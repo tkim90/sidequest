@@ -1,0 +1,56 @@
+:root {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1f2933;
+  background:
+    radial-gradient(circle at top, #f7e6c4, transparent 35%),
+    linear-gradient(180deg, #fefaf0 0%, #f3efe4 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.status-card {
+  width: min(100%, 420px);
+  padding: 32px;
+  border: 1px solid rgba(31, 41, 51, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 40px rgba(79, 62, 36, 0.12);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a6b2f;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.message {
+  margin: 16px 0 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
