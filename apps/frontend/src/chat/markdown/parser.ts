@@ -44,6 +44,14 @@ function finalizeBufferedBlock<T>({
 
 export { blocksEqual, createParserState };
 
+export function parseAllBlocks(content: string): MarkdownBlock[] {
+  const parser = createParserState();
+  const result = parseChunk(parser, [], content, true);
+  return result.activeBlock
+    ? [...result.nextBlocks, result.activeBlock]
+    : result.nextBlocks;
+}
+
 export function parseChunk(
   parser: ParserState,
   blocks: MarkdownBlock[],

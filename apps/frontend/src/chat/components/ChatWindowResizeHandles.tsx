@@ -29,22 +29,26 @@ const resizeHandles: Array<{
   },
   {
     key: "top-left",
-    className: "absolute left-0 top-0 z-20 h-3 w-3 cursor-nwse-resize",
+    className:
+      "absolute -left-2 -top-2 z-30 h-6 w-6 cursor-nwse-resize",
     edges: { north: true, south: false, east: false, west: true },
   },
   {
     key: "top-right",
-    className: "absolute right-0 top-0 z-20 h-3 w-3 cursor-nesw-resize",
+    className:
+      "absolute -right-2 -top-2 z-30 h-6 w-6 cursor-nesw-resize",
     edges: { north: true, south: false, east: true, west: false },
   },
   {
     key: "bottom-right",
-    className: "absolute bottom-0 right-0 z-20 h-3 w-3 cursor-nwse-resize",
+    className:
+      "absolute -bottom-2 -right-2 z-30 h-6 w-6 cursor-nwse-resize",
     edges: { north: false, south: true, east: true, west: false },
   },
   {
     key: "bottom-left",
-    className: "absolute bottom-0 left-0 z-20 h-3 w-3 cursor-nesw-resize",
+    className:
+      "absolute -bottom-2 -left-2 z-30 h-6 w-6 cursor-nesw-resize",
     edges: { north: false, south: true, east: false, west: true },
   },
 ];

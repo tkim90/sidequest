@@ -96,6 +96,17 @@ export function getRangeRect(range: Range): DOMRect | null {
   return new DOMRect(left, top, right - left, bottom - top);
 }
 
+export function getSelectionRect(
+  selection: Selection,
+  fallbackElement: Element,
+): DOMRect | null {
+  if (selection.rangeCount === 0) return null;
+  const rect = getRangeRect(selection.getRangeAt(0));
+  if (rect) return rect;
+  const elRect = fallbackElement.getBoundingClientRect();
+  return elRect.width > 0 || elRect.height > 0 ? elRect : null;
+}
+
 export function findTextOffsets(
   container: Node,
   range: Range,

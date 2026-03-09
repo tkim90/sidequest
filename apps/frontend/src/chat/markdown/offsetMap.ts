@@ -28,7 +28,7 @@ export interface AnnotatedSpan extends LeafSpan {
   anchorCount?: number;
 }
 
-function getRenderedTextForBlock(block: MarkdownBlock): string {
+export function getRenderedTextForBlock(block: MarkdownBlock): string {
   switch (block.type) {
     case "header":
       return getRenderedTextForInlineSource(block.text);

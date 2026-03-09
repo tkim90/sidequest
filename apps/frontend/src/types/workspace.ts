@@ -2,8 +2,8 @@ export interface SelectionState {
   parentWindowId: string;
   parentMessageId: string;
   selectedText: string;
-  startOffset: number;
-  endOffset: number;
+  startOffset?: number;
+  endOffset?: number;
   x: number;
   y: number;
   windowLocalY: number;

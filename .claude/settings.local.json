@@ -8,7 +8,17 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.npmjs.com)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(/Users/taekim/.nvm/versions/node/v20.18.1/bin/npx tsc:*)",
+      "Bash(/Users/taekim/Documents/projects/tinkering/sidequest/apps/frontend/node_modules/.bin/tsc:*)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:json-render.dev)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(apps/frontend/node_modules/.bin/tsc:*)",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:json-render.com)"
     ]
   }
 }

@@ -16,15 +16,15 @@ import {
 } from "../lib/constants";
 import {
   clamp,
-  findTextOffsets,
-  getRangeRect,
-  getRangeWithinContainer,
+  getSelectionRect,
 } from "../lib/geometry";
 import {
   cloneMessagesForBranch,
   createAnchorRecord,
   createWindowRecord,
 } from "../lib/state";
+import { computeBlockOffsets, getRenderedTextForBlock } from "../markdown/offsetMap";
+import { parseAllBlocks } from "../markdown/parser";
 
 interface UseBranchSelectionOptions {
   appStateRef: RefObject<AppState>;
@@ -94,65 +94,66 @@ export function useBranchSelection({
         return;
       }
 
-      const selectionRange = selection.getRangeAt(0);
-      const range = getRangeWithinContainer(messageNode, selectionRange);
-
-      if (!range) {
+      const selectedText = selection.toString().trim();
+      if (!selectedText) {
         return;
       }
 
-      const { selectedText, startOffset, endOffset } = findTextOffsets(
-        messageNode,
-        range,
-      );
-      const trimmedText = selectedText.trim();
-      const leadingWhitespace =
-        selectedText.length - selectedText.trimStart().length;
-      const trailingWhitespace =
-        selectedText.length - selectedText.trimEnd().length;
-      const adjustedStartOffset = startOffset + leadingWhitespace;
-      const adjustedEndOffset = endOffset - trailingWhitespace;
-
-      if (!trimmedText || adjustedStartOffset === adjustedEndOffset) {
+      const rect = getSelectionRect(selection, messageNode);
+      if (!rect) {
         return;
       }
 
-      const overlap = checkAnchorOverlap({
-        anchors: appStateRef.current.anchors,
-        parentWindowId: windowId,
-        parentMessageId: messageId,
-        startOffset: adjustedStartOffset,
-        endOffset: adjustedEndOffset,
-      });
-
-      if (overlap.type === "partial") {
-        setNotice(
-          "Overlapping branch anchors in the same message are blocked in this version.",
-        );
-        dismissSelection();
-        return;
-      }
-
-      const rangeRect = getRangeRect(range);
       const windowRect = windowRefs.current[windowId]?.getBoundingClientRect();
-
-      if (!rangeRect) {
-        return;
-      }
 
       setSelectionState({
         parentWindowId: windowId,
         parentMessageId: messageId,
-        selectedText: trimmedText,
-        startOffset: adjustedStartOffset,
-        endOffset: adjustedEndOffset,
-        x: rangeRect.left + rangeRect.width / 2,
-        y: rangeRect.top - 10,
+        selectedText,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
         windowLocalY: windowRect
-          ? rangeRect.top + rangeRect.height / 2 - windowRect.top
+          ? rect.top + rect.height / 2 - windowRect.top
           : 120,
       });
     });
+  }
+
+  function computeOffsetsForSelectedText(
+    messageContent: string,
+    selectedText: string,
+  ): { startOffset: number; endOffset: number } | null {
+    const blocks = parseAllBlocks(messageContent);
+    const blockOffsets = computeBlockOffsets(blocks);
+    const renderedSegments = blocks.map((b) => getRenderedTextForBlock(b));
+    const fullRendered = renderedSegments.join("\n");
+
+    // Try exact match in full rendered text
+    const idx = fullRendered.indexOf(selectedText);
+    if (idx >= 0) {
+      return { startOffset: idx, endOffset: idx + selectedText.length };
+    }
+
+    // Fallback: match against individual blocks (handles code blocks
+    // where DOM selection includes language label / button text)
+    for (let i = 0; i < blocks.length; i++) {
+      const blockText = renderedSegments[i];
+      const bo = blockOffsets[i];
+
+      if (selectedText.includes(blockText) && blockText.length > 0) {
+        return { startOffset: bo.renderedStart, endOffset: bo.renderedEnd };
+      }
+
+      const inner = blockText.indexOf(selectedText);
+      if (inner >= 0) {
+        return {
+          startOffset: bo.renderedStart + inner,
+          endOffset: bo.renderedStart + inner + selectedText.length,
+        };
+      }
+    }
+
+    return null;
   }
 
   function createBranchFromSelection(): void {
@@ -186,12 +187,34 @@ export function useBranchSelection({
       return;
     }
 
+    // Resolve offsets: use existing ones if available, otherwise compute from content
+    let startOffset = currentSelection.startOffset;
+    let endOffset = currentSelection.endOffset;
+
+    if (startOffset === undefined || endOffset === undefined) {
+      const computed = computeOffsetsForSelectedText(
+        anchorMessage.content,
+        currentSelection.selectedText,
+      );
+
+      if (!computed) {
+        setNotice(
+          "Could not determine selection position. Try selecting again.",
+        );
+        dismissSelection();
+        return;
+      }
+
+      startOffset = computed.startOffset;
+      endOffset = computed.endOffset;
+    }
+
     const overlap = checkAnchorOverlap({
       anchors: snapshot.anchors,
       parentWindowId: currentSelection.parentWindowId,
       parentMessageId: currentSelection.parentMessageId,
-      startOffset: currentSelection.startOffset,
-      endOffset: currentSelection.endOffset,
+      startOffset,
+      endOffset,
     });
 
     if (overlap.type === "partial") {
@@ -222,8 +245,8 @@ export function useBranchSelection({
       parentMessageId: currentSelection.parentMessageId,
       childWindowId: childWindow.id,
       selectedText: currentSelection.selectedText,
-      startOffset: currentSelection.startOffset,
-      endOffset: currentSelection.endOffset,
+      startOffset,
+      endOffset,
     });
 
     const inheritedMessages = cloneMessagesForBranch(
