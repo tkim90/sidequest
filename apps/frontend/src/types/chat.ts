@@ -23,6 +23,8 @@ export interface WindowRecord {
   title: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
   parentId: string | null;
   childIds: string[];
   branchAnchorId: string | null;

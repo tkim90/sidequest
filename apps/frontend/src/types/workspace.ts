@@ -36,4 +36,21 @@ export type InteractionState =
       startX: number;
       startY: number;
       scale: number;
+    }
+  | {
+      type: "resize";
+      windowId: string;
+      startClientX: number;
+      startClientY: number;
+      startX: number;
+      startY: number;
+      startWidth: number;
+      startHeight: number;
+      scale: number;
+      edges: {
+        north: boolean;
+        south: boolean;
+        east: boolean;
+        west: boolean;
+      };
     };

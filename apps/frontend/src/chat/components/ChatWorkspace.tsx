@@ -21,6 +21,7 @@ function ChatWorkspace() {
           onComposerChange={workspace.onComposerChange}
           onGeometryChange={workspace.onGeometryChange}
           onHeaderPointerDown={workspace.onHeaderPointerDown}
+          onResizePointerDown={workspace.onResizePointerDown}
           onMessageMouseUp={workspace.onMessageMouseUp}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
           onSend={workspace.onSend}

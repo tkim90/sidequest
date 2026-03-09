@@ -48,6 +48,9 @@ export interface ChatWorkspaceViewModel {
   onHeaderPointerDown: ReturnType<
     typeof useCanvasInteractions
   >["onHeaderPointerDown"];
+  onResizePointerDown: ReturnType<
+    typeof useCanvasInteractions
+  >["onResizePointerDown"];
   onMessageMouseUp: ReturnType<
     typeof useBranchSelection
   >["onMessageMouseUp"];
@@ -74,6 +77,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [notice, setNotice] = useState("");
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
+  const hasCenteredInitialWindowRef = useRef(false);
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -106,6 +110,60 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setNotice,
     windowRefs: canvas.windowRefs,
   });
+
+  useEffect(() => {
+    if (hasCenteredInitialWindowRef.current) {
+      return;
+    }
+
+    const canvasNode = canvas.canvasRef.current;
+    const rootWindowId = appState.zOrder[0];
+    const rootWindow = rootWindowId ? appState.windows[rootWindowId] : null;
+
+    if (
+      !canvasNode ||
+      !rootWindow ||
+      appState.zOrder.length !== 1 ||
+      rootWindow.parentId !== null
+    ) {
+      return;
+    }
+
+    hasCenteredInitialWindowRef.current = true;
+    const centeredX = Math.max(
+      24,
+      Math.round((canvasNode.clientWidth - rootWindow.width) / 2),
+    );
+
+    setAppState((current) => {
+      const currentRootWindow = rootWindowId
+        ? current.windows[rootWindowId]
+        : undefined;
+      if (!currentRootWindow) {
+        return current;
+      }
+
+      return {
+        ...current,
+        windows: {
+          ...current.windows,
+          [rootWindowId]: {
+            ...currentRootWindow,
+            x: centeredX,
+          },
+        },
+      };
+    });
+  }, [appState.windows, appState.zOrder, canvas.canvasRef]);
+
+  function getCenteredRootX(windowWidth: number): number {
+    const canvasWidth = canvas.canvasRef.current?.clientWidth;
+    if (!canvasWidth) {
+      return ROOT_WINDOW_X;
+    }
+
+    return Math.max(24, Math.round((canvasWidth - windowWidth) / 2));
+  }
 
   function handleComposerChange(windowId: string, composer: string): void {
     setAppState((current) => {
@@ -369,7 +427,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   function openFreshRootWindow(): void {
     const rootWindow = createWindowRecord({
       title: ROOT_WINDOW_TITLE,
-      x: ROOT_WINDOW_X,
+      x: getCenteredRootX(560),
       y: ROOT_WINDOW_Y,
     });
 
@@ -409,6 +467,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onHeaderPointerDown: (event, windowId) => {
       selection.dismissSelection();
       canvas.onHeaderPointerDown(event, windowId);
+    },
+    onResizePointerDown: (event, windowId, edges) => {
+      selection.dismissSelection();
+      canvas.onResizePointerDown(event, windowId, edges);
     },
     onMessageMouseUp: selection.onMessageMouseUp,
     onOpenFreshRootWindow: openFreshRootWindow,

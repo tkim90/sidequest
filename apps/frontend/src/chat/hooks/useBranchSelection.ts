@@ -13,7 +13,6 @@ import { checkAnchorOverlap } from "../lib/anchors";
 import {
   CHILD_VERTICAL_STAGGER,
   WINDOW_GAP,
-  WINDOW_WIDTH,
 } from "../lib/constants";
 import { clamp, findTextOffsets } from "../lib/geometry";
 import {
@@ -194,7 +193,7 @@ export function useBranchSelection({
 
     const childWindow = createWindowRecord({
       title: `${parentWindow.title}.${parentWindow.childIds.length + 1}`,
-      x: parentWindow.x + WINDOW_WIDTH + WINDOW_GAP,
+      x: parentWindow.x + parentWindow.width + WINDOW_GAP,
       y:
         parentWindow.y +
         clamp(currentSelection.windowLocalY - 120, 24, 260) +

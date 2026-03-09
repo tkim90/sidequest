@@ -1,7 +1,6 @@
 import type { RefObject } from "react";
 
 import type { SelectionState } from "../../types";
-import { primaryButtonClassName } from "./ui";
 
 interface SelectionPopoverProps {
   onBranch: () => void;
@@ -25,7 +24,7 @@ function SelectionPopover({
     >
       <p className="m-0">Branch this phrase into a new chat?</p>
       <button
-        className={`${primaryButtonClassName} border-zinc-50 bg-zinc-50 text-zinc-950 hover:bg-zinc-200`}
+        className="inline-flex cursor-pointer items-center justify-center border border-zinc-50 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-zinc-100"
         type="button"
         onClick={onBranch}
       >

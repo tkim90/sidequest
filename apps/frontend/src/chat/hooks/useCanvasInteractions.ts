@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -14,6 +15,10 @@ import type {
   ConnectorPath,
 } from "../../types";
 import { groupAnchorsByMessage } from "../lib/anchors";
+import {
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+} from "../lib/constants";
 import {
   areConnectorPathsEqual,
   clamp,
@@ -35,12 +40,54 @@ interface UseCanvasInteractionsResult {
     event: ReactPointerEvent<HTMLElement>,
     windowId: string,
   ) => void;
+  onResizePointerDown: (
+    event: ReactPointerEvent<HTMLElement>,
+    windowId: string,
+    edges: ResizeEdges,
+  ) => void;
   onWindowFocus: (windowId: string) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
   requestGeometryRefresh: () => void;
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
+
+export interface ResizeEdges {
+  north: boolean;
+  south: boolean;
+  east: boolean;
+  west: boolean;
+}
+
+type CanvasInteraction =
+  | {
+      type: "pan";
+      startClientX: number;
+      startClientY: number;
+      startViewportX: number;
+      startViewportY: number;
+    }
+  | {
+      type: "drag";
+      windowId: string;
+      startClientX: number;
+      startClientY: number;
+      startX: number;
+      startY: number;
+      scale: number;
+    }
+  | {
+      type: "resize";
+      windowId: string;
+      startClientX: number;
+      startClientY: number;
+      startX: number;
+      startY: number;
+      startWidth: number;
+      startHeight: number;
+      scale: number;
+      edges: ResizeEdges;
+    };
 
 export function useCanvasInteractions({
   appState,
@@ -53,25 +100,11 @@ export function useCanvasInteractions({
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const windowRefs = useRef<Record<string, HTMLElement>>({});
   const anchorRefs = useRef<Record<string, HTMLSpanElement>>({});
-  const interactionRef = useRef<
-    | {
-        type: "pan";
-        startClientX: number;
-        startClientY: number;
-        startViewportX: number;
-        startViewportY: number;
-      }
-    | {
-        type: "drag";
-        windowId: string;
-        startClientX: number;
-        startClientY: number;
-        startX: number;
-        startY: number;
-        scale: number;
-      }
-    | null
-  >(null);
+  const interactionRef = useRef<CanvasInteraction | null>(null);
+
+  const requestGeometryRefresh = useCallback((): void => {
+    setGeometryVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     function handlePointerMove(event: globalThis.PointerEvent): void {
@@ -104,14 +137,65 @@ export function useCanvasInteractions({
           return current;
         }
 
+        if (interaction.type === "drag") {
+          return {
+            ...current,
+            windows: {
+              ...current.windows,
+              [interaction.windowId]: {
+                ...windowData,
+                x: interaction.startX + dx,
+                y: interaction.startY + dy,
+              },
+            },
+          };
+        }
+
+        let nextX = interaction.startX;
+        let nextY = interaction.startY;
+        let nextWidth = interaction.startWidth;
+        let nextHeight = interaction.startHeight;
+
+        if (interaction.edges.east) {
+          nextWidth = Math.max(
+            MIN_WINDOW_WIDTH,
+            interaction.startWidth + dx,
+          );
+        }
+
+        if (interaction.edges.south) {
+          nextHeight = Math.max(
+            MIN_WINDOW_HEIGHT,
+            interaction.startHeight + dy,
+          );
+        }
+
+        if (interaction.edges.west) {
+          nextWidth = Math.max(
+            MIN_WINDOW_WIDTH,
+            interaction.startWidth - dx,
+          );
+          nextX = interaction.startX + (interaction.startWidth - nextWidth);
+        }
+
+        if (interaction.edges.north) {
+          nextHeight = Math.max(
+            MIN_WINDOW_HEIGHT,
+            interaction.startHeight - dy,
+          );
+          nextY = interaction.startY + (interaction.startHeight - nextHeight);
+        }
+
         return {
           ...current,
           windows: {
             ...current.windows,
             [interaction.windowId]: {
               ...windowData,
-              x: interaction.startX + dx,
-              y: interaction.startY + dy,
+              x: nextX,
+              y: nextY,
+              width: nextWidth,
+              height: nextHeight,
             },
           },
         };
@@ -132,7 +216,7 @@ export function useCanvasInteractions({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [setAppState]);
+  }, [requestGeometryRefresh, setAppState]);
 
   useEffect(() => {
     function handleWindowResize(): void {
@@ -143,7 +227,7 @@ export function useCanvasInteractions({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, []);
+  }, [requestGeometryRefresh]);
 
   useEffect(() => {
     const canvasNode = canvasRef.current;
@@ -247,10 +331,6 @@ export function useCanvasInteractions({
     geometryVersion,
   ]);
 
-  function requestGeometryRefresh(): void {
-    setGeometryVersion((version) => version + 1);
-  }
-
   function registerWindowRef(windowId: string, node: HTMLElement | null): void {
     if (node) {
       windowRefs.current[windowId] = node;
@@ -332,12 +412,45 @@ export function useCanvasInteractions({
     };
   }
 
+  function handleResizePointerDown(
+    event: ReactPointerEvent<HTMLElement>,
+    windowId: string,
+    edges: ResizeEdges,
+  ): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    bringWindowToFront(windowId);
+
+    const windowData = appStateRef.current.windows[windowId];
+    if (!windowData) {
+      return;
+    }
+
+    interactionRef.current = {
+      type: "resize",
+      windowId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: windowData.x,
+      startY: windowData.y,
+      startWidth: windowData.width,
+      startHeight: windowData.height,
+      scale: appStateRef.current.viewport.scale,
+      edges,
+    };
+  }
+
   return {
     anchorGroupsByMessageKey,
     canvasRef,
     connectorPaths,
     onCanvasPointerDown: handleCanvasPointerDown,
     onHeaderPointerDown: handleHeaderPointerDown,
+    onResizePointerDown: handleResizePointerDown,
     onWindowFocus: bringWindowToFront,
     registerAnchorRef,
     registerWindowRef,

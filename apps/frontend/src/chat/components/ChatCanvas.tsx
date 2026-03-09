@@ -5,6 +5,7 @@ import type {
   Viewport,
   WindowRecord,
 } from "../../types";
+import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
 import { eyebrowClassName, primaryButtonClassName } from "./ui";
@@ -20,6 +21,11 @@ interface ChatCanvasProps {
   onHeaderPointerDown: (
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
+  ) => void;
+  onResizePointerDown: (
+    event: React.PointerEvent<HTMLElement>,
+    windowId: string,
+    edges: ResizeEdges,
   ) => void;
   onMessageMouseUp: (
     event: React.MouseEvent<HTMLDivElement>,
@@ -45,6 +51,7 @@ function ChatCanvas({
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
+  onResizePointerDown,
   onMessageMouseUp,
   onOpenFreshRootWindow,
   onSend,
@@ -78,6 +85,7 @@ function ChatCanvas({
             onComposerChange={onComposerChange}
             onGeometryChange={onGeometryChange}
             onHeaderPointerDown={onHeaderPointerDown}
+            onResizePointerDown={onResizePointerDown}
             onMessageMouseUp={onMessageMouseUp}
             onSend={onSend}
             onWindowFocus={onWindowFocus}

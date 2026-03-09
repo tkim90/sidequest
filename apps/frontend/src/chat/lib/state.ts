@@ -14,12 +14,16 @@ import {
   ROOT_WINDOW_TITLE,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
+  WINDOW_HEIGHT,
+  WINDOW_WIDTH,
 } from "./constants";
 
 interface CreateWindowRecordOptions {
   title: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
   parentId?: string | null;
   branchAnchorId?: string | null;
   branchFocus?: BranchFocus | null;
@@ -41,6 +45,8 @@ export function createWindowRecord({
   title,
   x,
   y,
+  width = WINDOW_WIDTH,
+  height = WINDOW_HEIGHT,
   parentId = null,
   branchAnchorId = null,
   branchFocus = null,
@@ -50,6 +56,8 @@ export function createWindowRecord({
     title,
     x,
     y,
+    width,
+    height,
     parentId,
     childIds: [],
     branchAnchorId,

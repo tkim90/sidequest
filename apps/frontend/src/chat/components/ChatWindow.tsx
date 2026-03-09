@@ -11,6 +11,7 @@ import type {
   MessageRecord,
   WindowRecord,
 } from "../../types";
+import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import { splitContentByAnchors } from "../lib/anchors";
 import {
   eyebrowClassName,
@@ -39,6 +40,11 @@ interface ChatWindowProps {
     event: ReactPointerEvent<HTMLElement>,
     windowId: string,
   ) => void;
+  onResizePointerDown: (
+    event: ReactPointerEvent<HTMLElement>,
+    windowId: string,
+    edges: ResizeEdges,
+  ) => void;
   onMessageMouseUp: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
@@ -53,6 +59,53 @@ interface ChatWindowProps {
   zIndex: number;
 }
 
+const resizeHandles: Array<{
+  key: string;
+  className: string;
+  edges: ResizeEdges;
+}> = [
+  {
+    key: "top",
+    className: "absolute inset-x-3 top-0 z-20 h-2 cursor-n-resize",
+    edges: { north: true, south: false, east: false, west: false },
+  },
+  {
+    key: "right",
+    className: "absolute inset-y-3 right-0 z-20 w-2 cursor-e-resize",
+    edges: { north: false, south: false, east: true, west: false },
+  },
+  {
+    key: "bottom",
+    className: "absolute inset-x-3 bottom-0 z-20 h-2 cursor-s-resize",
+    edges: { north: false, south: true, east: false, west: false },
+  },
+  {
+    key: "left",
+    className: "absolute inset-y-3 left-0 z-20 w-2 cursor-w-resize",
+    edges: { north: false, south: false, east: false, west: true },
+  },
+  {
+    key: "top-left",
+    className: "absolute left-0 top-0 z-20 h-3 w-3 cursor-nwse-resize",
+    edges: { north: true, south: false, east: false, west: true },
+  },
+  {
+    key: "top-right",
+    className: "absolute right-0 top-0 z-20 h-3 w-3 cursor-nesw-resize",
+    edges: { north: true, south: false, east: true, west: false },
+  },
+  {
+    key: "bottom-right",
+    className: "absolute bottom-0 right-0 z-20 h-3 w-3 cursor-nwse-resize",
+    edges: { north: false, south: true, east: true, west: false },
+  },
+  {
+    key: "bottom-left",
+    className: "absolute bottom-0 left-0 z-20 h-3 w-3 cursor-nesw-resize",
+    edges: { north: false, south: true, east: false, west: true },
+  },
+];
+
 function renderMessageContent({
   windowId,
   message,
@@ -64,7 +117,7 @@ function renderMessageContent({
 
   return (
     <div
-      className="whitespace-pre-wrap break-words text-[15px] leading-7"
+      className="cursor-text whitespace-pre-wrap break-words text-[15px] leading-7"
       data-message-id={message.id}
       onMouseUp={(event) => onMessageMouseUp(event, windowId, message.id)}
     >
@@ -103,6 +156,7 @@ function ChatWindow({
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
+  onResizePointerDown,
   onMessageMouseUp,
   onSend,
   onWindowFocus,
@@ -113,6 +167,7 @@ function ChatWindow({
   zIndex,
 }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -120,21 +175,49 @@ function ChatWindow({
       return;
     }
 
-    node.scrollTop = node.scrollHeight;
+    if (shouldAutoScrollRef.current) {
+      node.scrollTop = node.scrollHeight;
+    }
+
     onGeometryChange();
-  }, [messages, onGeometryChange]);
+  }, [messages, onGeometryChange, windowData.height, windowData.width]);
+
+  function handleMessagesScroll(): void {
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    const distanceFromBottom =
+      node.scrollHeight - node.scrollTop - node.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom <= 32;
+    onGeometryChange();
+  }
 
   return (
     <article
-      className="absolute grid h-[720px] w-[560px] max-h-[calc(100vh-7rem)] max-w-[calc(100vw-2rem)] grid-rows-[auto_1fr_auto] overflow-hidden border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform"
+      className="absolute grid grid-rows-[auto_1fr_auto] overflow-hidden border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
         transform: `translate3d(${windowData.x}px, ${windowData.y}px, 0)`,
+        width: windowData.width,
+        height: windowData.height,
         zIndex,
       }}
       onPointerDown={() => onWindowFocus(windowData.id)}
     >
+      {resizeHandles.map((handle) => (
+        <span
+          key={handle.key}
+          aria-hidden="true"
+          className={handle.className}
+          onPointerDown={(event) =>
+            onResizePointerDown(event, windowData.id, handle.edges)
+          }
+        />
+      ))}
+
       <header
         className="flex cursor-grab justify-between gap-4 border-b border-zinc-300 bg-zinc-100 px-5 py-4 active:cursor-grabbing"
         onPointerDown={(event) => onHeaderPointerDown(event, windowData.id)}
@@ -169,7 +252,7 @@ function ChatWindow({
       <div
         className="flex flex-col gap-4 overflow-auto p-5"
         ref={scrollRef}
-        onScroll={onGeometryChange}
+        onScroll={handleMessagesScroll}
       >
         {messages.length === 0 ? (
           <div className="my-auto border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-6 text-zinc-500">
@@ -195,7 +278,7 @@ function ChatWindow({
           return (
             <section
               key={message.id}
-              className={`w-[92%] px-4 py-4 ${messageClassName}`}
+              className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}
             >
               <p className={messageLabelClassName}>
                 {message.role === "user" ? "You" : "Assistant"}
