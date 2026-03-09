@@ -1,6 +1,9 @@
 # Sidequest
 
-Branchable LLM chat workspace built with FastAPI plus Vite/React.
+Fork side bars into separate chats without disrupting your main conversation flow.
+
+<img width="1424" height="1039" alt="image" src="https://github.com/user-attachments/assets/8a12aa95-2e77-4716-859f-a6adb48c474b" />
+
 
 ## Structure
 
