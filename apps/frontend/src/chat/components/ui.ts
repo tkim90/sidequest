@@ -5,4 +5,4 @@ export const primaryButtonClassName =
   "inline-flex cursor-pointer items-center justify-center border border-zinc-950 bg-zinc-950 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-zinc-800 disabled:cursor-default disabled:border-zinc-300 disabled:bg-zinc-300 disabled:text-zinc-600";
 
 export const secondaryButtonClassName =
-  "inline-flex cursor-pointer items-center justify-center border border-zinc-300 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-100";
+  "inline-flex cursor-pointer items-center justify-center border border-zinc-300 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-default disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400";

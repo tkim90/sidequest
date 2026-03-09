@@ -79,6 +79,7 @@ export function createInitialState(rootWindowX: number = ROOT_WINDOW_X): AppStat
       x: 0,
       y: 0,
       scale: 1,
+      zoom: 1,
     },
     windows: {
       [rootWindow.id]: rootWindow,

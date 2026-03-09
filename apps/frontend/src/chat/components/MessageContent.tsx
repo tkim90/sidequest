@@ -210,7 +210,7 @@ function renderChunkContent({
     nodes.push(
       <span
         key={`${chunkKey}:anchor:${group.key}:${chunkLocalStart}`}
-        className="inline-flex items-center gap-2 border border-yellow-400 bg-yellow-200 px-1.5 py-0.5"
+        className="inline-flex items-center border border-yellow-400 bg-yellow-200 px-0.2"
         ref={(node) => registerAnchorRef(group.key, node)}
       >
         <span>{anchorText}</span>
@@ -286,7 +286,7 @@ const MessageContent = memo(function MessageContent({
 
   return (
     <div
-      className="cursor-text whitespace-pre-wrap break-words text-[15px] leading-7"
+      className="cursor-text whitespace-pre-wrap break-words text-[20px] leading-7"
       data-message-id={message.id}
       onMouseUp={(event) => onMessageMouseUp(event, windowId, message.id)}
     >

@@ -76,25 +76,32 @@ function ChatCanvas({
           transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.scale})`,
         }}
       >
-        {windows.map((windowData, index) => (
-          <ChatWindow
-            key={windowData.id}
-            anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-            messages={messagesByWindowId[windowData.id] || []}
-            onClose={onWindowClose}
-            onComposerChange={onComposerChange}
-            onGeometryChange={onGeometryChange}
-            onHeaderPointerDown={onHeaderPointerDown}
-            onResizePointerDown={onResizePointerDown}
-            onMessageMouseUp={onMessageMouseUp}
-            onSend={onSend}
-            onWindowFocus={onWindowFocus}
-            registerAnchorRef={registerAnchorRef}
-            registerWindowRef={registerWindowRef}
-            windowData={windowData}
-            zIndex={index + 1}
-          />
-        ))}
+        <div
+          className="relative min-h-full min-w-full origin-top-left"
+          style={{
+            zoom: viewport.zoom,
+          }}
+        >
+          {windows.map((windowData, index) => (
+            <ChatWindow
+              key={windowData.id}
+              anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+              messages={messagesByWindowId[windowData.id] || []}
+              onClose={onWindowClose}
+              onComposerChange={onComposerChange}
+              onGeometryChange={onGeometryChange}
+              onHeaderPointerDown={onHeaderPointerDown}
+              onResizePointerDown={onResizePointerDown}
+              onMessageMouseUp={onMessageMouseUp}
+              onSend={onSend}
+              onWindowFocus={onWindowFocus}
+              registerAnchorRef={registerAnchorRef}
+              registerWindowRef={registerWindowRef}
+              windowData={windowData}
+              zIndex={index + 1}
+            />
+          ))}
+        </div>
       </div>
 
       {windows.length === 0 ? (

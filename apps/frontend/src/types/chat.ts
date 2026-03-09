@@ -16,6 +16,7 @@ export interface Viewport {
   x: number;
   y: number;
   scale: number;
+  zoom: number;
 }
 
 export interface WindowRecord {

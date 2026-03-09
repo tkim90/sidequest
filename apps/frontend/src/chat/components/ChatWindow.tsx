@@ -225,7 +225,7 @@ function ChatWindow({
             </p>
           ) : (
             <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
-              Start a conversation, then branch any phrase into its own path.
+              Start a conversation, then branch any phrase into its own path by selecting the text.
             </p>
           )}
         </div>
