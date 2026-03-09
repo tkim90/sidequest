@@ -11,6 +11,7 @@ import type {
   AnchorGroup,
   MessageRecord,
 } from "../../types";
+import MarkdownContent from "../markdown/MarkdownContent";
 
 interface MessageContentProps {
   windowId: string;
@@ -244,7 +245,7 @@ function renderChunkContent({
   return nodes;
 }
 
-const MessageContent = memo(function MessageContent({
+function UserMessageContent({
   windowId,
   message,
   anchorGroups,
@@ -298,6 +299,22 @@ const MessageContent = memo(function MessageContent({
       ) : null}
     </div>
   );
+}
+
+const MessageContent = memo(function MessageContent(props: MessageContentProps) {
+  if (props.message.role === "assistant") {
+    return (
+      <MarkdownContent
+        windowId={props.windowId}
+        message={props.message}
+        anchorGroups={props.anchorGroups}
+        registerAnchorRef={props.registerAnchorRef}
+        onMessageMouseUp={props.onMessageMouseUp}
+      />
+    );
+  }
+
+  return <UserMessageContent {...props} />;
 }, areMessageContentPropsEqual);
 
 function areMessageContentPropsEqual(
