@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -284,7 +285,10 @@ export function useCanvasInteractions({
     };
   }, [appStateRef, setAppState]);
 
-  const anchorGroupsByMessageKey = groupAnchorsByMessage(appState.anchors);
+  const anchorGroupsByMessageKey = useMemo(
+    () => groupAnchorsByMessage(appState.anchors),
+    [appState.anchors],
+  );
 
   useEffect(() => {
     const canvasNode = canvasRef.current;

@@ -1,35 +1,22 @@
 import {
+  memo,
   useEffect,
   useRef,
-  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import type {
-  AnchorGroup,
   AnchorGroupsByMessageKey,
   MessageRecord,
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
-import { splitContentByAnchors } from "../lib/anchors";
+import MessageContent from "./MessageContent";
 import {
   eyebrowClassName,
   primaryButtonClassName,
   secondaryButtonClassName,
 } from "./ui";
-
-interface RenderMessageContentProps {
-  windowId: string;
-  message: MessageRecord;
-  anchorGroups: AnchorGroup[];
-  registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
-  onMessageMouseUp: (
-    event: ReactMouseEvent<HTMLDivElement>,
-    windowId: string,
-    messageId: string,
-  ) => void;
-}
 
 interface ChatWindowProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -45,11 +32,7 @@ interface ChatWindowProps {
     windowId: string,
     edges: ResizeEdges,
   ) => void;
-  onMessageMouseUp: (
-    event: ReactMouseEvent<HTMLDivElement>,
-    windowId: string,
-    messageId: string,
-  ) => void;
+  onMessageMouseUp: React.ComponentProps<typeof MessageContent>["onMessageMouseUp"];
   onSend: (windowId: string) => void | Promise<void>;
   onWindowFocus: (windowId: string) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
@@ -57,6 +40,14 @@ interface ChatWindowProps {
   windowData: WindowRecord;
   messages: MessageRecord[];
   zIndex: number;
+}
+
+interface ChatMessageCardProps {
+  windowId: string;
+  message: MessageRecord;
+  anchorGroups: AnchorGroupsByMessageKey[string];
+  registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
+  onMessageMouseUp: ChatWindowProps["onMessageMouseUp"];
 }
 
 const resizeHandles: Array<{
@@ -106,47 +97,46 @@ const resizeHandles: Array<{
   },
 ];
 
-function renderMessageContent({
+const ChatMessageCard = memo(function ChatMessageCard({
   windowId,
   message,
   anchorGroups,
   registerAnchorRef,
   onMessageMouseUp,
-}: RenderMessageContentProps) {
-  const segments = splitContentByAnchors(message.content, anchorGroups);
+}: ChatMessageCardProps) {
+  const messageClassName =
+    message.role === "user"
+      ? "self-end border border-zinc-950 bg-zinc-950 text-zinc-50"
+      : "self-start border border-zinc-300 bg-white text-zinc-950";
+  const messageLabelClassName =
+    message.role === "user"
+      ? "mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400"
+      : `${eyebrowClassName} mb-3`;
 
   return (
-    <div
-      className="cursor-text whitespace-pre-wrap break-words text-[15px] leading-7"
-      data-message-id={message.id}
-      onMouseUp={(event) => onMessageMouseUp(event, windowId, message.id)}
-    >
-      {segments.map((segment, index) => {
-        if (segment.type === "anchor") {
-          return (
-            <span
-              key={segment.key}
-              className="inline-flex items-center gap-2 border border-yellow-400 bg-yellow-200 px-1.5 py-0.5"
-              ref={(node) => registerAnchorRef(segment.key, node)}
-            >
-              <span>{segment.text}</span>
-              {segment.count > 1 ? (
-                <span className="inline-flex min-w-5 justify-center border border-yellow-500 bg-yellow-50 px-1 text-[11px] font-semibold text-yellow-800">
-                  {segment.count}
-                </span>
-              ) : null}
-            </span>
-          );
-        }
+    <section className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}>
+      <p className={messageLabelClassName}>
+        {message.role === "user" ? "You" : "Assistant"}
+      </p>
+      <MessageContent
+        windowId={windowId}
+        message={message}
+        anchorGroups={anchorGroups}
+        registerAnchorRef={registerAnchorRef}
+        onMessageMouseUp={onMessageMouseUp}
+      />
+    </section>
+  );
+}, areChatMessageCardPropsEqual);
 
-        return <span key={`${message.id}-segment-${index}`}>{segment.text}</span>;
-      })}
-      {message.status === "streaming" ? (
-        <span className="ml-0.5 inline-block animate-pulse font-semibold" aria-hidden="true">
-          |
-        </span>
-      ) : null}
-    </div>
+function areChatMessageCardPropsEqual(
+  previous: ChatMessageCardProps,
+  next: ChatMessageCardProps,
+): boolean {
+  return (
+    previous.windowId === next.windowId &&
+    previous.message === next.message &&
+    previous.anchorGroups === next.anchorGroups
   );
 }
 
@@ -266,31 +256,16 @@ function ChatWindow({
         {messages.map((message) => {
           const messageKey = `${windowData.id}:${message.id}`;
           const anchorGroups = anchorGroupsByMessageKey[messageKey] || [];
-          const messageClassName =
-            message.role === "user"
-              ? "self-end border border-zinc-950 bg-zinc-950 text-zinc-50"
-              : "self-start border border-zinc-300 bg-white text-zinc-950";
-          const messageLabelClassName =
-            message.role === "user"
-              ? "mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400"
-              : `${eyebrowClassName} mb-3`;
 
           return (
-            <section
+            <ChatMessageCard
               key={message.id}
-              className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}
-            >
-              <p className={messageLabelClassName}>
-                {message.role === "user" ? "You" : "Assistant"}
-              </p>
-              {renderMessageContent({
-                windowId: windowData.id,
-                message,
-                anchorGroups,
-                registerAnchorRef,
-                onMessageMouseUp,
-              })}
-            </section>
+              windowId={windowData.id}
+              message={message}
+              anchorGroups={anchorGroups}
+              registerAnchorRef={registerAnchorRef}
+              onMessageMouseUp={onMessageMouseUp}
+            />
           );
         })}
       </div>
