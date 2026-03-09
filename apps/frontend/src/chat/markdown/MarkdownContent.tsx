@@ -19,6 +19,7 @@ import {
   type AnnotatedSpan,
   type BlockOffset,
 } from "./offsetMap";
+import CodeBlock from "./CodeBlock";
 
 // --- Incremental token text (for streaming active block) ---
 
@@ -327,27 +328,31 @@ function RenderFinalizedBlock({
   }
 
   if (block.type === "code") {
-    const content = renderCodeBlockWithAnchors(
-      block.code,
-      0,
-      keyPrefix,
-      anchors,
-      ctx.registerAnchorRef,
-    );
-    return (
-      <div className="my-3">
-        <div className="overflow-x-auto rounded-md bg-zinc-900 text-zinc-100">
-          {block.language ? (
-            <div className="border-b border-zinc-700 px-3 py-1 text-xs text-zinc-300">
-              {block.language}
-            </div>
-          ) : null}
-          <pre className="p-3 text-sm leading-6 font-mono">
-            <code>{content}</code>
-          </pre>
+    // Fall back to plain-text rendering when anchor highlights overlap
+    if (anchors.length > 0) {
+      const content = renderCodeBlockWithAnchors(
+        block.code,
+        0,
+        keyPrefix,
+        anchors,
+        ctx.registerAnchorRef,
+      );
+      return (
+        <div className="my-3">
+          <div className="overflow-x-auto rounded-md bg-zinc-900 text-zinc-100">
+            {block.language ? (
+              <div className="border-b border-zinc-700 px-3 py-1 text-xs text-zinc-300">
+                {block.language}
+              </div>
+            ) : null}
+            <pre className="p-3 text-sm leading-6 font-mono">
+              <code>{content}</code>
+            </pre>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    return <CodeBlock code={block.code} language={block.language} />;
   }
 
   if (block.type === "blockquote") {
@@ -477,20 +482,7 @@ function RenderActiveBlock({
   }
 
   if (block.type === "code") {
-    return (
-      <div className="my-3">
-        <div className="overflow-x-auto rounded-md bg-zinc-900 text-zinc-100">
-          {block.language ? (
-            <div className="border-b border-zinc-700 px-3 py-1 text-xs text-zinc-300">
-              {block.language}
-            </div>
-          ) : null}
-          <pre className="p-3 text-sm leading-6 font-mono">
-            <code>{renderActiveBlockText(block, streamKey)}</code>
-          </pre>
-        </div>
-      </div>
-    );
+    return <CodeBlock code={block.code} language={block.language} />;
   }
 
   if (block.type === "blockquote") {

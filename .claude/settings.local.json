@@ -4,7 +4,11 @@
       "Bash(npx tsc:*)",
       "Bash(npx:*)",
       "Bash(node:*)",
-      "Bash(./node_modules/.bin/tsc:*)"
+      "Bash(./node_modules/.bin/tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm install:*)"
     ]
   }
 }
