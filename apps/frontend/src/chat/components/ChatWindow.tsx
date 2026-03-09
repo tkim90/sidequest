@@ -1,6 +1,7 @@
 import {
   memo,
   useEffect,
+  useLayoutEffect,
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -113,7 +114,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
       : `${eyebrowClassName} mb-3`;
 
   return (
-    <section data-message-card className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}>
+    <section data-message-card className={`${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName}`}>
       <p className={messageLabelClassName}>
         {message.role === "user" ? "You" : "Assistant"}
       </p>
@@ -158,6 +159,24 @@ function ChatWindow({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (node) {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, []);
+
+  // Guaranteed scroll-to-bottom after all child content has rendered
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const id = requestAnimationFrame(() => {
+      node.scrollTop = node.scrollHeight;
+      shouldAutoScrollRef.current = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     const node = scrollRef.current;

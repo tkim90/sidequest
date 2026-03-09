@@ -15,7 +15,7 @@ function SelectionPopover({
 }: SelectionPopoverProps) {
   return (
     <div
-      className="fixed z-40 flex -translate-x-1/2 items-center gap-3 border border-zinc-950 bg-zinc-950 px-4 py-3 text-sm text-zinc-50 shadow-[8px_8px_0_0_rgba(24,24,27,0.2)]"
+      className="fixed z-40 flex -translate-x-1/2 -translate-y-full items-center gap-3 border border-zinc-950 bg-zinc-950 px-4 py-3 text-sm text-zinc-50 shadow-[8px_8px_0_0_rgba(24,24,27,0.2)]"
       ref={popoverRef}
       style={{
         left: selectionState.x,

@@ -147,7 +147,7 @@ export function useBranchSelection({
         startOffset: adjustedStartOffset,
         endOffset: adjustedEndOffset,
         x: rangeRect.left + rangeRect.width / 2,
-        y: rangeRect.bottom + 10,
+        y: rangeRect.top - 10,
         windowLocalY: windowRect
           ? rangeRect.top + rangeRect.height / 2 - windowRect.top
           : 120,
