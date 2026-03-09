@@ -113,7 +113,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
       : `${eyebrowClassName} mb-3`;
 
   return (
-    <section className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}>
+    <section data-message-card className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}>
       <p className={messageLabelClassName}>
         {message.role === "user" ? "You" : "Assistant"}
       </p>
@@ -191,9 +191,18 @@ function ChatWindow({
     onGeometryChange();
   }
 
+  function handleWindowPointerDown(event: ReactPointerEvent<HTMLElement>): void {
+    onWindowFocus(windowData.id);
+    const target = event.target as HTMLElement;
+    if (target.closest("textarea, input, button, [data-message-card]")) {
+      return;
+    }
+    onHeaderPointerDown(event, windowData.id);
+  }
+
   return (
     <article
-      className="absolute grid grid-rows-[auto_1fr_auto] overflow-hidden border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform"
+      className="absolute grid grid-rows-[auto_1fr_auto] cursor-grab overflow-hidden border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform active:cursor-grabbing"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
@@ -202,7 +211,7 @@ function ChatWindow({
         height: windowData.height,
         zIndex,
       }}
-      onPointerDown={() => onWindowFocus(windowData.id)}
+      onPointerDown={handleWindowPointerDown}
     >
       {resizeHandles.map((handle) => (
         <span
@@ -216,8 +225,7 @@ function ChatWindow({
       ))}
 
       <header
-        className="flex cursor-grab justify-between gap-4 border-b border-zinc-300 bg-zinc-100 px-5 py-4 active:cursor-grabbing"
-        onPointerDown={(event) => onHeaderPointerDown(event, windowData.id)}
+        className="flex justify-between gap-4 border-b border-zinc-300 bg-zinc-100 px-5 py-4"
       >
         <div>
           <p className={eyebrowClassName}>
