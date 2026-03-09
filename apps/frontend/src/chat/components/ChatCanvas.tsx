@@ -7,6 +7,7 @@ import type {
 } from "../../types";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
+import { eyebrowClassName, primaryButtonClassName } from "./ui";
 
 interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -56,14 +57,14 @@ function ChatCanvas({
 }: ChatCanvasProps) {
   return (
     <div
-      className="canvas"
+      className="relative overflow-hidden border-t border-zinc-300 bg-zinc-50 cursor-grab active:cursor-grabbing"
       ref={canvasRef}
       onPointerDown={onCanvasPointerDown}
     >
       <ConnectionLayer paths={connectorPaths} />
 
       <div
-        className="canvas-scene"
+        className="absolute inset-0 origin-top-left will-change-transform"
         style={{
           transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.scale})`,
         }}
@@ -89,13 +90,15 @@ function ChatCanvas({
       </div>
 
       {windows.length === 0 ? (
-        <div className="empty-board">
+        <div className="absolute bottom-6 left-6 w-[min(440px,calc(100%-3rem))] border border-zinc-300 bg-white p-6 shadow-[8px_8px_0_0_rgba(24,24,27,0.08)]">
           <div>
-            <p className="workspace-header__eyebrow">Board is empty</p>
-            <h2>Open a fresh main chat to start branching again.</h2>
+            <p className={eyebrowClassName}>Board is empty</p>
+            <h2 className="mt-2 text-2xl font-medium tracking-tight text-zinc-950">
+              Open a fresh main chat to start branching again.
+            </h2>
           </div>
           <button
-            className="send-button"
+            className={`${primaryButtonClassName} mt-5`}
             type="button"
             onClick={onOpenFreshRootWindow}
           >

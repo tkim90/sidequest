@@ -6,9 +6,16 @@ interface ConnectionLayerProps {
 
 function ConnectionLayer({ paths }: ConnectionLayerProps) {
   return (
-    <svg className="connection-layer" aria-hidden="true">
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden="true"
+    >
       {paths.map((path) => (
-        <path key={path.id} d={path.path} />
+        <path
+          key={path.id}
+          className="fill-none stroke-zinc-400 stroke-[1.5] [stroke-dasharray:10_8] [stroke-linecap:round]"
+          d={path.path}
+        />
       ))}
     </svg>
   );
