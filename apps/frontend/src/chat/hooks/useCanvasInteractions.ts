@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type Dispatch,
-  type PointerEvent as ReactPointerEvent,
   type RefObject,
   type SetStateAction,
 } from "react";
@@ -16,18 +15,10 @@ import type {
   ConnectorPath,
 } from "../../types";
 import { groupAnchorsByMessage } from "../lib/anchors";
-import {
-  MIN_WINDOW_HEIGHT,
-  MIN_WINDOW_WIDTH,
-  MAX_VIEWPORT_ZOOM,
-  MIN_VIEWPORT_ZOOM,
-  ZOOM_COMMIT_DELAY_MS,
-} from "../lib/constants";
-import {
-  areConnectorPathsEqual,
-  clamp,
-  getConnectorPath,
-} from "../lib/geometry";
+import type { ResizeEdges } from "./canvasTypes";
+import { useConnectorPaths } from "./useConnectorPaths";
+import { usePointerInteractions } from "./usePointerInteractions";
+import { useViewportWheel } from "./useViewportWheel";
 
 interface UseCanvasInteractionsOptions {
   appState: AppState;
@@ -39,13 +30,13 @@ interface UseCanvasInteractionsResult {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: RefObject<HTMLDivElement | null>;
   connectorPaths: ConnectorPath[];
-  onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onHeaderPointerDown: (
-    event: ReactPointerEvent<HTMLElement>,
+    event: React.PointerEvent<HTMLElement>,
     windowId: string,
   ) => void;
   onResizePointerDown: (
-    event: ReactPointerEvent<HTMLElement>,
+    event: React.PointerEvent<HTMLElement>,
     windowId: string,
     edges: ResizeEdges,
   ) => void;
@@ -56,73 +47,32 @@ interface UseCanvasInteractionsResult {
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
 
-export interface ResizeEdges {
-  north: boolean;
-  south: boolean;
-  east: boolean;
-  west: boolean;
-}
-
-type CanvasInteraction =
-  | {
-      type: "pan";
-      startClientX: number;
-      startClientY: number;
-      startViewportX: number;
-      startViewportY: number;
-    }
-  | {
-      type: "drag";
-      windowId: string;
-      startClientX: number;
-      startClientY: number;
-      startX: number;
-      startY: number;
-      scale: number;
-    }
-  | {
-      type: "resize";
-      windowId: string;
-      startClientX: number;
-      startClientY: number;
-      startX: number;
-      startY: number;
-      startWidth: number;
-      startHeight: number;
-      scale: number;
-      edges: ResizeEdges;
-    };
-
-function getViewportEffectiveScale(appState: AppState["viewport"]): number {
-  return appState.zoom * appState.scale;
-}
+export type { ResizeEdges } from "./canvasTypes";
 
 export function useCanvasInteractions({
   appState,
   appStateRef,
   setAppState,
 }: UseCanvasInteractionsOptions): UseCanvasInteractionsResult {
-  const [connectorPaths, setConnectorPaths] = useState<ConnectorPath[]>([]);
   const [geometryVersion, setGeometryVersion] = useState(0);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const windowRefs = useRef<Record<string, HTMLElement>>({});
   const anchorRefs = useRef<Record<string, HTMLSpanElement>>({});
-  const interactionRef = useRef<CanvasInteraction | null>(null);
   const zoomCommitTimerRef = useRef<number | null>(null);
 
-  const requestGeometryRefresh = useCallback((): void => {
+  const requestGeometryRefresh = useCallback(() => {
     setGeometryVersion((version) => version + 1);
   }, []);
 
-  const clearZoomCommitTimer = useCallback((): void => {
+  const clearZoomCommitTimer = useCallback(() => {
     if (zoomCommitTimerRef.current !== null) {
       window.clearTimeout(zoomCommitTimerRef.current);
       zoomCommitTimerRef.current = null;
     }
   }, []);
 
-  const commitViewportZoom = useCallback((): void => {
+  const commitViewportZoom = useCallback(() => {
     clearZoomCommitTimer();
 
     setAppState((current) => {
@@ -144,118 +94,6 @@ export function useCanvasInteractions({
   useEffect(() => clearZoomCommitTimer, [clearZoomCommitTimer]);
 
   useEffect(() => {
-    function handlePointerMove(event: globalThis.PointerEvent): void {
-      const interaction = interactionRef.current;
-      if (!interaction) {
-        return;
-      }
-
-      if (interaction.type === "pan") {
-        const dx = event.clientX - interaction.startClientX;
-        const dy = event.clientY - interaction.startClientY;
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            x: interaction.startViewportX + dx,
-            y: interaction.startViewportY + dy,
-          },
-        }));
-        return;
-      }
-
-      const dx = (event.clientX - interaction.startClientX) / interaction.scale;
-      const dy = (event.clientY - interaction.startClientY) / interaction.scale;
-
-      setAppState((current) => {
-        const windowData = current.windows[interaction.windowId];
-        if (!windowData) {
-          return current;
-        }
-
-        if (interaction.type === "drag") {
-          return {
-            ...current,
-            windows: {
-              ...current.windows,
-              [interaction.windowId]: {
-                ...windowData,
-                x: interaction.startX + dx,
-                y: interaction.startY + dy,
-              },
-            },
-          };
-        }
-
-        let nextX = interaction.startX;
-        let nextY = interaction.startY;
-        let nextWidth = interaction.startWidth;
-        let nextHeight = interaction.startHeight;
-
-        if (interaction.edges.east) {
-          nextWidth = Math.max(
-            MIN_WINDOW_WIDTH,
-            interaction.startWidth + dx,
-          );
-        }
-
-        if (interaction.edges.south) {
-          nextHeight = Math.max(
-            MIN_WINDOW_HEIGHT,
-            interaction.startHeight + dy,
-          );
-        }
-
-        if (interaction.edges.west) {
-          nextWidth = Math.max(
-            MIN_WINDOW_WIDTH,
-            interaction.startWidth - dx,
-          );
-          nextX = interaction.startX + (interaction.startWidth - nextWidth);
-        }
-
-        if (interaction.edges.north) {
-          nextHeight = Math.max(
-            MIN_WINDOW_HEIGHT,
-            interaction.startHeight - dy,
-          );
-          nextY = interaction.startY + (interaction.startHeight - nextHeight);
-        }
-
-        return {
-          ...current,
-          windows: {
-            ...current.windows,
-            [interaction.windowId]: {
-              ...windowData,
-              x: nextX,
-              y: nextY,
-              width: nextWidth,
-              height: nextHeight,
-            },
-          },
-        };
-      });
-    }
-
-    function handlePointerUp(): void {
-      if (interactionRef.current) {
-        interactionRef.current = null;
-        requestGeometryRefresh();
-      }
-    }
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [requestGeometryRefresh, setAppState]);
-
-  useEffect(() => {
     function handleWindowResize(): void {
       requestGeometryRefresh();
     }
@@ -266,129 +104,37 @@ export function useCanvasInteractions({
     };
   }, [requestGeometryRefresh]);
 
-  useEffect(() => {
-    const canvasNode = canvasRef.current;
-    if (!canvasNode) {
-      return undefined;
-    }
-    const sceneNode = canvasNode;
+  useViewportWheel({
+    appStateRef,
+    canvasRef,
+    clearZoomCommitTimer,
+    commitViewportZoom,
+    setAppState,
+    zoomCommitTimerRef,
+  });
 
-    function handleCanvasWheel(event: WheelEvent): void {
-      const target = event.target instanceof Element ? event.target : null;
-      const isModifierZoom = event.ctrlKey || event.metaKey;
-
-      if (isModifierZoom) {
-        event.preventDefault();
-
-        const rect = sceneNode.getBoundingClientRect();
-        const currentViewport = appStateRef.current.viewport;
-        const pointerX = event.clientX - rect.left;
-        const pointerY = event.clientY - rect.top;
-        const currentEffectiveScale = getViewportEffectiveScale(currentViewport);
-        const contentX = (pointerX - currentViewport.x) / currentEffectiveScale;
-        const contentY = (pointerY - currentViewport.y) / currentEffectiveScale;
-        const zoomFactor = event.deltaY < 0 ? 1.08 : 0.92;
-        const nextEffectiveScale = clamp(
-          currentEffectiveScale * zoomFactor,
-          MIN_VIEWPORT_ZOOM,
-          MAX_VIEWPORT_ZOOM,
-        );
-
-        clearZoomCommitTimer();
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            scale: nextEffectiveScale / current.viewport.zoom,
-            x: pointerX - contentX * nextEffectiveScale,
-            y: pointerY - contentY * nextEffectiveScale,
-          },
-        }));
-
-        zoomCommitTimerRef.current = window.setTimeout(() => {
-          commitViewportZoom();
-        }, ZOOM_COMMIT_DELAY_MS);
-        return;
-      }
-
-      if (!target?.closest("[data-chat-window]")) {
-        event.preventDefault();
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            x: current.viewport.x - event.deltaX,
-            y: current.viewport.y - event.deltaY,
-          },
-        }));
-      }
-    }
-
-    sceneNode.addEventListener("wheel", handleCanvasWheel, { passive: false });
-
-    return () => {
-      sceneNode.removeEventListener("wheel", handleCanvasWheel);
-    };
-  }, [appStateRef, clearZoomCommitTimer, commitViewportZoom, setAppState]);
+  const pointerInteractions = usePointerInteractions({
+    appStateRef,
+    requestGeometryRefresh,
+    setAppState,
+  });
 
   const anchorGroupsByMessageKey = useMemo(
     () => groupAnchorsByMessage(appState.anchors),
     [appState.anchors],
   );
 
-  useEffect(() => {
-    const canvasNode = canvasRef.current;
-    if (!canvasNode) {
-      return;
-    }
-
-    const canvasRect = canvasNode.getBoundingClientRect();
-    const connectorInset = 48;
-    const nextPaths = Object.values(appState.anchors)
-      .map((anchor) => {
-        const anchorNode = anchorRefs.current[anchor.groupKey];
-        const parentWindowNode = windowRefs.current[anchor.parentWindowId];
-        const childWindowNode = windowRefs.current[anchor.childWindowId];
-
-        if (!anchorNode || !parentWindowNode || !childWindowNode) {
-          return null;
-        }
-
-        const anchorRect = anchorNode.getBoundingClientRect();
-        const parentRect = parentWindowNode.getBoundingClientRect();
-        const childRect = childWindowNode.getBoundingClientRect();
-
-        const startX = parentRect.right - canvasRect.left;
-        const startAnchorY =
-          anchorRect.top + anchorRect.height / 2 - canvasRect.top;
-        const startMinY = parentRect.top + connectorInset - canvasRect.top;
-        const startMaxY = parentRect.bottom - connectorInset - canvasRect.top;
-        const startY = clamp(startAnchorY, startMinY, startMaxY);
-        const endX = childRect.left - canvasRect.left;
-        const endMinY = childRect.top + connectorInset - canvasRect.top;
-        const endMaxY = childRect.bottom - connectorInset - canvasRect.top;
-        const endY = clamp(startY, endMinY, endMaxY);
-
-        return {
-          id: anchor.id,
-          path: getConnectorPath(startX, startY, endX, endY),
-        };
-      })
-      .filter((path): path is ConnectorPath => path !== null);
-
-    setConnectorPaths((current) =>
-      areConnectorPathsEqual(current, nextPaths) ? current : nextPaths,
-    );
-  }, [
-    appState.anchors,
-    appState.messagesByWindowId,
-    appState.viewport,
-    appState.windows,
-    appState.zOrder,
+  const connectorPaths = useConnectorPaths({
+    anchorRefs,
+    anchors: appState.anchors,
+    canvasRef,
     geometryVersion,
-  ]);
+    messagesByWindowId: appState.messagesByWindowId,
+    viewport: appState.viewport,
+    windowRefs,
+    windows: appState.windows,
+    zOrder: appState.zOrder,
+  });
 
   function registerWindowRef(windowId: string, node: HTMLElement | null): void {
     if (node) {
@@ -411,106 +157,14 @@ export function useCanvasInteractions({
     delete anchorRefs.current[groupKey];
   }
 
-  function bringWindowToFront(windowId: string): void {
-    setAppState((current) => {
-      if (!current.windows[windowId]) {
-        return current;
-      }
-
-      return {
-        ...current,
-        zOrder: [
-          ...current.zOrder.filter((candidateId) => candidateId !== windowId),
-          windowId,
-        ],
-      };
-    });
-  }
-
-  function handleCanvasPointerDown(
-    event: ReactPointerEvent<HTMLDivElement>,
-  ): void {
-    const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest("[data-chat-window]")) {
-      return;
-    }
-
-    interactionRef.current = {
-      type: "pan",
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startViewportX: appStateRef.current.viewport.x,
-      startViewportY: appStateRef.current.viewport.y,
-    };
-  }
-
-  function handleHeaderPointerDown(
-    event: ReactPointerEvent<HTMLElement>,
-    windowId: string,
-  ): void {
-    if (event.button !== 0) {
-      return;
-    }
-
-    event.preventDefault();
-    bringWindowToFront(windowId);
-
-    const windowData = appStateRef.current.windows[windowId];
-    if (!windowData) {
-      return;
-    }
-
-    interactionRef.current = {
-      type: "drag",
-      windowId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startX: windowData.x,
-      startY: windowData.y,
-      scale: getViewportEffectiveScale(appStateRef.current.viewport),
-    };
-  }
-
-  function handleResizePointerDown(
-    event: ReactPointerEvent<HTMLElement>,
-    windowId: string,
-    edges: ResizeEdges,
-  ): void {
-    if (event.button !== 0) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    bringWindowToFront(windowId);
-
-    const windowData = appStateRef.current.windows[windowId];
-    if (!windowData) {
-      return;
-    }
-
-    interactionRef.current = {
-      type: "resize",
-      windowId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startX: windowData.x,
-      startY: windowData.y,
-      startWidth: windowData.width,
-      startHeight: windowData.height,
-      scale: getViewportEffectiveScale(appStateRef.current.viewport),
-      edges,
-    };
-  }
-
   return {
     anchorGroupsByMessageKey,
     canvasRef,
     connectorPaths,
-    onCanvasPointerDown: handleCanvasPointerDown,
-    onHeaderPointerDown: handleHeaderPointerDown,
-    onResizePointerDown: handleResizePointerDown,
-    onWindowFocus: bringWindowToFront,
+    onCanvasPointerDown: pointerInteractions.onCanvasPointerDown,
+    onHeaderPointerDown: pointerInteractions.onHeaderPointerDown,
+    onResizePointerDown: pointerInteractions.onResizePointerDown,
+    onWindowFocus: pointerInteractions.onWindowFocus,
     registerAnchorRef,
     registerWindowRef,
     requestGeometryRefresh,

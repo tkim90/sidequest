@@ -72,20 +72,6 @@ export interface AppState {
   anchors: AnchorMap;
 }
 
-type TextSegment = {
-  type: "text";
-  text: string;
-};
-
-type AnchorSegment = {
-  type: "anchor";
-  key: string;
-  text: string;
-  count: number;
-};
-
-export type MessageContentSegment = TextSegment | AnchorSegment;
-
 export type AnchorOverlapResult =
   | {
       type: "exact";

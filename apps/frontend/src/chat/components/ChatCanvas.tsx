@@ -86,6 +86,7 @@ function ChatCanvas({
             <ChatWindow
               key={windowData.id}
               anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+              isFocused={index === windows.length - 1}
               messages={messagesByWindowId[windowData.id] || []}
               onClose={onWindowClose}
               onComposerChange={onComposerChange}

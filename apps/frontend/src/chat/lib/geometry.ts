@@ -68,6 +68,16 @@ export function getRangeRect(range: Range): DOMRect | null {
   );
 
   if (clientRects.length === 0) {
+    // Fallback: when selection spans entire block-level elements,
+    // browsers may return zero-size rects. Use the common ancestor element's rect.
+    const ancestor = range.commonAncestorContainer;
+    const element = ancestor instanceof Element ? ancestor : ancestor.parentElement;
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 || rect.height > 0) {
+        return rect;
+      }
+    }
     return null;
   }
 
