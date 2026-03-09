@@ -5,6 +5,10 @@
     box-sizing: border-box;
   }
 
+  html {
+    font-size: 125%;
+  }
+
   html,
   body,
   #root {

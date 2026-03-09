@@ -297,24 +297,31 @@ export function useCanvasInteractions({
     }
 
     const canvasRect = canvasNode.getBoundingClientRect();
+    const connectorInset = 48;
     const nextPaths = Object.values(appState.anchors)
       .map((anchor) => {
         const anchorNode = anchorRefs.current[anchor.groupKey];
+        const parentWindowNode = windowRefs.current[anchor.parentWindowId];
         const childWindowNode = windowRefs.current[anchor.childWindowId];
 
-        if (!anchorNode || !childWindowNode) {
+        if (!anchorNode || !parentWindowNode || !childWindowNode) {
           return null;
         }
 
         const anchorRect = anchorNode.getBoundingClientRect();
+        const parentRect = parentWindowNode.getBoundingClientRect();
         const childRect = childWindowNode.getBoundingClientRect();
 
-        const startX = anchorRect.right - canvasRect.left;
-        const startY = anchorRect.top + anchorRect.height / 2 - canvasRect.top;
+        const startX = parentRect.right - canvasRect.left;
+        const startAnchorY =
+          anchorRect.top + anchorRect.height / 2 - canvasRect.top;
+        const startMinY = parentRect.top + connectorInset - canvasRect.top;
+        const startMaxY = parentRect.bottom - connectorInset - canvasRect.top;
+        const startY = clamp(startAnchorY, startMinY, startMaxY);
         const endX = childRect.left - canvasRect.left;
-        const minY = childRect.top + 48 - canvasRect.top;
-        const maxY = childRect.bottom - 48 - canvasRect.top;
-        const endY = clamp(startY, minY, maxY);
+        const endMinY = childRect.top + connectorInset - canvasRect.top;
+        const endMaxY = childRect.bottom - connectorInset - canvasRect.top;
+        const endY = clamp(startY, endMinY, endMaxY);
 
         return {
           id: anchor.id,

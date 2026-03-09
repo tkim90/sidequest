@@ -19,6 +19,7 @@ import {
   ROOT_WINDOW_TITLE,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
+  WINDOW_WIDTH,
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
 import {
@@ -71,13 +72,22 @@ export interface ChatWorkspaceViewModel {
   windows: WindowRecord[];
 }
 
+function getViewportCenteredRootX(windowWidth: number): number {
+  if (typeof window === "undefined") {
+    return ROOT_WINDOW_X;
+  }
+
+  return Math.max(24, Math.round((window.innerWidth - windowWidth) / 2));
+}
+
 export function useChatWorkspace(): ChatWorkspaceViewModel {
-  const [appState, setAppState] = useState<AppState>(createInitialState);
+  const [appState, setAppState] = useState<AppState>(() =>
+    createInitialState(getViewportCenteredRootX(WINDOW_WIDTH)),
+  );
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
   const [notice, setNotice] = useState("");
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
-  const hasCenteredInitialWindowRef = useRef(false);
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -111,55 +121,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     windowRefs: canvas.windowRefs,
   });
 
-  useEffect(() => {
-    if (hasCenteredInitialWindowRef.current) {
-      return;
-    }
-
-    const canvasNode = canvas.canvasRef.current;
-    const rootWindowId = appState.zOrder[0];
-    const rootWindow = rootWindowId ? appState.windows[rootWindowId] : null;
-
-    if (
-      !canvasNode ||
-      !rootWindow ||
-      appState.zOrder.length !== 1 ||
-      rootWindow.parentId !== null
-    ) {
-      return;
-    }
-
-    hasCenteredInitialWindowRef.current = true;
-    const centeredX = Math.max(
-      24,
-      Math.round((canvasNode.clientWidth - rootWindow.width) / 2),
-    );
-
-    setAppState((current) => {
-      const currentRootWindow = rootWindowId
-        ? current.windows[rootWindowId]
-        : undefined;
-      if (!currentRootWindow) {
-        return current;
-      }
-
-      return {
-        ...current,
-        windows: {
-          ...current.windows,
-          [rootWindowId]: {
-            ...currentRootWindow,
-            x: centeredX,
-          },
-        },
-      };
-    });
-  }, [appState.windows, appState.zOrder, canvas.canvasRef]);
-
   function getCenteredRootX(windowWidth: number): number {
     const canvasWidth = canvas.canvasRef.current?.clientWidth;
     if (!canvasWidth) {
-      return ROOT_WINDOW_X;
+      return getViewportCenteredRootX(windowWidth);
     }
 
     return Math.max(24, Math.round((canvasWidth - windowWidth) / 2));
@@ -427,7 +392,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   function openFreshRootWindow(): void {
     const rootWindow = createWindowRecord({
       title: ROOT_WINDOW_TITLE,
-      x: getCenteredRootX(560),
+      x: getCenteredRootX(WINDOW_WIDTH),
       y: ROOT_WINDOW_Y,
     });
 

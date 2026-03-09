@@ -67,10 +67,10 @@ export function createWindowRecord({
   };
 }
 
-export function createInitialState(): AppState {
+export function createInitialState(rootWindowX: number = ROOT_WINDOW_X): AppState {
   const rootWindow = createWindowRecord({
     title: ROOT_WINDOW_TITLE,
-    x: ROOT_WINDOW_X,
+    x: rootWindowX,
     y: ROOT_WINDOW_Y,
   });
 

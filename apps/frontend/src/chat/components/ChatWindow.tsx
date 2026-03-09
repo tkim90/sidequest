@@ -273,6 +273,7 @@ function ChatWindow({
       <footer className="grid grid-cols-1 gap-3 border-t border-zinc-300 bg-white p-4 md:grid-cols-[1fr_auto] md:items-stretch">
         <textarea
           aria-label={`Message ${windowData.title}`}
+          autoFocus
           className="min-h-28 w-full resize-none border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600"
           placeholder="Ask a follow-up..."
           value={windowData.composer}
