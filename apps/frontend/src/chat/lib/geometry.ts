@@ -31,6 +31,61 @@ export function areConnectorPathsEqual(
   });
 }
 
+export function getRangeWithinContainer(
+  container: Node,
+  range: Range,
+): Range | null {
+  const startsInside = container.contains(range.startContainer);
+  const endsInside = container.contains(range.endContainer);
+  const intersects = startsInside || endsInside || range.intersectsNode(container);
+
+  if (!intersects) {
+    return null;
+  }
+
+  const constrainedRange = range.cloneRange();
+
+  if (!startsInside) {
+    constrainedRange.setStart(container, 0);
+  }
+
+  if (!endsInside) {
+    constrainedRange.setEnd(container, container.childNodes.length);
+  }
+
+  return constrainedRange;
+}
+
+export function getRangeRect(range: Range): DOMRect | null {
+  const primaryRect = range.getBoundingClientRect();
+
+  if (primaryRect.width > 0 || primaryRect.height > 0) {
+    return primaryRect;
+  }
+
+  const clientRects = Array.from(range.getClientRects()).filter(
+    (rect) => rect.width > 0 || rect.height > 0,
+  );
+
+  if (clientRects.length === 0) {
+    return null;
+  }
+
+  let left = clientRects[0].left;
+  let top = clientRects[0].top;
+  let right = clientRects[0].right;
+  let bottom = clientRects[0].bottom;
+
+  clientRects.slice(1).forEach((rect) => {
+    left = Math.min(left, rect.left);
+    top = Math.min(top, rect.top);
+    right = Math.max(right, rect.right);
+    bottom = Math.max(bottom, rect.bottom);
+  });
+
+  return new DOMRect(left, top, right - left, bottom - top);
+}
+
 export function findTextOffsets(
   container: Node,
   range: Range,

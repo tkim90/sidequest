@@ -11,7 +11,10 @@ function ChatWorkspace() {
   return (
     <main className="min-h-screen bg-zinc-100 p-2 text-zinc-950 sm:p-3">
       <section className="relative grid h-[calc(100vh-1rem)] grid-rows-[auto_1fr] overflow-hidden border border-zinc-300 bg-white sm:h-[calc(100vh-1.5rem)]">
-        <WorkspaceHeader />
+        <WorkspaceHeader
+          hasChildWindows={workspace.hasChildWindows}
+          onCloseAllChildWindows={workspace.onCloseAllChildWindows}
+        />
         <ChatCanvas
           anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
           canvasRef={workspace.canvasRef}

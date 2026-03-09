@@ -19,15 +19,17 @@ function CloseTreeModal({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-zinc-950/35 p-4">
       <div className="w-[min(92vw,520px)] border border-zinc-300 bg-white p-6 shadow-[10px_10px_0_0_rgba(24,24,27,0.12)]">
-        <p className={eyebrowClassName}>Close branch tree</p>
+        <p className={eyebrowClassName}>{closePrompt.eyebrow}</p>
         <h2 className="mt-2 text-3xl font-medium tracking-tight text-zinc-950">
-          Closing this window will also close its connected windows.
+          {closePrompt.title}
         </h2>
-        <ul className="mt-5 list-disc pl-5 text-sm leading-6 text-zinc-600">
-          {closePrompt.descendantTitles.map((title) => (
-            <li key={title}>{title}</li>
-          ))}
-        </ul>
+        {closePrompt.windowTitles.length > 0 ? (
+          <ul className="mt-5 list-disc pl-5 text-sm leading-6 text-zinc-600">
+            {closePrompt.windowTitles.map((title) => (
+              <li key={title}>{title}</li>
+            ))}
+          </ul>
+        ) : null}
         <div className="mt-6 flex justify-end gap-3">
           <button
             className={secondaryButtonClassName}
@@ -41,7 +43,7 @@ function CloseTreeModal({
             type="button"
             onClick={onConfirm}
           >
-            Close all
+            {closePrompt.confirmLabel}
           </button>
         </div>
       </div>

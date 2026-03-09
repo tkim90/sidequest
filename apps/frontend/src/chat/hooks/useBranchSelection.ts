@@ -14,7 +14,12 @@ import {
   CHILD_VERTICAL_STAGGER,
   WINDOW_GAP,
 } from "../lib/constants";
-import { clamp, findTextOffsets } from "../lib/geometry";
+import {
+  clamp,
+  findTextOffsets,
+  getRangeRect,
+  getRangeWithinContainer,
+} from "../lib/geometry";
 import {
   cloneMessagesForBranch,
   createAnchorRecord,
@@ -89,8 +94,10 @@ export function useBranchSelection({
         return;
       }
 
-      const range = selection.getRangeAt(0);
-      if (!messageNode.contains(range.commonAncestorContainer)) {
+      const selectionRange = selection.getRangeAt(0);
+      const range = getRangeWithinContainer(messageNode, selectionRange);
+
+      if (!range) {
         return;
       }
 
@@ -126,8 +133,12 @@ export function useBranchSelection({
         return;
       }
 
-      const rangeRect = range.getBoundingClientRect();
+      const rangeRect = getRangeRect(range);
       const windowRect = windowRefs.current[windowId]?.getBoundingClientRect();
+
+      if (!rangeRect) {
+        return;
+      }
 
       setSelectionState({
         parentWindowId: windowId,

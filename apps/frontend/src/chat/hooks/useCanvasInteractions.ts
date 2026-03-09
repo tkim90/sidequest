@@ -19,6 +19,9 @@ import { groupAnchorsByMessage } from "../lib/anchors";
 import {
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
+  MAX_VIEWPORT_ZOOM,
+  MIN_VIEWPORT_ZOOM,
+  ZOOM_COMMIT_DELAY_MS,
 } from "../lib/constants";
 import {
   areConnectorPathsEqual,
@@ -90,6 +93,10 @@ type CanvasInteraction =
       edges: ResizeEdges;
     };
 
+function getViewportEffectiveScale(appState: AppState["viewport"]): number {
+  return appState.zoom * appState.scale;
+}
+
 export function useCanvasInteractions({
   appState,
   appStateRef,
@@ -102,10 +109,39 @@ export function useCanvasInteractions({
   const windowRefs = useRef<Record<string, HTMLElement>>({});
   const anchorRefs = useRef<Record<string, HTMLSpanElement>>({});
   const interactionRef = useRef<CanvasInteraction | null>(null);
+  const zoomCommitTimerRef = useRef<number | null>(null);
 
   const requestGeometryRefresh = useCallback((): void => {
     setGeometryVersion((version) => version + 1);
   }, []);
+
+  const clearZoomCommitTimer = useCallback((): void => {
+    if (zoomCommitTimerRef.current !== null) {
+      window.clearTimeout(zoomCommitTimerRef.current);
+      zoomCommitTimerRef.current = null;
+    }
+  }, []);
+
+  const commitViewportZoom = useCallback((): void => {
+    clearZoomCommitTimer();
+
+    setAppState((current) => {
+      if (current.viewport.scale === 1) {
+        return current;
+      }
+
+      return {
+        ...current,
+        viewport: {
+          ...current.viewport,
+          zoom: current.viewport.zoom * current.viewport.scale,
+          scale: 1,
+        },
+      };
+    });
+  }, [clearZoomCommitTimer, setAppState]);
+
+  useEffect(() => clearZoomCommitTimer, [clearZoomCommitTimer]);
 
   useEffect(() => {
     function handlePointerMove(event: globalThis.PointerEvent): void {
@@ -248,19 +284,31 @@ export function useCanvasInteractions({
         const currentViewport = appStateRef.current.viewport;
         const pointerX = event.clientX - rect.left;
         const pointerY = event.clientY - rect.top;
-        const contentX = (pointerX - currentViewport.x) / currentViewport.scale;
-        const contentY = (pointerY - currentViewport.y) / currentViewport.scale;
+        const currentEffectiveScale = getViewportEffectiveScale(currentViewport);
+        const contentX = (pointerX - currentViewport.x) / currentEffectiveScale;
+        const contentY = (pointerY - currentViewport.y) / currentEffectiveScale;
         const zoomFactor = event.deltaY < 0 ? 1.08 : 0.92;
-        const nextScale = clamp(currentViewport.scale * zoomFactor, 0.55, 1.5);
+        const nextEffectiveScale = clamp(
+          currentEffectiveScale * zoomFactor,
+          MIN_VIEWPORT_ZOOM,
+          MAX_VIEWPORT_ZOOM,
+        );
+
+        clearZoomCommitTimer();
 
         setAppState((current) => ({
           ...current,
           viewport: {
-            scale: nextScale,
-            x: pointerX - contentX * nextScale,
-            y: pointerY - contentY * nextScale,
+            ...current.viewport,
+            scale: nextEffectiveScale / current.viewport.zoom,
+            x: pointerX - contentX * nextEffectiveScale,
+            y: pointerY - contentY * nextEffectiveScale,
           },
         }));
+
+        zoomCommitTimerRef.current = window.setTimeout(() => {
+          commitViewportZoom();
+        }, ZOOM_COMMIT_DELAY_MS);
         return;
       }
 
@@ -283,7 +331,7 @@ export function useCanvasInteractions({
     return () => {
       sceneNode.removeEventListener("wheel", handleCanvasWheel);
     };
-  }, [appStateRef, setAppState]);
+  }, [appStateRef, clearZoomCommitTimer, commitViewportZoom, setAppState]);
 
   const anchorGroupsByMessageKey = useMemo(
     () => groupAnchorsByMessage(appState.anchors),
@@ -419,7 +467,7 @@ export function useCanvasInteractions({
       startClientY: event.clientY,
       startX: windowData.x,
       startY: windowData.y,
-      scale: appStateRef.current.viewport.scale,
+      scale: getViewportEffectiveScale(appStateRef.current.viewport),
     };
   }
 
@@ -450,7 +498,7 @@ export function useCanvasInteractions({
       startY: windowData.y,
       startWidth: windowData.width,
       startHeight: windowData.height,
-      scale: appStateRef.current.viewport.scale,
+      scale: getViewportEffectiveScale(appStateRef.current.viewport),
       edges,
     };
   }

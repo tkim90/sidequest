@@ -10,9 +10,11 @@ export interface SelectionState {
 }
 
 export interface ClosePrompt {
-  windowId: string;
-  descendantIds: string[];
-  descendantTitles: string[];
+  confirmLabel: string;
+  eyebrow: string;
+  title: string;
+  windowIds: string[];
+  windowTitles: string[];
 }
 
 export interface ConnectorPath {

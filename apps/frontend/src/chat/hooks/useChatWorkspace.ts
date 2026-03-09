@@ -39,9 +39,11 @@ export interface ChatWorkspaceViewModel {
   canvasRef: RefObject<HTMLDivElement | null>;
   closePrompt: ClosePrompt | null;
   connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
+  hasChildWindows: boolean;
   messagesByWindowId: MessagesByWindowId;
   notice: string;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onCloseAllChildWindows: () => void;
   onClosePromptCancel: () => void;
   onClosePromptConfirm: () => void;
   onComposerChange: (windowId: string, composer: string) => void;
@@ -369,10 +371,33 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     }
 
     setClosePrompt({
-      windowId,
-      descendantIds: descendants,
-      descendantTitles: descendants
+      confirmLabel: "Close all",
+      eyebrow: "Close branch tree",
+      title: "Closing this window will also close its connected windows.",
+      windowIds: [windowId, ...descendants],
+      windowTitles: descendants
         .map((descendantId) => snapshot.windows[descendantId]?.title)
+        .filter((title): title is string => Boolean(title)),
+    });
+  }
+
+  function handleCloseAllChildWindows(): void {
+    const snapshot = appStateRef.current;
+    const childWindowIds = Object.values(snapshot.windows)
+      .filter((windowData) => windowData.parentId !== null)
+      .map((windowData) => windowData.id);
+
+    if (childWindowIds.length === 0) {
+      return;
+    }
+
+    setClosePrompt({
+      confirmLabel: "Close child windows",
+      eyebrow: "Close child windows",
+      title: "This will close every branched chat window and keep the main thread open.",
+      windowIds: childWindowIds,
+      windowTitles: childWindowIds
+        .map((windowId) => snapshot.windows[windowId]?.title)
         .filter((title): title is string => Boolean(title)),
     });
   }
@@ -386,7 +411,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
-    removeWindows([closePrompt.windowId, ...closePrompt.descendantIds]);
+    removeWindows(closePrompt.windowIds);
   }
 
   function openFreshRootWindow(): void {
@@ -413,18 +438,21 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const windows = appState.zOrder
     .map((windowId) => appState.windows[windowId])
     .filter((windowData): windowData is WindowRecord => Boolean(windowData));
+  const hasChildWindows = windows.some((windowData) => windowData.parentId !== null);
 
   return {
     anchorGroupsByMessageKey: canvas.anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
     connectorPaths: canvas.connectorPaths,
+    hasChildWindows,
     messagesByWindowId: appState.messagesByWindowId,
     notice,
     onCanvasPointerDown: (event) => {
       selection.dismissSelection();
       canvas.onCanvasPointerDown(event);
     },
+    onCloseAllChildWindows: handleCloseAllChildWindows,
     onClosePromptCancel: dismissClosePrompt,
     onClosePromptConfirm: confirmClosePrompt,
     onComposerChange: handleComposerChange,
