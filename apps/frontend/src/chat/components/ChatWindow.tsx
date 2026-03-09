@@ -202,7 +202,7 @@ function ChatWindow({
 
   return (
     <article
-      className="absolute grid grid-rows-[auto_1fr_auto] cursor-grab overflow-hidden border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform active:cursor-grabbing"
+      className="absolute grid grid-rows-[auto_1fr_auto] cursor-grab border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform active:cursor-grabbing"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
@@ -224,14 +224,15 @@ function ChatWindow({
         />
       ))}
 
+      <span className="absolute -top-7 rounded-sm border border-zinc-300 bg-white px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-zinc-500">
+        {windowData.parentId ? "Branch" : "Main thread"}
+      </span>
+
       <header
         className="flex justify-between gap-4 border-b border-zinc-300 bg-zinc-100 px-5 py-4"
       >
         <div>
-          <p className={eyebrowClassName}>
-            {windowData.parentId ? "Branch" : "Main thread"}
-          </p>
-          <h2 className="mt-2 text-2xl font-medium tracking-tight text-zinc-950">
+          <h2 className="text-2xl font-medium tracking-tight text-zinc-950">
             {windowData.title}
           </h2>
           {windowData.branchFocus && (
