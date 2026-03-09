@@ -14,7 +14,6 @@ import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import MessageContent from "./MessageContent";
 import {
   eyebrowClassName,
-  primaryButtonClassName,
   secondaryButtonClassName,
 } from "./ui";
 
@@ -55,47 +54,47 @@ const resizeHandles: Array<{
   className: string;
   edges: ResizeEdges;
 }> = [
-  {
-    key: "top",
-    className: "absolute inset-x-3 top-0 z-20 h-2 cursor-n-resize",
-    edges: { north: true, south: false, east: false, west: false },
-  },
-  {
-    key: "right",
-    className: "absolute inset-y-3 right-0 z-20 w-2 cursor-e-resize",
-    edges: { north: false, south: false, east: true, west: false },
-  },
-  {
-    key: "bottom",
-    className: "absolute inset-x-3 bottom-0 z-20 h-2 cursor-s-resize",
-    edges: { north: false, south: true, east: false, west: false },
-  },
-  {
-    key: "left",
-    className: "absolute inset-y-3 left-0 z-20 w-2 cursor-w-resize",
-    edges: { north: false, south: false, east: false, west: true },
-  },
-  {
-    key: "top-left",
-    className: "absolute left-0 top-0 z-20 h-3 w-3 cursor-nwse-resize",
-    edges: { north: true, south: false, east: false, west: true },
-  },
-  {
-    key: "top-right",
-    className: "absolute right-0 top-0 z-20 h-3 w-3 cursor-nesw-resize",
-    edges: { north: true, south: false, east: true, west: false },
-  },
-  {
-    key: "bottom-right",
-    className: "absolute bottom-0 right-0 z-20 h-3 w-3 cursor-nwse-resize",
-    edges: { north: false, south: true, east: true, west: false },
-  },
-  {
-    key: "bottom-left",
-    className: "absolute bottom-0 left-0 z-20 h-3 w-3 cursor-nesw-resize",
-    edges: { north: false, south: true, east: false, west: true },
-  },
-];
+    {
+      key: "top",
+      className: "absolute inset-x-3 top-0 z-20 h-2 cursor-n-resize",
+      edges: { north: true, south: false, east: false, west: false },
+    },
+    {
+      key: "right",
+      className: "absolute inset-y-3 right-0 z-20 w-2 cursor-e-resize",
+      edges: { north: false, south: false, east: true, west: false },
+    },
+    {
+      key: "bottom",
+      className: "absolute inset-x-3 bottom-0 z-20 h-2 cursor-s-resize",
+      edges: { north: false, south: true, east: false, west: false },
+    },
+    {
+      key: "left",
+      className: "absolute inset-y-3 left-0 z-20 w-2 cursor-w-resize",
+      edges: { north: false, south: false, east: false, west: true },
+    },
+    {
+      key: "top-left",
+      className: "absolute left-0 top-0 z-20 h-3 w-3 cursor-nwse-resize",
+      edges: { north: true, south: false, east: false, west: true },
+    },
+    {
+      key: "top-right",
+      className: "absolute right-0 top-0 z-20 h-3 w-3 cursor-nesw-resize",
+      edges: { north: true, south: false, east: true, west: false },
+    },
+    {
+      key: "bottom-right",
+      className: "absolute bottom-0 right-0 z-20 h-3 w-3 cursor-nwse-resize",
+      edges: { north: false, south: true, east: true, west: false },
+    },
+    {
+      key: "bottom-left",
+      className: "absolute bottom-0 left-0 z-20 h-3 w-3 cursor-nesw-resize",
+      edges: { north: false, south: true, east: false, west: true },
+    },
+  ];
 
 const ChatMessageCard = memo(function ChatMessageCard({
   windowId,
@@ -158,6 +157,7 @@ function ChatWindow({
 }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -171,6 +171,13 @@ function ChatWindow({
 
     onGeometryChange();
   }, [messages, onGeometryChange, windowData.height, windowData.width]);
+
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
+  }, [windowData.composer]);
 
   function handleMessagesScroll(): void {
     const node = scrollRef.current;
@@ -219,13 +226,9 @@ function ChatWindow({
           <h2 className="mt-2 text-2xl font-medium tracking-tight text-zinc-950">
             {windowData.title}
           </h2>
-          {windowData.branchFocus ? (
+          {windowData.branchFocus && (
             <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-700">
               Focus: "{windowData.branchFocus.selectedText}"
-            </p>
-          ) : (
-            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
-              Start a conversation, then branch any phrase into its own path by selecting the text.
             </p>
           )}
         </div>
@@ -235,7 +238,7 @@ function ChatWindow({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => onClose(windowData.id)}
         >
-          Close
+          X
         </button>
       </header>
 
@@ -270,31 +273,48 @@ function ChatWindow({
         })}
       </div>
 
-      <footer className="grid grid-cols-1 gap-3 border-t border-zinc-300 bg-white p-4 md:grid-cols-[1fr_auto] md:items-stretch">
-        <textarea
-          aria-label={`Message ${windowData.title}`}
-          autoFocus
-          className="min-h-28 w-full resize-none border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600"
-          placeholder="Ask a follow-up..."
-          value={windowData.composer}
-          onChange={(event) => onComposerChange(windowData.id, event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void onSend(windowData.id);
-            }
-          }}
-        />
-        <button
-          className={`${primaryButtonClassName} min-h-12 md:min-w-28`}
-          type="button"
-          disabled={windowData.isStreaming}
-          onClick={() => {
-            void onSend(windowData.id);
-          }}
-        >
-          {windowData.isStreaming ? "Streaming..." : "Send"}
-        </button>
+      <footer className="border-t border-zinc-300 bg-white p-4">
+        <div className="relative flex items-end rounded-2xl border border-zinc-300 bg-zinc-50 transition-colors focus-within:border-zinc-500">
+          <textarea
+            ref={textareaRef}
+            aria-label={`Message ${windowData.title}`}
+            autoFocus
+            rows={1}
+            className="min-h-[40px] max-h-[200px] flex-1 resize-none overflow-y-auto bg-transparent px-4 py-3 pr-12 text-sm leading-6 text-zinc-950 outline-none placeholder:text-zinc-400"
+            placeholder="Ask a follow-up..."
+            value={windowData.composer}
+            onChange={(event) => onComposerChange(windowData.id, event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void onSend(windowData.id);
+              }
+            }}
+          />
+          {windowData.composer.trim().length > 0 && !windowData.isStreaming && (
+            <button
+              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950 text-white transition-opacity hover:opacity-80"
+              type="button"
+              onClick={() => {
+                void onSend(windowData.id);
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <line x1="12" y1="19" x2="12" y2="5" />
+                <polyline points="5 12 12 5 19 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </footer>
     </article>
   );

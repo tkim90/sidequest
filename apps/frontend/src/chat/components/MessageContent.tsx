@@ -210,12 +210,12 @@ function renderChunkContent({
     nodes.push(
       <span
         key={`${chunkKey}:anchor:${group.key}:${chunkLocalStart}`}
-        className="inline-flex items-center border border-yellow-400 bg-yellow-200 px-0.2"
+        className="border border-yellow-400 bg-yellow-200 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
         ref={(node) => registerAnchorRef(group.key, node)}
       >
         <span>{anchorText}</span>
         {group.anchorIds.length > 1 ? (
-          <span className="inline-flex min-w-5 justify-center border border-yellow-500 bg-yellow-50 px-1 text-[11px] font-semibold text-yellow-800">
+          <span className="ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500 bg-yellow-50 px-1 align-middle text-[11px] font-semibold text-yellow-800">
             {group.anchorIds.length}
           </span>
         ) : null}

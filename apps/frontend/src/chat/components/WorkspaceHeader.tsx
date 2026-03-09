@@ -17,27 +17,18 @@ function WorkspaceHeader({
       <div>
         <p className={eyebrowClassName}>Sidequest</p>
         <h1 className="mt-2 max-w-4xl text-3xl font-medium tracking-tight text-zinc-950 md:text-4xl">
-          Branch the phrase, not the whole thread.
+          Fork a conversation by selecting text.
         </h1>
       </div>
-      <div className="flex max-w-xl flex-col gap-3 lg:items-end">
-        <p className="text-sm leading-6 text-zinc-600 lg:text-right">
-          Drag windows by the header. Drag the empty board to pan. Hold
-          <span className="mx-1 inline-block border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-zinc-800">
-            Cmd/Ctrl
-          </span>
-          while scrolling to zoom.
-        </p>
-        <button
-          className={secondaryButtonClassName}
-          type="button"
-          disabled={!hasChildWindows}
-          onClick={onCloseAllChildWindows}
-        >
-          Close all child windows
-        </button>
-      </div>
-    </div>
+      <button
+        className={secondaryButtonClassName}
+        type="button"
+        disabled={!hasChildWindows}
+        onClick={onCloseAllChildWindows}
+      >
+        Close all child windows
+      </button>
+    </div >
   );
 }
 
