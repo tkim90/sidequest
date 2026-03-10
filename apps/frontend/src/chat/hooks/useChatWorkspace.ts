@@ -7,6 +7,8 @@ import {
   type RefObject,
 } from "react";
 
+import { useDeltaBatcher } from "./useDeltaBatcher";
+
 import type {
   AppState,
   ChatMessage,
@@ -33,7 +35,6 @@ import {
 } from "../lib/state";
 import {
   addRootWindow,
-  appendAssistantDelta,
   buildCloseAllChildrenPrompt,
   buildCloseBranchPrompt,
   completeAssistantMessage,
@@ -206,6 +207,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     windowRefs: canvas.windowRefs,
   });
 
+  const deltaBatcher = useDeltaBatcher(setAppState, canvas.requestGeometryRefresh);
+
   function getCenteredRootX(windowWidth: number): number {
     const canvasWidth = canvas.canvasRef.current?.clientWidth;
     if (!canvasWidth) {
@@ -276,23 +279,17 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     abortControllersRef.current[windowId] = controller;
 
     try {
+      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
       await streamChat({
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
         signal: controller.signal,
-        onDelta: (delta) => {
-          setAppState((current) =>
-            appendAssistantDelta(
-              current,
-              windowId,
-              assistantMessage.id,
-              delta,
-            ),
-          );
-          canvas.requestGeometryRefresh();
-        },
+        onDelta: batcher.push,
       });
+
+      batcher.flush();
 
       setAppState((current) =>
         completeAssistantMessage(current, windowId, assistantMessage.id),
@@ -304,6 +301,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       if (!aborted) {
         setNotice(message);
       }
+
+      deltaBatcher.cancel(windowId);
 
       setAppState((current) =>
         failAssistantMessage(
@@ -354,23 +353,17 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     abortControllersRef.current[windowId] = controller;
 
     try {
+      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
       await streamChat({
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
         signal: controller.signal,
-        onDelta: (delta) => {
-          setAppState((current) =>
-            appendAssistantDelta(
-              current,
-              windowId,
-              assistantMessage.id,
-              delta,
-            ),
-          );
-          canvas.requestGeometryRefresh();
-        },
+        onDelta: batcher.push,
       });
+
+      batcher.flush();
 
       setAppState((current) =>
         completeAssistantMessage(current, windowId, assistantMessage.id),
@@ -382,6 +375,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       if (!aborted) {
         setNotice(message);
       }
+
+      deltaBatcher.cancel(windowId);
 
       setAppState((current) =>
         failAssistantMessage(

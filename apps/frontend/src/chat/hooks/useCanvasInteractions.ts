@@ -129,7 +129,6 @@ export function useCanvasInteractions({
     anchors: appState.anchors,
     canvasRef,
     geometryVersion,
-    messagesByWindowId: appState.messagesByWindowId,
     viewport: appState.viewport,
     windowRefs,
     windows: appState.windows,
