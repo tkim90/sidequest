@@ -135,20 +135,16 @@ function ChatWindowMessages({
         <section className="border border-dashed border-zinc-300 bg-zinc-50 px-4 py-4 text-zinc-700">
           <button
             aria-expanded={isHistoryExpanded}
-            className="cursor-pointer text-sm font-semibold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:text-zinc-950"
+            className="cursor-pointer text-sm font-semibold uppercase text-zinc-700 transition-colors hover:text-zinc-950"
             type="button"
             onClick={onToggleHistoryExpanded}
           >
             {isHistoryExpanded ? "Hide previous history" : "See previous history"}
           </button>
-          {isHistoryExpanded ? (
+          {isHistoryExpanded && (
             <div className="mt-4 flex flex-col gap-4">
               {historyMessages.map(renderMessage)}
             </div>
-          ) : (
-            <p className="mt-2 mb-0 text-sm leading-6 text-zinc-500">
-              Earlier messages stay tucked away until you need them.
-            </p>
           )}
         </section>
       ) : null}
