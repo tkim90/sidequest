@@ -12,6 +12,7 @@ import ConnectionLayer from "./ConnectionLayer";
 import { eyebrowClassName, primaryButtonClassName } from "./ui";
 
 interface ChatCanvasProps {
+  availableModels: string[];
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   connectorPaths: ConnectorPath[];
@@ -23,6 +24,7 @@ interface ChatCanvasProps {
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
   ) => void;
+  onModelChange: (windowId: string, model: string) => void;
   onResizePointerDown: (
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
@@ -34,6 +36,7 @@ interface ChatCanvasProps {
     messageId: string,
   ) => void;
   onOpenFreshRootWindow: () => void;
+  onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
@@ -50,6 +53,7 @@ interface ChatCanvasProps {
 }
 
 function ChatCanvas({
+  availableModels,
   anchorGroupsByMessageKey,
   canvasRef,
   connectorPaths,
@@ -58,9 +62,11 @@ function ChatCanvas({
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
+  onModelChange,
   onResizePointerDown,
   onMessageMouseDown,
   onOpenFreshRootWindow,
+  onRetry,
   onSend,
   onToggleHistoryExpanded,
   onWindowClose,
@@ -102,8 +108,10 @@ function ChatCanvas({
               onComposerChange={onComposerChange}
               onGeometryChange={onGeometryChange}
               onHeaderPointerDown={onHeaderPointerDown}
+              onModelChange={onModelChange}
               onResizePointerDown={onResizePointerDown}
               onMessageMouseDown={onMessageMouseDown}
+              onRetry={onRetry}
               onSend={onSend}
               onToggleHistoryExpanded={onToggleHistoryExpanded}
               onWindowFocus={onWindowFocus}
@@ -117,23 +125,22 @@ function ChatCanvas({
                 }
               }
               windowData={windowData}
+              availableModels={availableModels}
               zIndex={index + 1}
             />
           ))}
         </div>
       </div>
 
-      {windows.length === 0 ? (
-        <div className="absolute bottom-6 left-6 w-[min(440px,calc(100%-3rem))]">
-          <button
-            className={`${primaryButtonClassName} mt-5`}
-            type="button"
-            onClick={onOpenFreshRootWindow}
-          >
-            New Chat
-          </button>
-        </div>
-      ) : null}
+      <div className="absolute top-6 left-6">
+        <button
+          className={primaryButtonClassName}
+          type="button"
+          onClick={onOpenFreshRootWindow}
+        >
+          New Chat
+        </button>
+      </div>
     </div>
   );
 }

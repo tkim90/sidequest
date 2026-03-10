@@ -77,6 +77,23 @@ export function updateComposer(
   }));
 }
 
+export function updateWindowModel(
+  state: AppState,
+  windowId: string,
+  selectedModel: string,
+): AppState {
+  return updateExistingWindow(state, windowId, (windowData) => {
+    if (windowData.selectedModel === selectedModel) {
+      return windowData;
+    }
+
+    return {
+      ...windowData,
+      selectedModel,
+    };
+  });
+}
+
 export function setWindowHistoryExpanded(
   state: AppState,
   windowId: string,
@@ -193,6 +210,39 @@ export function failAssistantMessage(
       })),
     },
   }));
+}
+
+export function retryAssistantMessage(
+  state: AppState,
+  windowId: string,
+  oldMessageId: string,
+  newMessage: MessageRecord,
+): AppState {
+  const windowData = state.windows[windowId];
+  const messages = state.messagesByWindowId[windowId];
+  if (!windowData || !messages) {
+    return state;
+  }
+
+  const index = messages.findIndex((m) => m.id === oldMessageId);
+  if (index === -1) {
+    return state;
+  }
+
+  return {
+    ...state,
+    windows: {
+      ...state.windows,
+      [windowId]: {
+        ...windowData,
+        isStreaming: true,
+      },
+    },
+    messagesByWindowId: {
+      ...state.messagesByWindowId,
+      [windowId]: [...messages.slice(0, index), newMessage],
+    },
+  };
 }
 
 export function removeWindowsFromState(

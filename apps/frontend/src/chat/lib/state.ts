@@ -29,6 +29,7 @@ interface CreateWindowRecordOptions {
   branchFocus?: BranchFocus | null;
   inheritedMessageCount?: number;
   isHistoryExpanded?: boolean;
+  selectedModel?: string | null;
 }
 
 interface CreateAnchorGroupKeyOptions {
@@ -54,6 +55,7 @@ export function createWindowRecord({
   branchFocus = null,
   inheritedMessageCount = 0,
   isHistoryExpanded = true,
+  selectedModel = null,
 }: CreateWindowRecordOptions): WindowRecord {
   return {
     id: crypto.randomUUID(),
@@ -69,6 +71,7 @@ export function createWindowRecord({
     inheritedMessageCount,
     isHistoryExpanded,
     composer: "",
+    selectedModel,
     isStreaming: false,
   };
 }
@@ -102,12 +105,14 @@ export function createMessage(
   role: ChatRole,
   content: string,
   status: MessageStatus = "complete",
+  model?: string,
 ): MessageRecord {
   return {
     id: crypto.randomUUID(),
     role,
     content,
     status,
+    model,
   };
 }
 

@@ -3,8 +3,14 @@ import type { BranchFocus, ChatMessage } from "../../types";
 interface StreamChatOptions {
   messages: ChatMessage[];
   branchFocus: BranchFocus | null;
+  model?: string | null;
   signal?: AbortSignal;
   onDelta: (delta: string) => void;
+}
+
+export interface ChatModelConfig {
+  models: string[];
+  defaultModel: string | null;
 }
 
 type StreamEvent =
@@ -55,6 +61,7 @@ function parseStreamEvent(line: string): StreamEvent {
 export async function streamChat({
   messages,
   branchFocus,
+  model,
   signal,
   onDelta,
 }: StreamChatOptions): Promise<void> {
@@ -72,6 +79,7 @@ export async function streamChat({
             parent_message_role: branchFocus.parentMessageRole,
           }
         : null,
+      model,
     }),
     signal,
   });
@@ -132,4 +140,38 @@ export async function streamChat({
   if (finalEvent.type === "error") {
     throw new Error(finalEvent.message || "The model stream failed.");
   }
+}
+
+export async function fetchChatModelConfig(
+  signal?: AbortSignal,
+): Promise<ChatModelConfig> {
+  const response = await fetch("/api/chat/models", {
+    method: "GET",
+    signal,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed with ${response.status}`);
+  }
+
+  const value: unknown = await response.json();
+
+  if (!value || typeof value !== "object") {
+    throw new Error("The server returned an invalid model config response.");
+  }
+
+  const payload = value as Record<string, unknown>;
+  const modelValues = Array.isArray(payload.models)
+    ? payload.models.filter((model): model is string => typeof model === "string")
+    : [];
+  const defaultModel =
+    typeof payload.default_model === "string"
+      ? payload.default_model
+      : null;
+
+  return {
+    models: modelValues,
+    defaultModel,
+  };
 }

@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Highlight, themes } from "prism-react-renderer";
+import { Fragment, useState, useCallback } from "react";
+import { Highlight, themes, type Token } from "prism-react-renderer";
 
 interface CodeBlockAnchorRange {
   key: string;
@@ -13,6 +13,18 @@ interface TokenSegment {
   endOffset: number;
   startOffset: number;
   text: string;
+}
+
+interface LinePart {
+  token: Token;
+  tokenIndex: number;
+  segment: TokenSegment;
+  segmentIndex: number;
+}
+
+interface LineRun {
+  anchor?: CodeBlockAnchorRange;
+  parts: LinePart[];
 }
 
 interface CodeBlockProps {
@@ -147,6 +159,32 @@ function getAnchorBadgeClass(isMonochrome: boolean, isFocused: boolean): string 
     : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-600/30 bg-yellow-900/20 px-1 align-middle text-[11px] font-semibold text-yellow-100/55";
 }
 
+function groupLineSegments(parts: LinePart[]): LineRun[] {
+  if (parts.length === 0) return [];
+
+  const runs: LineRun[] = [];
+  let currentRun: LineRun = {
+    anchor: parts[0].segment.anchor,
+    parts: [parts[0]],
+  };
+
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i];
+    const currentKey = currentRun.anchor?.key;
+    const partKey = part.segment.anchor?.key;
+
+    if (currentKey === partKey) {
+      currentRun.parts.push(part);
+    } else {
+      runs.push(currentRun);
+      currentRun = { anchor: part.segment.anchor, parts: [part] };
+    }
+  }
+
+  runs.push(currentRun);
+  return runs;
+}
+
 export default function CodeBlock({
   anchorRanges = [],
   code,
@@ -187,101 +225,121 @@ export default function CodeBlock({
                   const renderedBadgeKeys = new Set<string>();
 
                   return tokens.map((line, lineIndex) => {
+                    // Pass 1: Collect all LineParts for this line
+                    const lineParts: LinePart[] = [];
+
+                    line.forEach((token, tokenIndex) => {
+                      const tokenText = token.content;
+                      const tokenStartOffset = contentOffset;
+                      contentOffset += tokenText.length;
+
+                      if (
+                        normalizedAnchorRanges.length === 0 ||
+                        tokenText.length === 0
+                      ) {
+                        lineParts.push({
+                          token,
+                          tokenIndex,
+                          segment: {
+                            text: tokenText,
+                            startOffset: tokenStartOffset,
+                            endOffset: tokenStartOffset + tokenText.length,
+                          },
+                          segmentIndex: 0,
+                        });
+                        return;
+                      }
+
+                      const segments = splitTokenByAnchors(
+                        tokenText,
+                        tokenStartOffset,
+                        normalizedAnchorRanges,
+                      );
+
+                      segments.forEach((segment, segmentIndex) => {
+                        lineParts.push({ token, tokenIndex, segment, segmentIndex });
+                      });
+                    });
+
+                    // Pass 2: Group consecutive same-anchor segments, then render
+                    const runs = groupLineSegments(lineParts);
+
                     const lineNode = (
                       <div key={lineIndex} {...getLineProps({ line })}>
-                        {line.map((token, tokenIndex) => {
-                          const tokenText = token.content;
-                          const tokenStartOffset = contentOffset;
-                          contentOffset += tokenText.length;
-
-                          if (
-                            normalizedAnchorRanges.length === 0 ||
-                            tokenText.length === 0
-                          ) {
-                            return <span key={tokenIndex} {...getTokenProps({ token })} />;
-                          }
-
-                          const segments = splitTokenByAnchors(
-                            tokenText,
-                            tokenStartOffset,
-                            normalizedAnchorRanges,
-                          );
-
-                          if (segments.length === 1 && !segments[0].anchor) {
-                            return <span key={tokenIndex} {...getTokenProps({ token })} />;
-                          }
-
-                          const tokenProps = getTokenProps({ token });
-                          const {
-                            children: _children,
-                            className,
-                            style,
-                            ...restTokenProps
-                          } = tokenProps;
-
-                          return (
-                            <span key={tokenIndex}>
-                              {segments.map((segment, segmentIndex) => {
-                                const segmentKey = `${tokenIndex}:${segmentIndex}:${segment.startOffset}:${segment.endOffset}`;
-
-                                if (!segment.anchor) {
+                        {runs.map((run, runIndex) => {
+                          if (!run.anchor) {
+                            return (
+                              <Fragment key={`r${runIndex}`}>
+                                {run.parts.map((part) => {
+                                  const tokenProps = getTokenProps({ token: part.token });
+                                  const { children: _children, ...restProps } = tokenProps;
                                   return (
                                     <span
-                                      key={segmentKey}
-                                      className={className}
-                                      style={style}
-                                      {...restTokenProps}
+                                      key={`${part.tokenIndex}:${part.segmentIndex}`}
+                                      {...restProps}
                                     >
-                                      {segment.text}
+                                      {part.segment.text}
                                     </span>
                                   );
-                                }
+                                })}
+                              </Fragment>
+                            );
+                          }
 
-                                const anchor = segment.anchor;
-                                const shouldAttachRef =
-                                  registerAnchorRef &&
-                                  !renderedAnchorKeys.has(anchor.key);
-                                if (shouldAttachRef) {
-                                  renderedAnchorKeys.add(anchor.key);
-                                }
+                          const anchor = run.anchor;
+                          const shouldAttachRef =
+                            registerAnchorRef &&
+                            !renderedAnchorKeys.has(anchor.key);
+                          if (shouldAttachRef) {
+                            renderedAnchorKeys.add(anchor.key);
+                          }
 
-                                const showBadge =
-                                  anchor.count > 1 &&
-                                  !renderedBadgeKeys.has(anchor.key);
-                                if (showBadge) {
-                                  renderedBadgeKeys.add(anchor.key);
-                                }
+                          const showBadge =
+                            anchor.count > 1 &&
+                            !renderedBadgeKeys.has(anchor.key);
+                          if (showBadge) {
+                            renderedBadgeKeys.add(anchor.key);
+                          }
 
+                          return (
+                            <span
+                              key={`r${runIndex}`}
+                              className={getAnchorHighlightClass(isMonochrome, isFocused)}
+                              ref={
+                                shouldAttachRef
+                                  ? (node) => registerAnchorRef(anchor.key, node)
+                                  : undefined
+                              }
+                            >
+                              {run.parts.map((part) => {
+                                const tokenProps = getTokenProps({ token: part.token });
+                                const {
+                                  children: _children,
+                                  className,
+                                  style,
+                                  ...restTokenProps
+                                } = tokenProps;
                                 return (
                                   <span
-                                    key={segmentKey}
-                                    className={getAnchorHighlightClass(isMonochrome, isFocused)}
-                                    ref={
-                                      shouldAttachRef
-                                        ? (node) => registerAnchorRef(anchor.key, node)
-                                        : undefined
-                                    }
+                                    key={`${part.tokenIndex}:${part.segmentIndex}`}
+                                    className={className}
+                                    style={style}
+                                    {...restTokenProps}
                                   >
-                                    <span
-                                      className={className}
-                                      style={style}
-                                      {...restTokenProps}
-                                    >
-                                      {segment.text}
-                                    </span>
-                                    {showBadge ? (
-                                      <span
-                                        className={getAnchorBadgeClass(
-                                          isMonochrome,
-                                          isFocused,
-                                        )}
-                                      >
-                                        {anchor.count}
-                                      </span>
-                                    ) : null}
+                                    {part.segment.text}
                                   </span>
                                 );
                               })}
+                              {showBadge ? (
+                                <span
+                                  className={getAnchorBadgeClass(
+                                    isMonochrome,
+                                    isFocused,
+                                  )}
+                                >
+                                  {anchor.count}
+                                </span>
+                              ) : null}
                             </span>
                           );
                         })}

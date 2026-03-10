@@ -92,7 +92,16 @@ export default function AlgorithmVisualizer({
 }: AlgorithmVisualizerProps) {
   const [current, setCurrent] = useState(0);
 
-  if (!steps || steps.length === 0) return null;
+  if (!steps || steps.length === 0) {
+    return (
+      <div className={`${surfaceClass} p-4`}>
+        {title && <p className={titleClass}>{title}</p>}
+        <div className="mt-3 flex h-48 animate-pulse items-center justify-center rounded-lg border border-border bg-secondary">
+          <span className="text-sm text-muted-foreground">Loading Visualizer...</span>
+        </div>
+      </div>
+    );
+  }
 
   const step = steps[current];
   const highlightLineSet = new Set(step.highlightLines ?? []);

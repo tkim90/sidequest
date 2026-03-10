@@ -14,6 +14,7 @@ import ChatWindowMessages from "./ChatWindowMessages";
 import ChatWindowResizeHandles from "./ChatWindowResizeHandles";
 
 interface ChatWindowProps {
+  availableModels: string[];
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   isFocused: boolean;
   onClose: (windowId: string) => void;
@@ -23,12 +24,14 @@ interface ChatWindowProps {
     event: ReactPointerEvent<HTMLElement>,
     windowId: string,
   ) => void;
+  onModelChange: (windowId: string, model: string) => void;
   onResizePointerDown: (
     event: ReactPointerEvent<HTMLElement>,
     windowId: string,
     edges: ResizeEdges,
   ) => void;
   onMessageMouseDown: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseDown"];
+  onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -45,14 +48,17 @@ interface ChatWindowProps {
 }
 
 function ChatWindow({
+  availableModels,
   anchorGroupsByMessageKey,
   isFocused,
   onClose,
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
+  onModelChange,
   onResizePointerDown,
   onMessageMouseDown,
+  onRetry,
   onSend,
   onToggleHistoryExpanded,
   onWindowFocus,
@@ -81,7 +87,7 @@ function ChatWindow({
   function handleWindowPointerDown(event: ReactPointerEvent<HTMLElement>): void {
     onWindowFocus(windowData.id);
     const target = event.target as HTMLElement;
-    if (target.closest("textarea, input, button, [data-message-card]")) {
+    if (target.closest("textarea, input, button, select, [data-message-card]")) {
       return;
     }
 
@@ -124,6 +130,7 @@ function ChatWindow({
         isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
         onMessageMouseDown={onMessageMouseDown}
+        onRetry={(messageId) => onRetry(windowData.id, messageId)}
         onScroll={onMessagesScroll}
         onToggleHistoryExpanded={() => onToggleHistoryExpanded(windowData.id)}
         registerAnchorRef={registerAnchorRef}
@@ -132,12 +139,16 @@ function ChatWindow({
       />
 
       <ChatWindowComposer
+        availableModels={availableModels}
         composer={windowData.composer}
         isStreaming={windowData.isStreaming}
         onComposerChange={(composer) => onComposerChange(windowData.id, composer)}
+        onModelChange={(model) => onModelChange(windowData.id, model)}
         onSend={() => onSend(windowData.id)}
+        selectedModel={windowData.selectedModel}
         textareaRef={textareaRef}
         title={windowData.title}
+        windowId={windowData.id}
       />
     </article>
   );

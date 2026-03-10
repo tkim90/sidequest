@@ -16,6 +16,7 @@ function ChatWorkspace() {
           onCloseAllChildWindows={workspace.onCloseAllChildWindows}
         />
         <ChatCanvas
+          availableModels={workspace.availableModels}
           anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
           canvasRef={workspace.canvasRef}
           connectorPaths={workspace.connectorPaths}
@@ -24,9 +25,11 @@ function ChatWorkspace() {
           onComposerChange={workspace.onComposerChange}
           onGeometryChange={workspace.onGeometryChange}
           onHeaderPointerDown={workspace.onHeaderPointerDown}
+          onModelChange={workspace.onModelChange}
           onResizePointerDown={workspace.onResizePointerDown}
           onMessageMouseDown={workspace.onMessageMouseDown}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
+          onRetry={workspace.onRetry}
           onSend={workspace.onSend}
           onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
           onWindowClose={workspace.onWindowClose}

@@ -271,6 +271,7 @@ export function useBranchSelection({
         clamp(currentSelection.windowLocalY - 120, 24, 260) +
         parentWindow.childIds.length * CHILD_VERTICAL_STAGGER,
       parentId: parentWindow.id,
+      selectedModel: parentWindow.selectedModel,
       branchFocus: {
         selectedText: currentSelection.selectedText,
         parentWindowTitle: parentWindow.title,

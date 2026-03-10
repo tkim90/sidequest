@@ -33,6 +33,7 @@ export interface WindowRecord {
   inheritedMessageCount: number;
   isHistoryExpanded: boolean;
   composer: string;
+  selectedModel: string | null;
   isStreaming: boolean;
 }
 
@@ -41,6 +42,7 @@ export interface MessageRecord {
   role: ChatRole;
   content: string;
   status: MessageStatus;
+  model?: string;
 }
 
 export interface AnchorRecord {
