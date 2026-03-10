@@ -78,7 +78,7 @@ export interface ChatWorkspaceViewModel {
   onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
   onSelectionBranch: () => void;
-  onSend: (windowId: string) => Promise<void>;
+  onSend: (windowId: string, promptOverride?: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -239,14 +239,17 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     windowScrollStatesRef.current[windowId] = nextState;
   }, []);
 
-  async function handleSend(windowId: string): Promise<void> {
+  async function handleSend(
+    windowId: string,
+    promptOverride?: string,
+  ): Promise<void> {
     const snapshot = appStateRef.current;
     const windowData = snapshot.windows[windowId];
     if (!windowData) {
       return;
     }
 
-    const composer = windowData.composer.trim();
+    const composer = (promptOverride ?? windowData.composer).trim();
     if (!composer || windowData.isStreaming) {
       return;
     }

@@ -7,6 +7,12 @@ import type {
 import MessageContent from "./MessageContent";
 import { eyebrowClassName } from "./ui";
 
+const STARTER_QUESTIONS = [
+  "Code and visualize Dijkstra's algorithm in python",
+  "Create a metrics dashboard about something random",
+  "Create an OG image for social media using light colors",
+] as const;
+
 interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   historyPreviewCount: number;
@@ -14,6 +20,7 @@ interface ChatWindowMessagesProps {
   isHistoryExpanded: boolean;
   messages: MessageRecord[];
   onMessageMouseDown: React.ComponentProps<typeof MessageContent>["onMessageMouseDown"];
+  onStarterQuestionClick: (question: string) => void | Promise<void>;
   onRetry: (messageId: string) => void;
   onScroll: () => void;
   onToggleHistoryExpanded: () => void;
@@ -119,6 +126,7 @@ function ChatWindowMessages({
   isHistoryExpanded,
   messages,
   onMessageMouseDown,
+  onStarterQuestionClick,
   onRetry,
   onScroll,
   onToggleHistoryExpanded,
@@ -158,12 +166,22 @@ function ChatWindowMessages({
       onScroll={onScroll}
     >
       {messages.length === 0 ? (
-        <div className="my-auto border border-dashed border-border bg-secondary/70 p-4 text-sm leading-6 text-muted-foreground">
-          <p className="m-0">No messages yet.</p>
-          <p className="mt-2 m-0">
-            Ask something here, then highlight a phrase to branch it.
-          </p>
-        </div>
+        <section className="my-auto border border-dashed border-border bg-secondary/70">
+          {STARTER_QUESTIONS.map((question, index) => (
+            <button
+              key={question}
+              className={`block w-full cursor-pointer px-5 py-4 text-left text-[17px] leading-7 text-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground ${
+                index > 0 ? "border-t border-border/70" : ""
+              }`}
+              type="button"
+              onClick={() => {
+                void onStarterQuestionClick(question);
+              }}
+            >
+              {question}
+            </button>
+          ))}
+        </section>
       ) : null}
 
       {historyMessages.length > 0 ? (

@@ -32,7 +32,7 @@ interface ChatWindowProps {
   ) => void;
   onMessageMouseDown: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseDown"];
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
-  onSend: (windowId: string) => void | Promise<void>;
+  onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
   onWindowScrollStateChange: (
@@ -130,6 +130,7 @@ function ChatWindow({
         isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
         onMessageMouseDown={onMessageMouseDown}
+        onStarterQuestionClick={(question) => onSend(windowData.id, question)}
         onRetry={(messageId) => onRetry(windowData.id, messageId)}
         onScroll={onMessagesScroll}
         onToggleHistoryExpanded={() => onToggleHistoryExpanded(windowData.id)}

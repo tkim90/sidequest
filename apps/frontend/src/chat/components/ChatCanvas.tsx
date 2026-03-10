@@ -44,7 +44,7 @@ interface ChatCanvasProps {
   ) => void;
   onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
-  onSend: (windowId: string) => void | Promise<void>;
+  onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
