@@ -2,6 +2,8 @@
 
 Fork side bars into separate chats without disrupting your main conversation flow.
 
+<img width="1982" height="1323" alt="CleanShot 2026-03-09 at 22 03 25" src="https://github.com/user-attachments/assets/61426cb2-fc0d-4bb7-8d88-ef06cae32e2e" />
+
 <img width="1424" height="1039" alt="image" src="https://github.com/user-attachments/assets/8a12aa95-2e77-4716-859f-a6adb48c474b" />
 
 
