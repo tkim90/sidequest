@@ -5,7 +5,6 @@ import type {
   MessageRecord,
 } from "../../types";
 import MessageContent from "./MessageContent";
-import { eyebrowClassName } from "./ui";
 
 const STARTER_QUESTIONS = [
   "Code and visualize Dijkstra's algorithm in python",
@@ -64,7 +63,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
         </p>
       ) : (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <p className={eyebrowClassName}>Assistant</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Assistant</p>
           {message.model ? (
             <span className="inline-flex items-center border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-muted-foreground">
               {message.model}
