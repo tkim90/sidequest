@@ -13,6 +13,7 @@ interface Step {
   label: string;
   description?: string;
   highlight?: string;
+  variables?: Record<string, string>;
 }
 
 interface AlgorithmStepperProps {
@@ -48,6 +49,20 @@ export default function AlgorithmStepper({ title, steps, description }: Algorith
           <pre className="mt-2 overflow-x-auto rounded-lg border border-border bg-popover p-2 font-mono text-xs text-popover-foreground">
             {step.highlight}
           </pre>
+        )}
+        {step.variables && Object.keys(step.variables).length > 0 && (
+          <div className="mt-2 rounded-lg border border-border bg-popover p-2">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Variables</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {Object.entries(step.variables).map(([name, value]) => (
+                <span key={name} className="font-mono text-xs">
+                  <span className="font-semibold text-foreground">{name}</span>
+                  <span className="text-muted-foreground"> = </span>
+                  <span className="text-primary">{value}</span>
+                </span>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

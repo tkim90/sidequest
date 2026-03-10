@@ -31,6 +31,8 @@ interface Step {
   highlightNodes?: string[];
   highlightEdges?: [string, string][];
   nodeAnnotations?: Record<string, string>;
+  variables?: Record<string, string>;
+  lineAnnotations?: Record<number, string>;
 }
 
 interface AlgorithmVisualizerProps {
@@ -161,6 +163,7 @@ export default function AlgorithmVisualizer({
                   {tokens.map((line, lineIndex) => {
                     const lineNum = lineIndex + 1;
                     const isHighlighted = highlightLineSet.has(lineNum);
+                    const lineAnnotation = step.lineAnnotations?.[lineNum];
                     const lineProps = getLineProps({ line });
                     return (
                       <div
@@ -176,6 +179,11 @@ export default function AlgorithmVisualizer({
                             <span key={tokenIndex} {...getTokenProps({ token })} />
                           ))}
                         </span>
+                        {lineAnnotation && (
+                          <span className="ml-4 shrink-0 whitespace-nowrap text-[11px] italic text-primary/70">
+                            {`// ${lineAnnotation}`}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -328,6 +336,22 @@ export default function AlgorithmVisualizer({
           <p className={`mt-1 ${captionTextClass}`}>{step.description}</p>
         )}
       </div>
+
+      {/* Variables */}
+      {step.variables && Object.keys(step.variables).length > 0 && (
+        <div className={`${insetSurfaceClass} mt-3 p-3`}>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Variables</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {Object.entries(step.variables).map(([name, value]) => (
+              <span key={name} className="font-mono text-xs">
+                <span className="font-semibold text-foreground">{name}</span>
+                <span className="text-muted-foreground"> = </span>
+                <span className="text-primary">{value}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Progress dots */}
       <div className="mt-3 flex items-center gap-1">

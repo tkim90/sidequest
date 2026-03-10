@@ -12,7 +12,7 @@ export function partialJsonParse(input: string): JsonRenderSpec | null {
   // Try parsing as-is first
   try {
     const result = JSON.parse(trimmed);
-    if (isValidSpec(result)) return result;
+    if (isValidSpec(result, { requireChildReferences: false })) return result;
     return null;
   } catch {
     // Continue to repair attempt
@@ -24,7 +24,7 @@ export function partialJsonParse(input: string): JsonRenderSpec | null {
 
   try {
     const result = JSON.parse(repaired);
-    if (isValidSpec(result)) return result;
+    if (isValidSpec(result, { requireChildReferences: false })) return result;
     return null;
   } catch {
     return null;
@@ -34,14 +34,21 @@ export function partialJsonParse(input: string): JsonRenderSpec | null {
 export function tryParseSpec(input: string): JsonRenderSpec | null {
   try {
     const result = JSON.parse(input.trim());
-    if (isValidSpec(result)) return result;
+    if (isValidSpec(result, { requireChildReferences: true })) return result;
     return null;
   } catch {
     return null;
   }
 }
 
-function isValidSpec(obj: unknown): obj is JsonRenderSpec {
+interface SpecValidationOptions {
+  requireChildReferences: boolean;
+}
+
+function isValidSpec(
+  obj: unknown,
+  { requireChildReferences }: SpecValidationOptions,
+): obj is JsonRenderSpec {
   if (typeof obj !== "object" || obj === null) return false;
   const spec = obj as Record<string, unknown>;
   if (typeof spec.root !== "string" || spec.root.length === 0) {
@@ -59,7 +66,15 @@ function isValidSpec(obj: unknown): obj is JsonRenderSpec {
     return false;
   }
 
-  return Object.values(elements).every(isValidElement);
+  if (!Object.values(elements).every(isValidElement)) {
+    return false;
+  }
+
+  if (requireChildReferences && !hasValidChildReferences(elements)) {
+    return false;
+  }
+
+  return true;
 }
 
 function isValidElement(element: unknown): boolean {
@@ -90,6 +105,28 @@ function isValidElement(element: unknown): boolean {
       candidate.children.some((childId) => typeof childId !== "string"))
   ) {
     return false;
+  }
+
+  return true;
+}
+
+function hasValidChildReferences(elements: Record<string, unknown>): boolean {
+  for (const element of Object.values(elements)) {
+    const candidate = element as Record<string, unknown>;
+    const children = candidate.children;
+
+    if (!children) {
+      continue;
+    }
+
+    for (const childId of children as unknown[]) {
+      if (
+        typeof childId !== "string" ||
+        !Object.prototype.hasOwnProperty.call(elements, childId)
+      ) {
+        return false;
+      }
+    }
   }
 
   return true;
