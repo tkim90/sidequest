@@ -1,6 +1,7 @@
 import type {
   AnchorGroupsByMessageKey,
   ConnectorPath,
+  MessageRecord,
   MessagesByWindowId,
   Viewport,
   WindowScrollState,
@@ -9,7 +10,13 @@ import type {
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
-import { eyebrowClassName, primaryButtonClassName } from "./ui";
+import { primaryButtonClassName } from "./ui";
+
+const EMPTY_MESSAGES: MessageRecord[] = [];
+const DEFAULT_SCROLL_STATE: WindowScrollState = {
+  scrollTop: null,
+  shouldAutoScroll: true,
+};
 
 interface ChatCanvasProps {
   availableModels: string[];
@@ -37,7 +44,7 @@ interface ChatCanvasProps {
   ) => void;
   onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
-  onSend: (windowId: string) => void | Promise<void>;
+  onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -80,7 +87,7 @@ function ChatCanvas({
 }: ChatCanvasProps) {
   return (
     <div
-      className="relative overflow-hidden border-t border-zinc-300 bg-zinc-50 cursor-grab active:cursor-grabbing"
+      className="relative cursor-grab overflow-hidden border-t border-border bg-secondary/60 active:cursor-grabbing"
       ref={canvasRef}
       onPointerDown={onCanvasPointerDown}
     >
@@ -103,7 +110,7 @@ function ChatCanvas({
               key={windowData.id}
               anchorGroupsByMessageKey={anchorGroupsByMessageKey}
               isFocused={index === windows.length - 1}
-              messages={messagesByWindowId[windowData.id] || []}
+              messages={messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES}
               onClose={onWindowClose}
               onComposerChange={onComposerChange}
               onGeometryChange={onGeometryChange}
@@ -118,12 +125,7 @@ function ChatCanvas({
               onWindowScrollStateChange={onWindowScrollStateChange}
               registerAnchorRef={registerAnchorRef}
               registerWindowRef={registerWindowRef}
-              savedScrollState={
-                windowScrollStates[windowData.id] || {
-                  scrollTop: null,
-                  shouldAutoScroll: true,
-                }
-              }
+              savedScrollState={windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE}
               windowData={windowData}
               availableModels={availableModels}
               zIndex={index + 1}

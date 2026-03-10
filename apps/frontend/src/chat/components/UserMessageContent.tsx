@@ -207,11 +207,11 @@ function renderChunkContent({
       chunkLocalEnd - startOffset,
     );
     const highlightClass = isFocused
-      ? "border border-yellow-400 bg-yellow-200 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-      : "border border-yellow-500/30 bg-yellow-400/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+      ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+      : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
     const badgeClass = isFocused
-      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500 bg-yellow-50 px-1 align-middle text-[11px] font-semibold text-yellow-800"
-      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500/30 bg-yellow-50/50 px-1 align-middle text-[11px] font-semibold text-yellow-800/50";
+      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
+      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
 
     nodes.push(
       <span

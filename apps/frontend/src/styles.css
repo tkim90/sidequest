@@ -2,34 +2,41 @@
 
 :root {
   color-scheme: light;
-  --background: oklch(0.984 0.006 224);
-  --foreground: oklch(0.235 0.028 258);
-  --card: oklch(0.995 0.002 225);
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --card: #ffffff;
   --card-foreground: var(--foreground);
-  --popover: oklch(0.997 0.002 225);
+  --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.61 0.14 241);
-  --primary-foreground: oklch(0.985 0.003 247);
-  --secondary: oklch(0.94 0.024 224);
-  --secondary-foreground: oklch(0.34 0.037 257);
-  --muted: oklch(0.96 0.012 230);
-  --muted-foreground: oklch(0.53 0.03 257);
-  --accent: oklch(0.92 0.034 186);
-  --accent-foreground: oklch(0.27 0.03 194);
-  --destructive: oklch(0.63 0.227 25);
-  --destructive-foreground: oklch(0.985 0.003 247);
-  --border: oklch(0.88 0.013 238);
-  --input: oklch(0.9 0.011 238);
-  --ring: oklch(0.61 0.14 241);
-  --success: oklch(0.66 0.152 160);
-  --success-foreground: oklch(0.985 0.003 247);
-  --warning: oklch(0.82 0.163 84);
-  --warning-foreground: oklch(0.29 0.03 65);
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #27272a;
+  --muted: #e4e4e7;
+  --muted-foreground: #71717a;
+  --accent: #e4e4e7;
+  --accent-foreground: #27272a;
+  --destructive: #dc2626;
+  --destructive-foreground: #fef2f2;
+  --border: #d4d4d8;
+  --input: #d4d4d8;
+  --ring: #52525b;
+  --success: #16a34a;
+  --success-foreground: #f0fdf4;
+  --warning: #d97706;
+  --warning-foreground: #fffbeb;
   --chart-1: oklch(0.62 0.19 255);
   --chart-2: oklch(0.71 0.16 167);
   --chart-3: oklch(0.78 0.16 85);
   --chart-4: oklch(0.68 0.2 24);
   --chart-5: oklch(0.67 0.14 210);
+  --code-surface: #18181b;
+  --code-border: #3f3f46;
+  --code-foreground: #f4f4f5;
+  --code-muted: #a1a1aa;
+  --window-shadow: 8px 8px 0 0 rgb(24 24 27 / 0.08);
+  --modal-shadow: 10px 10px 0 0 rgb(24 24 27 / 0.12);
+  --toast-shadow: 8px 8px 0 0 rgb(24 24 27 / 0.2);
 }
 
 @theme inline {
@@ -61,6 +68,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-code-surface: var(--code-surface);
+  --color-code-border: var(--code-border);
+  --color-code-foreground: var(--code-foreground);
+  --color-code-muted: var(--code-muted);
 }
 
 @layer base {

@@ -15,7 +15,7 @@ function SelectionPopover({
 }: SelectionPopoverProps) {
   return (
     <div
-      className="fixed z-40 flex -translate-x-1/2 -translate-y-full items-center gap-3 border border-zinc-950 bg-zinc-950 px-4 py-3 text-sm text-zinc-50"
+      className="fixed z-40 flex -translate-x-1/2 -translate-y-full items-center gap-3 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
       ref={popoverRef}
       style={{
         left: selectionState.x,
@@ -24,7 +24,7 @@ function SelectionPopover({
     >
       <p className="m-0">Sidebar this selection into a new chat?</p>
       <button
-        className="inline-flex cursor-pointer items-center justify-center border border-zinc-50 bg-white px-2 py-2 text-xs font-semibold uppercase text-zinc-950 transition-colors hover:bg-zinc-100"
+        className="inline-flex cursor-pointer items-center justify-center border border-primary bg-primary px-2 py-2 text-xs font-semibold uppercase text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         type="button"
         onClick={onBranch}
       >

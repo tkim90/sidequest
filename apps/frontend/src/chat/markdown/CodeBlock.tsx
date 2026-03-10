@@ -52,7 +52,7 @@ function CopyButton({ code, variant = "default" }: { code: string; variant?: "de
       className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
         variant === "monochrome"
           ? "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          : "text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+          : "text-code-muted hover:bg-code-border/50 hover:text-code-foreground"
       }`}
       aria-label="Copy code"
     >
@@ -138,25 +138,25 @@ function splitTokenByAnchors(
 function getAnchorHighlightClass(isMonochrome: boolean, isFocused: boolean): string {
   if (isMonochrome) {
     return isFocused
-      ? "border border-yellow-400 bg-yellow-100/80 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-      : "border border-yellow-500/35 bg-yellow-100/50 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+      ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+      : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
   }
 
   return isFocused
-    ? "border border-yellow-500/65 bg-yellow-400/25 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-    : "border border-yellow-600/30 bg-yellow-400/14 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+    ? "border border-warning/65 bg-warning/25 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+    : "border border-warning/35 bg-warning/15 px-0.2 text-warning-foreground/80 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
 }
 
 function getAnchorBadgeClass(isMonochrome: boolean, isFocused: boolean): string {
   if (isMonochrome) {
     return isFocused
-      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500 bg-yellow-50 px-1 align-middle text-[11px] font-semibold text-yellow-800"
-      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500/35 bg-yellow-50/80 px-1 align-middle text-[11px] font-semibold text-yellow-800/70";
+      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
+      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
   }
 
   return isFocused
-    ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-600/60 bg-yellow-900/35 px-1 align-middle text-[11px] font-semibold text-yellow-100"
-    : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-600/30 bg-yellow-900/20 px-1 align-middle text-[11px] font-semibold text-yellow-100/55";
+    ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/25 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
+    : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/15 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
 }
 
 function groupLineSegments(parts: LinePart[]): LineRun[] {
@@ -202,15 +202,17 @@ export default function CodeBlock({
     <div className="my-3">
       <div
         className={`overflow-x-auto rounded-md ${
-          isMonochrome ? "border border-border bg-card text-card-foreground shadow-sm" : "bg-[#282c34]"
+          isMonochrome
+            ? "border border-border bg-card text-card-foreground shadow-sm"
+            : "border border-code-border bg-code-surface text-code-foreground"
         }`}
       >
         <div
           className={`flex items-center justify-between px-3 py-1 ${
-            isMonochrome ? "border-b border-border bg-muted" : "border-b border-zinc-700"
+            isMonochrome ? "border-b border-border bg-muted" : "border-b border-code-border"
           }`}
         >
-          <span className={`text-xs ${isMonochrome ? "text-muted-foreground" : "text-zinc-400"}`}>
+          <span className={`text-xs ${isMonochrome ? "text-muted-foreground" : "text-code-muted"}`}>
             {language || "text"}
           </span>
           <CopyButton code={code} variant={variant} />

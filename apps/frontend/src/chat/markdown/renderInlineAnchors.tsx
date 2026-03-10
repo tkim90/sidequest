@@ -45,7 +45,7 @@ function renderFormattedSpan(
 
   if (span.formatting.code) {
     content = (
-      <code className="rounded bg-zinc-200 px-1 py-0.5 font-mono text-[0.9em]">
+      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em] text-foreground">
         {content}
       </code>
     );
@@ -65,7 +65,7 @@ function renderFormattedSpan(
         href={span.formatting.link}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-blue-600 underline decoration-blue-500/70 underline-offset-2 hover:text-blue-500"
+        className="text-primary underline decoration-primary/60 underline-offset-2 hover:text-accent-foreground"
       >
         {content}
       </a>
@@ -79,18 +79,18 @@ function renderFormattedSpan(
 
     if (darkBackground) {
       highlightClass = focused
-        ? "border border-yellow-500/60 bg-yellow-400/25 px-0.2 text-yellow-100 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-        : "border border-yellow-600/30 bg-yellow-400/10 px-0.2 text-yellow-200/60 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+        ? "border border-warning/60 bg-warning/25 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+        : "border border-warning/35 bg-warning/10 px-0.2 text-warning-foreground/70 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
       badgeClass = focused
-        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-600/60 bg-yellow-900/40 px-1 align-middle text-[11px] font-semibold text-yellow-200"
-        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-600/30 bg-yellow-900/20 px-1 align-middle text-[11px] font-semibold text-yellow-200/50";
+        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/60 bg-warning/25 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
+        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
     } else {
       highlightClass = focused
-        ? "border border-yellow-400 bg-yellow-200 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-        : "border border-yellow-500/30 bg-yellow-400/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+        ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+        : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
       badgeClass = focused
-        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500 bg-yellow-50 px-1 align-middle text-[11px] font-semibold text-yellow-800"
-        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-yellow-500/30 bg-yellow-50/50 px-1 align-middle text-[11px] font-semibold text-yellow-800/50";
+        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
+        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
     }
 
     return (
@@ -122,7 +122,7 @@ function renderInlineNodes(nodes: InlineNode[], keyPrefix: string): ReactNode[] 
       return (
         <code
           key={key}
-          className="rounded bg-zinc-200 px-1 py-0.5 font-mono text-[0.9em]"
+          className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em] text-foreground"
         >
           {node.text}
         </code>
@@ -152,7 +152,7 @@ function renderInlineNodes(nodes: InlineNode[], keyPrefix: string): ReactNode[] 
         href={node.href}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-blue-600 underline decoration-blue-500/70 underline-offset-2 hover:text-blue-500"
+        className="text-primary underline decoration-primary/60 underline-offset-2 hover:text-accent-foreground"
       >
         {children}
       </a>

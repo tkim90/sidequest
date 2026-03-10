@@ -60,9 +60,22 @@ export function useCanvasInteractions({
   const windowRefs = useRef<Record<string, HTMLElement>>({});
   const anchorRefs = useRef<Record<string, HTMLSpanElement>>({});
   const zoomCommitTimerRef = useRef<number | null>(null);
+  const geometryRefreshFrameRef = useRef<number | null>(null);
 
   const requestGeometryRefresh = useCallback(() => {
-    setGeometryVersion((version) => version + 1);
+    if (typeof window === "undefined") {
+      setGeometryVersion((version) => version + 1);
+      return;
+    }
+
+    if (geometryRefreshFrameRef.current !== null) {
+      return;
+    }
+
+    geometryRefreshFrameRef.current = window.requestAnimationFrame(() => {
+      geometryRefreshFrameRef.current = null;
+      setGeometryVersion((version) => version + 1);
+    });
   }, []);
 
   const clearZoomCommitTimer = useCallback(() => {
@@ -92,6 +105,16 @@ export function useCanvasInteractions({
   }, [clearZoomCommitTimer, setAppState]);
 
   useEffect(() => clearZoomCommitTimer, [clearZoomCommitTimer]);
+
+  useEffect(
+    () => () => {
+      if (geometryRefreshFrameRef.current !== null) {
+        window.cancelAnimationFrame(geometryRefreshFrameRef.current);
+        geometryRefreshFrameRef.current = null;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     function handleWindowResize(): void {

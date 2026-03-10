@@ -38,6 +38,7 @@ export function useChatWindowLayout({
   const didHydrateScrollRef = useRef(false);
   const savedScrollStateRef = useRef(savedScrollState);
   const shouldAutoScrollRef = useRef(savedScrollState.shouldAutoScroll);
+  const geometrySignatureRef = useRef<string>("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   savedScrollStateRef.current = savedScrollState;
 
@@ -70,6 +71,26 @@ export function useChatWindowLayout({
     persistScrollState(node);
   }
 
+  function notifyGeometryIfChanged(node: HTMLDivElement): void {
+    const signature = [
+      Math.round(node.scrollTop),
+      Math.round(node.scrollHeight),
+      Math.round(node.clientHeight),
+      messages.length,
+      height,
+      width,
+      inheritedMessageCount,
+      Number(isHistoryExpanded),
+    ].join(":");
+
+    if (geometrySignatureRef.current === signature) {
+      return;
+    }
+
+    geometrySignatureRef.current = signature;
+    onGeometryChange();
+  }
+
   useLayoutEffect(() => {
     const node = scrollRef.current;
     if (!node) {
@@ -78,6 +99,7 @@ export function useChatWindowLayout({
 
     restoreScrollState(node);
     didHydrateScrollRef.current = true;
+    notifyGeometryIfChanged(node);
   }, []);
 
   useLayoutEffect(() => {
@@ -91,6 +113,7 @@ export function useChatWindowLayout({
     }
 
     restoreScrollState(node);
+    notifyGeometryIfChanged(node);
   }, [isFocused]);
 
   useEffect(() => {
@@ -104,7 +127,7 @@ export function useChatWindowLayout({
     }
 
     persistScrollState(node);
-    onGeometryChange();
+    notifyGeometryIfChanged(node);
   }, [messages, height, onGeometryChange, width]);
 
   useEffect(() => {
@@ -114,7 +137,7 @@ export function useChatWindowLayout({
     }
 
     persistScrollState(node);
-    onGeometryChange();
+    notifyGeometryIfChanged(node);
   }, [inheritedMessageCount, isHistoryExpanded, onGeometryChange, onWindowScrollStateChange, windowId]);
 
   useEffect(() => {
@@ -134,7 +157,7 @@ export function useChatWindowLayout({
     }
 
     persistScrollState(node);
-    onGeometryChange();
+    notifyGeometryIfChanged(node);
   }
 
   return {
