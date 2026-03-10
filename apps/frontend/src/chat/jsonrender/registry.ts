@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import Alert from "./components/Alert";
 import AlgorithmStepper from "./components/AlgorithmStepper";
+import AlgorithmVisualizer from "./components/AlgorithmVisualizer";
 import Badge from "./components/Badge";
 import BarChart from "./components/BarChart";
 import Button from "./components/Button";
@@ -26,6 +27,7 @@ import TextInput from "./components/TextInput";
 const registry: Record<string, ComponentType<any>> = {
   Alert,
   AlgorithmStepper,
+  AlgorithmVisualizer,
   Badge,
   BarChart,
   Button,
