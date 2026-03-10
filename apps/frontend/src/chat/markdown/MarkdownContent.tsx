@@ -41,6 +41,9 @@ const MarkdownContent = memo(function MarkdownContent({
     ? [...finalizedBlocks, activeBlock]
     : finalizedBlocks;
 
+  const hasContent = finalizedBlocks.length > 0 || activeBlock !== null;
+  const showSkeleton = message.status === "streaming" && !hasContent;
+
   return (
     <div
       className="cursor-text break-words text-[20px] leading-7"
@@ -72,7 +75,15 @@ const MarkdownContent = memo(function MarkdownContent({
           />
         )
       ) : null}
-      {message.status === "streaming" ? (
+      {showSkeleton ? (
+        <div className="animate-pulse space-y-3 py-1" aria-hidden="true">
+          <div className="h-4 w-3/4 rounded bg-muted" />
+          <div className="h-4 w-full rounded bg-muted" />
+          <div className="h-4 w-5/6 rounded bg-muted" />
+          <div className="h-4 w-2/5 rounded bg-muted" />
+        </div>
+      ) : null}
+      {message.status === "streaming" && !showSkeleton ? (
         <span className="ml-0.5 inline-block animate-pulse font-semibold" aria-hidden="true">
           |
         </span>

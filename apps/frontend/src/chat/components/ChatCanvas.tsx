@@ -1,6 +1,7 @@
 import type {
   AnchorGroupsByMessageKey,
   ConnectorPath,
+  MessageRecord,
   MessagesByWindowId,
   Viewport,
   WindowScrollState,
@@ -10,6 +11,12 @@ import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
 import { primaryButtonClassName } from "./ui";
+
+const EMPTY_MESSAGES: MessageRecord[] = [];
+const DEFAULT_SCROLL_STATE: WindowScrollState = {
+  scrollTop: null,
+  shouldAutoScroll: true,
+};
 
 interface ChatCanvasProps {
   availableModels: string[];
@@ -103,7 +110,7 @@ function ChatCanvas({
               key={windowData.id}
               anchorGroupsByMessageKey={anchorGroupsByMessageKey}
               isFocused={index === windows.length - 1}
-              messages={messagesByWindowId[windowData.id] || []}
+              messages={messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES}
               onClose={onWindowClose}
               onComposerChange={onComposerChange}
               onGeometryChange={onGeometryChange}
@@ -118,12 +125,7 @@ function ChatCanvas({
               onWindowScrollStateChange={onWindowScrollStateChange}
               registerAnchorRef={registerAnchorRef}
               registerWindowRef={registerWindowRef}
-              savedScrollState={
-                windowScrollStates[windowData.id] || {
-                  scrollTop: null,
-                  shouldAutoScroll: true,
-                }
-              }
+              savedScrollState={windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE}
               windowData={windowData}
               availableModels={availableModels}
               zIndex={index + 1}

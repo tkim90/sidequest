@@ -19,7 +19,7 @@ interface Step {
 }
 
 interface StepperExample {
-  label: string;
+  label?: string;
   title?: string;
   description?: string;
   code?: string;
@@ -28,8 +28,8 @@ interface StepperExample {
 }
 
 interface AlgorithmStepperProps {
-  title: string;
-  steps: Step[];
+  title?: string;
+  steps?: Step[];
   description?: string;
   code?: string;
   language?: string;
@@ -48,10 +48,26 @@ interface StepperScenario {
 
 const DEFAULT_PLAYBACK_DELAY_MS = 900;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function buildFallbackCode(sourceSteps: Step[]): string {
   return sourceSteps
     .map((step, index) => `step_${index + 1}: ${step.label}`)
     .join("\n");
+}
+
+function normalizeStringRecord(
+  value: unknown,
+): Record<string, string> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => [key, String(entryValue)]),
+  );
 }
 
 export default function AlgorithmStepper({
@@ -68,91 +84,125 @@ export default function AlgorithmStepper({
   const [activeExampleIndex, setActiveExampleIndex] = useState<number | null>(null);
   const codeContainerRef = useRef<HTMLPreElement | null>(null);
 
-  const baseCode = code && code.trim().length > 0 ? code : buildFallbackCode(steps);
-  const baseLanguage = code && code.trim().length > 0 ? (language ?? "javascript") : "text";
+  const baseSteps = useMemo<Step[]>(() => (Array.isArray(steps) ? steps : []), [steps]);
+  const hasExplicitCode = typeof code === "string" && code.trim().length > 0;
+  const baseCode = hasExplicitCode ? code : buildFallbackCode(baseSteps);
+  const baseLanguage =
+    hasExplicitCode && typeof language === "string" && language.trim().length > 0
+      ? language
+      : hasExplicitCode
+        ? "javascript"
+        : "text";
+  const baseTitle = typeof title === "string" ? title : "Algorithm Stepper";
+  const baseDescription = typeof description === "string" ? description : undefined;
 
   const baseScenario = useMemo<StepperScenario>(
     () => ({
       label: "Current",
-      title,
-      description,
+      title: baseTitle,
+      description: baseDescription,
       code: baseCode,
       language: baseLanguage,
-      steps,
+      steps: baseSteps,
     }),
-    [title, description, baseCode, baseLanguage, steps],
+    [baseCode, baseDescription, baseLanguage, baseSteps, baseTitle],
   );
 
   const fallbackExamples = useMemo<StepperScenario[]>(() => {
-    if (!steps || steps.length === 0) {
+    if (baseSteps.length === 0) {
       return [];
     }
 
-    const shortLength = Math.max(1, Math.min(6, Math.ceil(steps.length / 3)));
-    const simpleSteps = steps.slice(0, shortLength);
+    const shortLength = Math.max(1, Math.min(6, Math.ceil(baseSteps.length / 3)));
+    const simpleSteps = baseSteps.slice(0, shortLength);
+
     return [
       {
         label: "Simple",
-        title,
+        title: baseTitle,
         description: "Simple run with fewer iterations",
-        code: code && code.trim().length > 0 ? code : buildFallbackCode(simpleSteps),
-        language: code && code.trim().length > 0 ? (language ?? "javascript") : "text",
+        code: hasExplicitCode ? baseCode : buildFallbackCode(simpleSteps),
+        language: hasExplicitCode ? baseLanguage : "text",
         steps: simpleSteps,
       },
       {
         label: "Larger",
-        title,
+        title: baseTitle,
         description: "Slightly larger run with full iteration history",
         code: baseCode,
         language: baseLanguage,
-        steps,
+        steps: baseSteps,
       },
     ];
-  }, [title, code, language, baseCode, baseLanguage, steps]);
+  }, [baseCode, baseLanguage, baseSteps, baseTitle, hasExplicitCode]);
 
   const providedExamples = useMemo<StepperScenario[]>(
     () =>
       (examples ?? [])
-        .filter((example) => Array.isArray(example.steps) && example.steps.length > 0)
-        .map((example) => {
-          const exampleCode =
-            example.code && example.code.trim().length > 0
+        .flatMap((example) => {
+          const exampleSteps = Array.isArray(example.steps) ? example.steps : [];
+          if (exampleSteps.length === 0) {
+            return [];
+          }
+
+          const explicitExampleCode =
+            typeof example.code === "string" && example.code.trim().length > 0
               ? example.code
-              : buildFallbackCode(example.steps);
+              : null;
+          const exampleCode = explicitExampleCode ?? buildFallbackCode(exampleSteps);
+          const label = typeof example.label === "string" ? example.label : undefined;
           const exampleLanguage =
-            example.code && example.code.trim().length > 0
-              ? (example.language ?? language ?? "javascript")
+            explicitExampleCode
+              ? typeof example.language === "string"
+                ? example.language
+                : baseLanguage
               : "text";
 
-          return {
-            label: example.label,
-            title: example.title ?? title,
-            description: example.description,
-            code: exampleCode,
-            language: exampleLanguage,
-            steps: example.steps,
-          };
+          return [
+            {
+              ...(label ? { label } : {}),
+              title: example.title ?? baseTitle,
+              description: example.description,
+              code: exampleCode,
+              language: exampleLanguage,
+              steps: exampleSteps,
+            },
+          ];
         }),
-    [examples, title, language],
+    [baseLanguage, baseTitle, examples],
   );
 
   const selectableExamples = providedExamples.length > 0 ? providedExamples : fallbackExamples;
 
-  const activeScenario =
-    activeExampleIndex === null
-      ? baseScenario
-      : selectableExamples[activeExampleIndex] ?? baseScenario;
+  const effectiveExampleIndex =
+    activeExampleIndex ??
+    (baseSteps.length === 0 && selectableExamples.length > 0 ? 0 : null);
 
-  const totalSteps = activeScenario.steps.length;
+  const activeScenario =
+    effectiveExampleIndex === null
+      ? baseScenario
+      : selectableExamples[effectiveExampleIndex] ?? baseScenario;
+
+  const activeSteps = Array.isArray(activeScenario.steps) ? activeScenario.steps : [];
+  const totalSteps = activeSteps.length;
   const maxIndex = Math.max(totalSteps - 1, 0);
   const currentIndex = Math.min(current, maxIndex);
-  const step = activeScenario.steps[currentIndex] ?? { label: "Waiting for steps" };
+  const step = activeSteps[currentIndex] ?? { label: "Waiting for steps" };
+  const stepLabel =
+    typeof step.label === "string" && step.label.length > 0
+      ? step.label
+      : `Step ${currentIndex + 1}`;
+  const stepDescription =
+    typeof step.description === "string" ? step.description : undefined;
+  const stepHighlight =
+    typeof step.highlight === "string" ? step.highlight : undefined;
+  const stepVariables = normalizeStringRecord(step.variables);
   const playbackDelayMs = Math.max(250, autoPlayDelayMs);
 
   useEffect(() => {
     setCurrent(0);
     setIsPlaying(false);
-  }, [activeExampleIndex, activeScenario]);
+  }, [effectiveExampleIndex]);
 
   useEffect(() => {
     setCurrent((prev) => Math.min(prev, maxIndex));
@@ -176,9 +226,12 @@ export default function AlgorithmStepper({
   }, [currentIndex, isPlaying, maxIndex, playbackDelayMs]);
 
   const codeLineCount = activeScenario.code.split(/\r?\n/).length;
+  const stepHighlightLines = Array.isArray(step.highlightLines)
+    ? step.highlightLines.filter((line): line is number => Number.isFinite(line))
+    : [];
   const highlightLines =
-    step.highlightLines && step.highlightLines.length > 0
-      ? step.highlightLines
+    stepHighlightLines.length > 0
+      ? stepHighlightLines
       : [Math.min(currentIndex + 1, codeLineCount)];
   const highlightLineSet = new Set(highlightLines);
 
@@ -194,14 +247,14 @@ export default function AlgorithmStepper({
     }
   }, [currentIndex, activeScenario.code]);
 
-  if (!steps || steps.length === 0 || totalSteps === 0) {
+  if (totalSteps === 0) {
     return (
       <div
         className={`${surfaceClass} p-4`}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
       >
-        <p className={titleClass}>{title}</p>
+        <p className={titleClass}>{baseTitle}</p>
         <div className="mt-3 flex h-40 animate-pulse items-center justify-center rounded-lg border border-border bg-secondary">
           <span className="text-sm text-muted-foreground">Loading Stepper...</span>
         </div>
@@ -237,8 +290,8 @@ export default function AlgorithmStepper({
     >
       <div className="border-b border-border px-4 py-3">
         <p className={titleClass}>{activeScenario.title}</p>
-        {(activeScenario.description || description) && (
-          <p className={`mt-1 ${captionTextClass}`}>{activeScenario.description ?? description}</p>
+        {(activeScenario.description || baseDescription) && (
+          <p className={`mt-1 ${captionTextClass}`}>{activeScenario.description ?? baseDescription}</p>
         )}
       </div>
 
@@ -247,7 +300,7 @@ export default function AlgorithmStepper({
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Examples</span>
           {selectableExamples.map((example, index) => {
             const label = example.label || (index === 0 ? "Simple" : "Larger");
-            const isActive = activeExampleIndex === index;
+            const isActive = effectiveExampleIndex === index;
             return (
               <button
                 key={`${label}-${index}`}
@@ -267,7 +320,7 @@ export default function AlgorithmStepper({
             type="button"
             onClick={() => setActiveExampleIndex(null)}
             className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
-              activeExampleIndex === null
+              effectiveExampleIndex === null
                 ? "border-primary bg-primary/15 text-primary"
                 : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             }`}
@@ -325,20 +378,20 @@ export default function AlgorithmStepper({
           </div>
           <div className="space-y-3 p-4">
             <p className="text-sm font-medium text-foreground">
-              Step {currentIndex + 1} of {totalSteps}: {step.label}
+              Step {currentIndex + 1} of {totalSteps}: {stepLabel}
             </p>
-            {step.description && <p className={captionTextClass}>{step.description}</p>}
-            {step.highlight && (
+            {stepDescription && <p className={captionTextClass}>{stepDescription}</p>}
+            {stepHighlight && (
               <pre className="overflow-x-auto rounded-lg border border-border bg-card/80 p-3 font-mono text-xs text-foreground">
-                {step.highlight}
+                {stepHighlight}
               </pre>
             )}
 
-            {step.variables && Object.keys(step.variables).length > 0 && (
+            {stepVariables && Object.keys(stepVariables).length > 0 && (
               <div className="rounded-md border border-border/80 bg-card/80 p-2">
                 <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Variables</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {Object.entries(step.variables).map(([name, value]) => (
+                  {Object.entries(stepVariables).map(([name, value]) => (
                     <span key={name} className="font-mono text-xs">
                       <span className="font-semibold text-foreground">{name}</span>
                       <span className="text-muted-foreground"> = </span>

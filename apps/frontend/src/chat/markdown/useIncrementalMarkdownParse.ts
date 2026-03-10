@@ -8,6 +8,23 @@ interface MarkdownParseState {
   activeBlock: MarkdownBlock | null;
 }
 
+function blockListsEqual(
+  previous: MarkdownBlock[],
+  next: MarkdownBlock[],
+): boolean {
+  if (previous.length !== next.length) {
+    return false;
+  }
+
+  for (let index = 0; index < previous.length; index += 1) {
+    if (!blocksEqual(previous[index], next[index])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function useIncrementalMarkdownParse(
   content: string,
   messageId: string,
@@ -43,7 +60,9 @@ export function useIncrementalMarkdownParse(
 
         if (result.blocksChanged) {
           blocksRef.current = result.nextBlocks;
-          setFinalizedBlocks(result.nextBlocks);
+          setFinalizedBlocks((previous) =>
+            blockListsEqual(previous, result.nextBlocks) ? previous : result.nextBlocks,
+          );
         }
 
         setActiveBlock((previous) =>
@@ -57,8 +76,12 @@ export function useIncrementalMarkdownParse(
       const result = parseChunk(parserRef.current, [], content, isComplete);
 
       blocksRef.current = result.nextBlocks;
-      setFinalizedBlocks(result.nextBlocks);
-      setActiveBlock(result.activeBlock);
+      setFinalizedBlocks((previous) =>
+        blockListsEqual(previous, result.nextBlocks) ? previous : result.nextBlocks,
+      );
+      setActiveBlock((previous) =>
+        blocksEqual(previous, result.activeBlock) ? previous : result.activeBlock,
+      );
     }
 
     prevContentRef.current = content;
