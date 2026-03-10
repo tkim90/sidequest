@@ -25,7 +25,7 @@ function ChatWorkspace() {
           onGeometryChange={workspace.onGeometryChange}
           onHeaderPointerDown={workspace.onHeaderPointerDown}
           onResizePointerDown={workspace.onResizePointerDown}
-          onMessageMouseUp={workspace.onMessageMouseUp}
+          onMessageMouseDown={workspace.onMessageMouseDown}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
           onSend={workspace.onSend}
           onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}

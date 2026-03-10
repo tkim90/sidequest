@@ -10,7 +10,7 @@ interface MessageContentProps {
   anchorGroups: AnchorGroup[];
   isFocused: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
@@ -26,7 +26,7 @@ const MessageContent = memo(function MessageContent(props: MessageContentProps) 
         anchorGroups={props.anchorGroups}
         isFocused={props.isFocused}
         registerAnchorRef={props.registerAnchorRef}
-        onMessageMouseUp={props.onMessageMouseUp}
+        onMessageMouseDown={props.onMessageMouseDown}
       />
     );
   }

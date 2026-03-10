@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -34,9 +35,15 @@ interface UseBranchSelectionOptions {
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
 
+interface MouseDownContext {
+  windowId: string;
+  messageId: string;
+  node: HTMLElement;
+}
+
 interface UseBranchSelectionResult {
   dismissSelection: () => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
@@ -55,6 +62,7 @@ export function useBranchSelection({
 }: UseBranchSelectionOptions): UseBranchSelectionResult {
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
+  const mouseDownRef = useRef<MouseDownContext | null>(null);
 
   useEffect(() => {
     function clearSelectionOnOutsideClick(event: globalThis.MouseEvent): void {
@@ -76,48 +84,74 @@ export function useBranchSelection({
     };
   }, [selectionState]);
 
+  // Document-level mouseup listener to detect selection even when mouse
+  // is released outside the message div.
+  useEffect(() => {
+    function handleDocumentMouseUp(): void {
+      const ctx = mouseDownRef.current;
+      if (!ctx) {
+        return;
+      }
+      mouseDownRef.current = null;
+
+      const { windowId, messageId, node } = ctx;
+
+      requestAnimationFrame(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          return;
+        }
+
+        const selectedText = selection.toString().trim();
+        if (!selectedText) {
+          return;
+        }
+
+        const rect = getSelectionRect(selection, node);
+        if (!rect) {
+          return;
+        }
+
+        const windowRect = windowRefs.current[windowId]?.getBoundingClientRect();
+
+        setSelectionState({
+          parentWindowId: windowId,
+          parentMessageId: messageId,
+          selectedText,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10,
+          windowLocalY: windowRect
+            ? rect.top + rect.height / 2 - windowRect.top
+            : 120,
+        });
+      });
+    }
+
+    document.addEventListener("mouseup", handleDocumentMouseUp);
+    return () => {
+      document.removeEventListener("mouseup", handleDocumentMouseUp);
+    };
+  }, []);
+
   function dismissSelection(): void {
     setSelectionState(null);
     window.getSelection()?.removeAllRanges();
   }
 
-  function handleMessageMouseUp(
-    event: ReactMouseEvent<HTMLDivElement>,
-    windowId: string,
-    messageId: string,
-  ): void {
-    const messageNode = event.currentTarget;
-
-    requestAnimationFrame(() => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        return;
-      }
-
-      const selectedText = selection.toString().trim();
-      if (!selectedText) {
-        return;
-      }
-
-      const rect = getSelectionRect(selection, messageNode);
-      if (!rect) {
-        return;
-      }
-
-      const windowRect = windowRefs.current[windowId]?.getBoundingClientRect();
-
-      setSelectionState({
-        parentWindowId: windowId,
-        parentMessageId: messageId,
-        selectedText,
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10,
-        windowLocalY: windowRect
-          ? rect.top + rect.height / 2 - windowRect.top
-          : 120,
-      });
-    });
-  }
+  const handleMessageMouseDown = useCallback(
+    (
+      event: ReactMouseEvent<HTMLDivElement>,
+      windowId: string,
+      messageId: string,
+    ): void => {
+      mouseDownRef.current = {
+        windowId,
+        messageId,
+        node: event.currentTarget,
+      };
+    },
+    [],
+  );
 
   function computeOffsetsForSelectedText(
     messageContent: string,
@@ -298,7 +332,7 @@ export function useBranchSelection({
 
   return {
     dismissSelection,
-    onMessageMouseUp: handleMessageMouseUp,
+    onMessageMouseDown: handleMessageMouseDown,
     onSelectionBranch: createBranchFromSelection,
     popoverRef,
     selectionState,

@@ -15,7 +15,7 @@ interface MarkdownContentProps {
   anchorGroups: AnchorGroup[];
   isFocused: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
@@ -28,7 +28,7 @@ const MarkdownContent = memo(function MarkdownContent({
   anchorGroups,
   isFocused,
   registerAnchorRef,
-  onMessageMouseUp,
+  onMessageMouseDown,
 }: MarkdownContentProps) {
   const isComplete = message.status === "complete";
   const { finalizedBlocks, activeBlock } = useIncrementalMarkdownParse(
@@ -45,7 +45,7 @@ const MarkdownContent = memo(function MarkdownContent({
     <div
       className="cursor-text break-words text-[20px] leading-7"
       data-message-id={message.id}
-      onMouseUp={(event) => onMessageMouseUp(event, windowId, message.id)}
+      onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
       <FinalizedBlocksList
         allBlocks={allBlocks}

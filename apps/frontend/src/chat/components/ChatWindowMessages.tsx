@@ -13,7 +13,7 @@ interface ChatWindowMessagesProps {
   isFocused: boolean;
   isHistoryExpanded: boolean;
   messages: MessageRecord[];
-  onMessageMouseUp: React.ComponentProps<typeof MessageContent>["onMessageMouseUp"];
+  onMessageMouseDown: React.ComponentProps<typeof MessageContent>["onMessageMouseDown"];
   onScroll: () => void;
   onToggleHistoryExpanded: () => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
@@ -25,7 +25,7 @@ interface ChatMessageCardProps {
   anchorGroups: AnchorGroupsByMessageKey[string];
   isFocused: boolean;
   message: MessageRecord;
-  onMessageMouseUp: ChatWindowMessagesProps["onMessageMouseUp"];
+  onMessageMouseDown: ChatWindowMessagesProps["onMessageMouseDown"];
   registerAnchorRef: ChatWindowMessagesProps["registerAnchorRef"];
   windowId: string;
 }
@@ -34,7 +34,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
   anchorGroups,
   isFocused,
   message,
-  onMessageMouseUp,
+  onMessageMouseDown,
   registerAnchorRef,
   windowId,
 }: ChatMessageCardProps) {
@@ -61,7 +61,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
         anchorGroups={anchorGroups}
         isFocused={isFocused}
         registerAnchorRef={registerAnchorRef}
-        onMessageMouseUp={onMessageMouseUp}
+        onMessageMouseDown={onMessageMouseDown}
       />
     </section>
   );
@@ -85,7 +85,7 @@ function ChatWindowMessages({
   isFocused,
   isHistoryExpanded,
   messages,
-  onMessageMouseUp,
+  onMessageMouseDown,
   onScroll,
   onToggleHistoryExpanded,
   registerAnchorRef,
@@ -109,7 +109,7 @@ function ChatWindowMessages({
         anchorGroups={anchorGroups}
         isFocused={isFocused}
         message={message}
-        onMessageMouseUp={onMessageMouseUp}
+        onMessageMouseDown={onMessageMouseDown}
         registerAnchorRef={registerAnchorRef}
         windowId={windowId}
       />

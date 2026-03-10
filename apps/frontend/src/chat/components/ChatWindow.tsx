@@ -28,7 +28,7 @@ interface ChatWindowProps {
     windowId: string,
     edges: ResizeEdges,
   ) => void;
-  onMessageMouseUp: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseUp"];
+  onMessageMouseDown: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseDown"];
   onSend: (windowId: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -52,7 +52,7 @@ function ChatWindow({
   onGeometryChange,
   onHeaderPointerDown,
   onResizePointerDown,
-  onMessageMouseUp,
+  onMessageMouseDown,
   onSend,
   onToggleHistoryExpanded,
   onWindowFocus,
@@ -123,7 +123,7 @@ function ChatWindow({
         isFocused={isFocused}
         isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
-        onMessageMouseUp={onMessageMouseUp}
+        onMessageMouseDown={onMessageMouseDown}
         onScroll={onMessagesScroll}
         onToggleHistoryExpanded={() => onToggleHistoryExpanded(windowData.id)}
         registerAnchorRef={registerAnchorRef}

@@ -68,9 +68,9 @@ export interface ChatWorkspaceViewModel {
   onResizePointerDown: ReturnType<
     typeof useCanvasInteractions
   >["onResizePointerDown"];
-  onMessageMouseUp: ReturnType<
+  onMessageMouseDown: ReturnType<
     typeof useBranchSelection
-  >["onMessageMouseUp"];
+  >["onMessageMouseDown"];
   onOpenFreshRootWindow: () => void;
   onSelectionBranch: () => void;
   onSend: (windowId: string) => Promise<void>;
@@ -347,7 +347,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       selection.dismissSelection();
       canvas.onResizePointerDown(event, windowId, edges);
     },
-    onMessageMouseUp: selection.onMessageMouseUp,
+    onMessageMouseDown: selection.onMessageMouseDown,
     onOpenFreshRootWindow: openFreshRootWindow,
     onSelectionBranch: selection.onSelectionBranch,
     onSend: handleSend,

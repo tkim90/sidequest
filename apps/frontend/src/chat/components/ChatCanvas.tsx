@@ -28,7 +28,7 @@ interface ChatCanvasProps {
     windowId: string,
     edges: ResizeEdges,
   ) => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: React.MouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
@@ -59,7 +59,7 @@ function ChatCanvas({
   onGeometryChange,
   onHeaderPointerDown,
   onResizePointerDown,
-  onMessageMouseUp,
+  onMessageMouseDown,
   onOpenFreshRootWindow,
   onSend,
   onToggleHistoryExpanded,
@@ -103,7 +103,7 @@ function ChatCanvas({
               onGeometryChange={onGeometryChange}
               onHeaderPointerDown={onHeaderPointerDown}
               onResizePointerDown={onResizePointerDown}
-              onMessageMouseUp={onMessageMouseUp}
+              onMessageMouseDown={onMessageMouseDown}
               onSend={onSend}
               onToggleHistoryExpanded={onToggleHistoryExpanded}
               onWindowFocus={onWindowFocus}

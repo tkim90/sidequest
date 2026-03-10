@@ -18,7 +18,11 @@
       "Bash(node_modules/.bin/tsc:*)",
       "Bash(apps/frontend/node_modules/.bin/tsc:*)",
       "WebFetch(domain:deepwiki.com)",
-      "WebFetch(domain:json-render.com)"
+      "WebFetch(domain:json-render.com)",
+      "Bash(source:*)",
+      "Bash(PATH=\"/Users/taekim/.nvm/versions/node/v25.3.0/bin:$PATH\" npx tsc:*)",
+      "Bash(/Users/taekim/.nvm/versions/node/v25.3.0/bin/npx tsc:*)",
+      "Bash(/Users/taekim/.nvm/versions/node/v25.3.0/bin/npx vitest:*)"
     ]
   }
 }

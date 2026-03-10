@@ -14,7 +14,7 @@ export interface UserMessageContentProps {
   anchorGroups: AnchorGroup[];
   isFocused: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
@@ -253,7 +253,7 @@ function UserMessageContent({
   anchorGroups,
   isFocused,
   registerAnchorRef,
-  onMessageMouseUp,
+  onMessageMouseDown,
 }: UserMessageContentProps) {
   const { finalizedChunks, activeChunk } = useIncrementalLineChunks(
     message.content,
@@ -294,7 +294,7 @@ function UserMessageContent({
     <div
       className="cursor-text whitespace-pre-wrap break-words text-[20px] leading-7"
       data-message-id={message.id}
-      onMouseUp={(event) => onMessageMouseUp(event, windowId, message.id)}
+      onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
       {chunkNodes}
       {message.status === "streaming" ? (
