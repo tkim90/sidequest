@@ -18,7 +18,9 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:json-render.dev)",
       "WebFetch(domain:json-render.com)",
-      "WebFetch(domain:deepwiki.com)"
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(git checkout:*)",
+      "Bash(/opt/homebrew/bin/npx tsc:*)"
     ]
   }
 }
