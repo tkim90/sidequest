@@ -16,13 +16,18 @@ import type {
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import { fetchChatModelConfig, streamChat } from "../api/streamChat";
+import { fetchChatModelConfig, RateLimitError, streamChat } from "../api/streamChat";
 import {
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
+import {
+  MAX_CHARS_PER_MESSAGE,
+  SEND_COOLDOWN_MS,
+  formatRetryAfter,
+} from "../lib/safeguards";
 import {
   createMessage,
   createWindowRecord,
@@ -47,6 +52,7 @@ import {
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
 import { useCanvasInteractions } from "./useCanvasInteractions";
+import { useTurnstile } from "./useTurnstile";
 
 export interface ChatWorkspaceViewModel {
   availableModels: string[];
@@ -57,6 +63,7 @@ export interface ChatWorkspaceViewModel {
   closePrompt: ClosePrompt | null;
   connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
   hasChildWindows: boolean;
+  isGlobalStreaming: boolean;
   messagesByWindowId: MessagesByWindowId;
   notice: string;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -94,6 +101,7 @@ export interface ChatWorkspaceViewModel {
     typeof useCanvasInteractions
   >["registerWindowRef"];
   selectionState: SelectionState | null;
+  turnstileContainerRef: RefObject<HTMLDivElement | null>;
   viewport: AppState["viewport"];
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
@@ -115,9 +123,13 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [isGlobalStreaming, setIsGlobalStreaming] = useState(false);
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
+  const lastSendTimeRef = useRef(0);
+
+  const { getToken, containerRef: turnstileContainerRef } = useTurnstile();
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -216,7 +228,11 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function handleComposerChange(windowId: string, composer: string): void {
-    setAppState((current) => updateComposer(current, windowId, composer));
+    // Enforce client-side character limit
+    const clamped = composer.length > MAX_CHARS_PER_MESSAGE
+      ? composer.slice(0, MAX_CHARS_PER_MESSAGE)
+      : composer;
+    setAppState((current) => updateComposer(current, windowId, clamped));
   }
 
   function handleModelChange(windowId: string, model: string): void {
@@ -254,8 +270,27 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
+    // Enforce one in-flight stream globally
+    if (isGlobalStreaming) {
+      setNotice("Please wait for the current stream to finish.");
+      return;
+    }
+
+    // Enforce cooldown between sends
+    const now = Date.now();
+    const elapsed = now - lastSendTimeRef.current;
+    if (elapsed < SEND_COOLDOWN_MS) {
+      const remaining = Math.ceil((SEND_COOLDOWN_MS - elapsed) / 1000);
+      setNotice(`Please wait ${remaining}s before sending again.`);
+      return;
+    }
+    lastSendTimeRef.current = now;
+
     canvas.onWindowFocus(windowId);
     selection.dismissSelection();
+
+    // Get turnstile token (non-blocking if not configured)
+    const turnstileToken = await getToken();
 
     const userMessage = createMessage("user", composer);
     const resolvedModel =
@@ -274,6 +309,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setAppState((current) =>
       queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
     );
+    setIsGlobalStreaming(true);
 
     const controller = new AbortController();
     abortControllersRef.current[windowId] = controller;
@@ -283,6 +319,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
+        turnstileToken,
         signal: controller.signal,
         onDelta: (delta) => {
           setAppState((current) =>
@@ -305,7 +342,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       const message = getErrorMessage(error);
 
       if (!aborted) {
-        setNotice(message);
+        // Show rate-limit countdown if available
+        if (error instanceof RateLimitError && error.retryAfter) {
+          setNotice(formatRetryAfter(error.retryAfter));
+        } else {
+          setNotice(message);
+        }
       }
 
       setAppState((current) =>
@@ -319,6 +361,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         ),
       );
     } finally {
+      setIsGlobalStreaming(false);
       delete abortControllersRef.current[windowId];
       canvas.requestGeometryRefresh();
     }
@@ -332,6 +375,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
+    // Enforce one in-flight stream globally
+    if (isGlobalStreaming) {
+      setNotice("Please wait for the current stream to finish.");
+      return;
+    }
+
     const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1 || messages[messageIndex].role !== "assistant") {
       return;
@@ -339,6 +388,9 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
     canvas.onWindowFocus(windowId);
     selection.dismissSelection();
+
+    // Get turnstile token
+    const turnstileToken = await getToken();
 
     const resolvedModel =
       windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
@@ -352,6 +404,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setAppState((current) =>
       retryAssistantMessage(current, windowId, messageId, assistantMessage),
     );
+    setIsGlobalStreaming(true);
 
     const controller = new AbortController();
     abortControllersRef.current[windowId] = controller;
@@ -361,6 +414,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
+        turnstileToken,
         signal: controller.signal,
         onDelta: (delta) => {
           setAppState((current) =>
@@ -383,7 +437,11 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       const message = getErrorMessage(error);
 
       if (!aborted) {
-        setNotice(message);
+        if (error instanceof RateLimitError && error.retryAfter) {
+          setNotice(formatRetryAfter(error.retryAfter));
+        } else {
+          setNotice(message);
+        }
       }
 
       setAppState((current) =>
@@ -397,6 +455,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         ),
       );
     } finally {
+      setIsGlobalStreaming(false);
       delete abortControllersRef.current[windowId];
       canvas.requestGeometryRefresh();
     }
@@ -487,6 +546,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     closePrompt,
     connectorPaths: canvas.connectorPaths,
     hasChildWindows,
+    isGlobalStreaming,
     messagesByWindowId: appState.messagesByWindowId,
     notice,
     onCanvasPointerDown: (event) => {
@@ -520,6 +580,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     registerAnchorRef: canvas.registerAnchorRef,
     registerWindowRef: canvas.registerWindowRef,
     selectionState: selection.selectionState,
+    turnstileContainerRef,
     viewport: appState.viewport,
     windowScrollStates: windowScrollStatesRef.current,
     windows,

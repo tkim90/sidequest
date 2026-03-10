@@ -4,12 +4,23 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, Literal, cast
 
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from app.catalog_prompt import CATALOG_PROMPT
+from app.security import (
+    MAX_CHARS_PER_MESSAGE,
+    MAX_MESSAGES,
+    MAX_OUTPUT_TOKENS,
+    MAX_TOTAL_CHARS,
+    RateLimitMiddleware,
+    get_client_ip,
+    is_ai_disabled,
+    verify_turnstile_token,
+)
 
 
 class ChatMessage(BaseModel):
@@ -27,6 +38,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
     branch_focus: BranchFocus | None = None
     model: str | None = Field(default=None, min_length=1)
+    turnstile_token: str | None = None
 
 
 def encode_line(payload: dict[str, str]) -> bytes:
@@ -122,6 +134,49 @@ def get_client(app: FastAPI) -> AsyncOpenAI | None:
     return client
 
 
+def validate_request_size(payload: ChatRequest) -> str | None:
+    """Validate message count and character limits. Returns error string or None."""
+    if len(payload.messages) > MAX_MESSAGES:
+        return f"Too many messages. Maximum is {MAX_MESSAGES}."
+
+    total_chars = 0
+    for message in payload.messages:
+        msg_len = len(message.content)
+        if msg_len > MAX_CHARS_PER_MESSAGE:
+            return f"Message too long ({msg_len} chars). Maximum is {MAX_CHARS_PER_MESSAGE} per message."
+        total_chars += msg_len
+
+    if total_chars > MAX_TOTAL_CHARS:
+        return f"Total message content too long ({total_chars} chars). Maximum is {MAX_TOTAL_CHARS}."
+
+    return None
+
+
+def trim_history(
+    messages: list[ChatMessage], max_chars: int = MAX_TOTAL_CHARS
+) -> list[ChatMessage]:
+    """Keep the most recent messages that fit within max_chars total.
+
+    Always preserves the last message (the user's new prompt).
+    """
+    if not messages:
+        return messages
+
+    # Always keep the last message
+    result: list[ChatMessage] = [messages[-1]]
+    remaining = max_chars - len(messages[-1].content)
+
+    # Walk backwards from second-to-last, adding messages while budget remains
+    for message in reversed(messages[:-1]):
+        msg_len = len(message.content)
+        if remaining - msg_len < 0:
+            break
+        result.insert(0, message)
+        remaining -= msg_len
+
+    return result
+
+
 async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncIterator[bytes]:
     client = get_client(app)
     model, model_error = resolve_model_name(payload.model)
@@ -153,14 +208,18 @@ async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncItera
         )
         return
 
+    # Trim history to stay within token budget
+    trimmed_messages = trim_history(payload.messages)
+
     done_sent = False
 
     try:
         stream = await client.responses.create(
             model=model,
-            input=cast(Any, build_input(payload.messages)),
+            input=cast(Any, build_input(trimmed_messages)),
             instructions=build_instructions(payload.branch_focus),
             stream=True,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
         )
 
         async for event in stream:
@@ -197,14 +256,62 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Sidequest API", lifespan=lifespan)
 
+# --- CORS middleware ---
+_cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+_cors_origins = (
+    [origin.strip() for origin in _cors_origins_raw.split(",") if origin.strip()]
+    if _cors_origins_raw
+    else ["*"]
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# --- Rate-limit + concurrent-stream middleware ---
+app.add_middleware(RateLimitMiddleware)
+
 
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/api/chat/stream")
-async def chat_stream(payload: ChatRequest) -> StreamingResponse:
+@app.post("/api/chat/stream", response_model=None)
+async def chat_stream(
+    payload: ChatRequest, request: Request
+) -> StreamingResponse | JSONResponse:
+    # Circuit breaker
+    if is_ai_disabled():
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "AI features are temporarily disabled. Please try again later.",
+            },
+        )
+
+    # Turnstile verification
+    client_ip = get_client_ip(request)
+    if not await verify_turnstile_token(payload.turnstile_token or "", client_ip):
+        return JSONResponse(
+            status_code=403,
+            content={
+                "detail": "Captcha verification failed. Please refresh and try again.",
+            },
+        )
+
+    # Request size validation
+    size_error = validate_request_size(payload)
+    if size_error:
+        return JSONResponse(
+            status_code=422,
+            content={"detail": size_error},
+        )
+
     return StreamingResponse(
         stream_chat_response(app, payload),
         media_type="application/x-ndjson",

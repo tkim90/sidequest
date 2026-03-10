@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { MAX_CHARS_PER_MESSAGE } from "../lib/safeguards";
+
 interface ChatWindowComposerProps {
   availableModels: string[];
   composer: string;
@@ -75,6 +77,7 @@ function ChatWindowComposer({
           }}
         />
         <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-3">
           {availableModels.length > 0 ? (
             <div
               ref={modelPickerRef}
@@ -128,6 +131,18 @@ function ChatWindowComposer({
           ) : (
             <div />
           )}
+          {composer.length > MAX_CHARS_PER_MESSAGE * 0.8 ? (
+            <span
+              className={`text-[11px] tabular-nums ${
+                composer.length >= MAX_CHARS_PER_MESSAGE
+                  ? "text-destructive font-medium"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {composer.length}/{MAX_CHARS_PER_MESSAGE}
+            </span>
+          ) : null}
+          </div>
           {composer.trim().length > 0 && !isStreaming ? (
             <button
               className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
