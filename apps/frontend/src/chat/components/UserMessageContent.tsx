@@ -206,9 +206,12 @@ function renderChunkContent({
       chunkLocalStart - startOffset,
       chunkLocalEnd - startOffset,
     );
-    const highlightClass = isFocused
-      ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-      : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+    const isPreview = !!group.preview;
+    const highlightClass = isPreview
+      ? "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+      : isFocused
+        ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+        : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
     const badgeClass = isFocused
       ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
       : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
@@ -220,7 +223,7 @@ function renderChunkContent({
         ref={(node) => registerAnchorRef(group.key, node)}
       >
         <span>{anchorText}</span>
-        {group.anchorIds.length > 1 ? (
+        {!isPreview && group.anchorIds.length > 1 ? (
           <span className={badgeClass}>{group.anchorIds.length}</span>
         ) : null}
       </span>,

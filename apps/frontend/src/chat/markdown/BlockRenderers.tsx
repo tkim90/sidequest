@@ -173,6 +173,7 @@ function getBlockAnchorRanges(ctx: BlockRenderContext): AnchorRange[] {
         Math.min(group.endOffset, blockOffset.renderedEnd) -
         blockOffset.renderedStart,
       count: group.anchorIds.length,
+      preview: group.preview,
     }));
 }
 

@@ -48,7 +48,7 @@ interface UseBranchSelectionResult {
     windowId: string,
     messageId: string,
   ) => void;
-  onSelectionBranch: () => void;
+  onSelectionBranch: () => string | null;
   popoverRef: RefObject<HTMLDivElement | null>;
   selectionState: SelectionState | null;
 }
@@ -114,10 +114,20 @@ export function useBranchSelection({
 
         const windowRect = windowRefs.current[windowId]?.getBoundingClientRect();
 
+        // Eagerly compute offsets so the preview highlight can render
+        // even after the browser clears the native selection (autoFocus).
+        const snapshot = appStateRef.current;
+        const messages = snapshot.messagesByWindowId[windowId] || [];
+        const anchorMessage = messages.find((m) => m.id === messageId);
+        const offsets = anchorMessage
+          ? computeOffsetsForSelectedText(anchorMessage.content, selectedText)
+          : null;
+
         setSelectionState({
           parentWindowId: windowId,
           parentMessageId: messageId,
           selectedText,
+          ...(offsets && { startOffset: offsets.startOffset, endOffset: offsets.endOffset }),
           x: rect.left + rect.width / 2,
           y: rect.top - 10,
           windowLocalY: windowRect
@@ -190,10 +200,10 @@ export function useBranchSelection({
     return null;
   }
 
-  function createBranchFromSelection(): void {
+  function createBranchFromSelection(): string | null {
     const currentSelection = selectionState;
     if (!currentSelection) {
-      return;
+      return null;
     }
 
     const snapshot = appStateRef.current;
@@ -203,7 +213,7 @@ export function useBranchSelection({
 
     if (!parentWindow) {
       dismissSelection();
-      return;
+      return null;
     }
 
     const anchorIndex = parentMessages.findIndex(
@@ -212,13 +222,13 @@ export function useBranchSelection({
 
     if (anchorIndex < 0) {
       dismissSelection();
-      return;
+      return null;
     }
 
     const anchorMessage = parentMessages[anchorIndex];
     if (!anchorMessage) {
       dismissSelection();
-      return;
+      return null;
     }
 
     // Resolve offsets: use existing ones if available, otherwise compute from content
@@ -236,7 +246,7 @@ export function useBranchSelection({
           "Could not determine selection position. Try selecting again.",
         );
         dismissSelection();
-        return;
+        return null;
       }
 
       startOffset = computed.startOffset;
@@ -256,7 +266,7 @@ export function useBranchSelection({
         "Overlapping branch anchors in the same message are blocked in this version.",
       );
       dismissSelection();
-      return;
+      return null;
     }
 
     const inheritedMessages = cloneMessagesForBranch(
@@ -329,6 +339,8 @@ export function useBranchSelection({
 
     dismissSelection();
     requestGeometryRefresh();
+
+    return childWindow.id;
   }
 
   return {

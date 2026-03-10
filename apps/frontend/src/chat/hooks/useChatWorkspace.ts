@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -8,6 +9,8 @@ import {
 } from "react";
 
 import type {
+  AnchorGroup,
+  AnchorGroupsByMessageKey,
   AppState,
   ChatMessage,
   ClosePrompt,
@@ -77,7 +80,7 @@ export interface ChatWorkspaceViewModel {
   >["onMessageMouseDown"];
   onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
-  onSelectionBranch: () => void;
+  onSelectionBranch: (prompt?: string) => void;
   onSend: (windowId: string, promptOverride?: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
@@ -118,9 +121,21 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
+  const pendingBranchSendRef = useRef<{ windowId: string; prompt: string } | null>(null);
 
   useEffect(() => {
     appStateRef.current = appState;
+  }, [appState]);
+
+  useEffect(() => {
+    const pending = pendingBranchSendRef.current;
+    if (!pending) return;
+
+    const windowData = appState.windows[pending.windowId];
+    if (!windowData) return;
+
+    pendingBranchSendRef.current = null;
+    void handleSend(pending.windowId, pending.prompt);
   }, [appState]);
 
   useEffect(() => {
@@ -475,6 +490,29 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.requestGeometryRefresh();
   }
 
+  const anchorGroupsByMessageKey = useMemo((): AnchorGroupsByMessageKey => {
+    const base = canvas.anchorGroupsByMessageKey;
+    const sel = selection.selectionState;
+    if (!sel || sel.startOffset === undefined || sel.endOffset === undefined) {
+      return base;
+    }
+
+    const messageKey = `${sel.parentWindowId}:${sel.parentMessageId}`;
+    const previewGroup: AnchorGroup = {
+      key: `__preview__`,
+      startOffset: sel.startOffset,
+      endOffset: sel.endOffset,
+      anchorIds: [],
+      preview: true,
+    };
+
+    const existing = base[messageKey] ?? [];
+    return {
+      ...base,
+      [messageKey]: [...existing, previewGroup],
+    };
+  }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
+
   const windows = appState.zOrder
     .map((windowId) => appState.windows[windowId])
     .filter((windowData): windowData is WindowRecord => Boolean(windowData));
@@ -482,7 +520,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
   return {
     availableModels,
-    anchorGroupsByMessageKey: canvas.anchorGroupsByMessageKey,
+    anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
     connectorPaths: canvas.connectorPaths,
@@ -510,7 +548,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onMessageMouseDown: selection.onMessageMouseDown,
     onOpenFreshRootWindow: openFreshRootWindow,
     onRetry: handleRetry,
-    onSelectionBranch: selection.onSelectionBranch,
+    onSelectionBranch: (prompt?: string) => {
+      const childWindowId = selection.onSelectionBranch();
+      if (childWindowId && prompt?.trim()) {
+        pendingBranchSendRef.current = { windowId: childWindowId, prompt: prompt.trim() };
+      }
+    },
     onSend: handleSend,
     onToggleHistoryExpanded: handleToggleHistoryExpanded,
     onWindowClose: handleClose,

@@ -14,6 +14,7 @@ export interface AnchorRange {
   startOffset: number;
   endOffset: number;
   count: number;
+  preview?: boolean;
 }
 
 interface RenderAnchoredTextOptions {
@@ -74,10 +75,15 @@ function renderFormattedSpan(
 
   if (span.highlighted && span.anchorGroupKey) {
     const focused = isFocused !== false;
+    const isPreview = !!span.preview;
     let highlightClass: string;
     let badgeClass: string;
 
-    if (darkBackground) {
+    if (isPreview) {
+      highlightClass =
+        "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+      badgeClass = ""; // unused for preview
+    } else if (darkBackground) {
       highlightClass = focused
         ? "border border-warning/60 bg-warning/25 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
         : "border border-warning/35 bg-warning/10 px-0.2 text-warning-foreground/70 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
@@ -100,7 +106,7 @@ function renderFormattedSpan(
         ref={registerAnchorRef ? (node) => registerAnchorRef(span.anchorGroupKey!, node) : undefined}
       >
         <span>{content}</span>
-        {span.anchorCount && span.anchorCount > 1 ? (
+        {!isPreview && span.anchorCount && span.anchorCount > 1 ? (
           <span className={badgeClass}>{span.anchorCount}</span>
         ) : null}
       </span>
