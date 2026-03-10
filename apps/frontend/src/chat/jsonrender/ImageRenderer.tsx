@@ -94,7 +94,7 @@ export default function ImageRenderer({ spec, partial, rawJson }: ImageRendererP
 
   if (error) {
     return (
-      <div className="my-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+      <div className="my-3 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
         Image render failed: {error}
       </div>
     );
@@ -125,21 +125,21 @@ export default function ImageRenderer({ spec, partial, rawJson }: ImageRendererP
           />
         </div>
       ) : (
-        <div className="flex h-40 animate-pulse items-center justify-center rounded bg-zinc-100">
-          <span className="text-sm text-zinc-400">Generating image...</span>
+        <div className="flex h-40 animate-pulse items-center justify-center rounded border border-border bg-secondary/70">
+          <span className="text-sm text-muted-foreground">Generating image...</span>
         </div>
       )}
       {rawJson && (
         <div className="mt-2 flex flex-col items-end">
           <button
             type="button"
-            className="rounded border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-200"
+            className="rounded border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             onClick={() => setShowMetadata((v) => !v)}
           >
             {showMetadata ? "Hide Metadata" : "See Metadata"}
           </button>
           {showMetadata && (
-            <pre className="mt-1 max-h-64 w-full overflow-auto rounded bg-zinc-900 p-3 font-mono text-xs text-zinc-100">
+            <pre className="mt-1 max-h-64 w-full overflow-auto rounded border border-border bg-popover p-3 font-mono text-xs text-popover-foreground">
               {rawJson}
             </pre>
           )}
@@ -151,8 +151,8 @@ export default function ImageRenderer({ spec, partial, rawJson }: ImageRendererP
 
 export function ImageRendererSkeleton() {
   return (
-    <div className="my-3 flex h-40 animate-pulse items-center justify-center rounded bg-zinc-100">
-      <span className="text-sm text-zinc-400">Generating image...</span>
+    <div className="my-3 flex h-40 animate-pulse items-center justify-center rounded border border-border bg-secondary/70">
+      <span className="text-sm text-muted-foreground">Generating image...</span>
     </div>
   );
 }

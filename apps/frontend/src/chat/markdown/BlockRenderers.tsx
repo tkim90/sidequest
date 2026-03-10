@@ -286,7 +286,7 @@ function renderTableCells(
     cursor = cellCursor + (rowIndex < rows.length - 1 ? 1 : 0);
 
     return (
-      <tr key={rowIndex} className="border-b border-zinc-200">
+      <tr key={rowIndex} className="border-b border-border">
         {cells}
       </tr>
     );
@@ -374,7 +374,7 @@ export function RenderFinalizedBlock({
   if (block.type === "blockquote") {
     return (
       <div className="my-3">
-        <blockquote className="whitespace-pre-wrap border-l-4 border-zinc-300 pl-4 italic leading-7 text-zinc-600">
+        <blockquote className="whitespace-pre-wrap border-l-4 border-border pl-4 italic leading-7 text-muted-foreground">
           {renderAnchoredInlineSource({
             anchors,
             isFocused: ctx.isFocused,
@@ -524,7 +524,7 @@ export function RenderActiveBlock({
   if (block.type === "blockquote") {
     return (
       <div className="my-3">
-        <blockquote className="whitespace-pre-wrap border-l-4 border-zinc-300 pl-4 italic leading-7 text-zinc-600">
+        <blockquote className="whitespace-pre-wrap border-l-4 border-border pl-4 italic leading-7 text-muted-foreground">
           {renderActiveBlockText(block, streamKey)}
         </blockquote>
       </div>
@@ -582,7 +582,7 @@ export function RenderActiveBlock({
       <div className="my-3 overflow-x-auto">
         <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-zinc-300">
+            <tr className="border-b border-border">
               {block.headers.map((header, index) => (
                 <th
                   key={index}
@@ -601,7 +601,7 @@ export function RenderActiveBlock({
           </thead>
           <tbody>
             {block.rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-b border-zinc-200">
+              <tr key={rowIndex} className="border-b border-border">
                 {row.map((cell, cellIndex) => (
                   <td
                     key={cellIndex}

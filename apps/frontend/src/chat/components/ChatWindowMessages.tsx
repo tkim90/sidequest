@@ -43,8 +43,8 @@ const ChatMessageCard = memo(function ChatMessageCard({
 }: ChatMessageCardProps) {
   const messageClassName =
     message.role === "user"
-      ? "self-end border border-zinc-950 bg-zinc-950 text-zinc-50"
-      : "self-start border border-zinc-300 bg-white text-zinc-950";
+      ? "self-end border border-primary bg-primary text-primary-foreground"
+      : "self-start border border-border bg-card text-card-foreground";
 
   return (
     <section
@@ -52,14 +52,14 @@ const ChatMessageCard = memo(function ChatMessageCard({
       className={`relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName}`}
     >
       {message.role === "user" ? (
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-foreground/70">
           You
         </p>
       ) : (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className={eyebrowClassName}>Assistant</p>
           {message.model ? (
-            <span className="inline-flex items-center border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-zinc-600">
+            <span className="inline-flex items-center border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-muted-foreground">
               {message.model}
             </span>
           ) : null}
@@ -75,7 +75,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
       />
       {message.role === "assistant" && message.status === "complete" ? (
         <button
-          className="absolute right-2 bottom-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-400 transition-colors hover:border-zinc-400 hover:text-zinc-700"
+          className="absolute right-2 bottom-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border bg-secondary text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
           title="Retry"
           type="button"
           onClick={() => onRetry(message.id)}
@@ -158,7 +158,7 @@ function ChatWindowMessages({
       onScroll={onScroll}
     >
       {messages.length === 0 ? (
-        <div className="my-auto border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-6 text-zinc-500">
+        <div className="my-auto border border-dashed border-border bg-secondary/70 p-4 text-sm leading-6 text-muted-foreground">
           <p className="m-0">No messages yet.</p>
           <p className="mt-2 m-0">
             Ask something here, then highlight a phrase to branch it.
@@ -167,10 +167,10 @@ function ChatWindowMessages({
       ) : null}
 
       {historyMessages.length > 0 ? (
-        <section className="border border-dashed border-zinc-300 bg-zinc-50 px-4 py-4 text-zinc-700">
+        <section className="border border-dashed border-border bg-secondary/70 px-4 py-4 text-muted-foreground">
           <button
             aria-expanded={isHistoryExpanded}
-            className="cursor-pointer text-sm font-semibold uppercase text-zinc-700 transition-colors hover:text-zinc-950"
+            className="cursor-pointer text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
             type="button"
             onClick={onToggleHistoryExpanded}
           >

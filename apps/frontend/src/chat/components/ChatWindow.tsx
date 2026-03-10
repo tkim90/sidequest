@@ -96,7 +96,7 @@ function ChatWindow({
 
   return (
     <article
-      className="absolute origin-top-left grid grid-rows-[auto_1fr_auto] cursor-grab border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] will-change-transform active:cursor-grabbing"
+      className="absolute origin-top-left grid cursor-grab grid-rows-[auto_1fr_auto] border border-border bg-card shadow-[var(--window-shadow)] will-change-transform active:cursor-grabbing"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
@@ -113,7 +113,7 @@ function ChatWindow({
         }
       />
 
-      <span className="absolute -top-7 rounded-sm border border-zinc-300 bg-white px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-zinc-500">
+      <span className="absolute -top-7 rounded-sm border border-border bg-card px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-muted-foreground">
         {windowData.parentId ? "Branch" : "Main thread"}
       </span>
 

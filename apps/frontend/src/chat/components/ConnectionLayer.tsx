@@ -13,7 +13,7 @@ function ConnectionLayer({ paths }: ConnectionLayerProps) {
       {paths.map((path) => (
         <path
           key={path.id}
-          className="fill-none stroke-zinc-400 stroke-[1.5] [stroke-dasharray:10_8] [stroke-linecap:round]"
+          className="fill-none stroke-muted-foreground/80 stroke-[1.5] [stroke-dasharray:10_8] [stroke-linecap:round]"
           d={path.path}
         />
       ))}

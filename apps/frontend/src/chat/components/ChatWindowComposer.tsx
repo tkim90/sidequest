@@ -56,14 +56,14 @@ function ChatWindowComposer({
   }, [isModelPickerOpen]);
 
   return (
-    <footer className="border-t border-zinc-300 bg-white p-4">
-      <div className="rounded-2xl border border-zinc-300 bg-zinc-50 transition-colors focus-within:border-zinc-500">
+    <footer className="border-t border-border bg-card p-4">
+      <div className="rounded-2xl border border-border bg-secondary transition-colors focus-within:border-ring">
         <textarea
           ref={textareaRef}
           aria-label={`Message ${title}`}
           autoFocus
           rows={1}
-          className="min-h-[40px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent px-4 py-3 text-sm leading-6 text-zinc-950 outline-none placeholder:text-zinc-400"
+          className="min-h-[40px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent px-4 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
           placeholder="Ask a follow-up..."
           value={composer}
           onChange={(event) => onComposerChange(event.target.value)}
@@ -84,7 +84,7 @@ function ChatWindowComposer({
               <button
                 type="button"
                 disabled={isStreaming}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:hover:bg-transparent"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
                 onClick={() => setIsModelPickerOpen((prev) => !prev)}
               >
                 <span className="max-w-[200px] truncate">
@@ -104,14 +104,14 @@ function ChatWindowComposer({
                 </svg>
               </button>
               {isModelPickerOpen && (
-                <div className="absolute bottom-full left-0 z-50 mb-1 min-w-[200px] rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+                <div className="absolute bottom-full left-0 z-50 mb-1 min-w-[200px] rounded-lg border border-border bg-popover py-1 shadow-lg">
                   {availableModels.map((model) => (
                     <button
                       key={model}
                       type="button"
-                      className={`w-full px-3 py-2 text-left text-xs hover:bg-zinc-100 ${
+                      className={`w-full px-3 py-2 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
                         model === resolvedSelectedModel
-                          ? "bg-zinc-100 font-medium"
+                          ? "bg-accent font-medium text-accent-foreground"
                           : ""
                       }`}
                       onClick={() => {
@@ -130,7 +130,7 @@ function ChatWindowComposer({
           )}
           {composer.trim().length > 0 && !isStreaming ? (
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950 text-white transition-opacity hover:opacity-80"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
               type="button"
               onClick={() => {
                 void onSend();

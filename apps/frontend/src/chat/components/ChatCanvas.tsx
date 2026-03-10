@@ -9,7 +9,7 @@ import type {
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
-import { eyebrowClassName, primaryButtonClassName } from "./ui";
+import { primaryButtonClassName } from "./ui";
 
 interface ChatCanvasProps {
   availableModels: string[];
@@ -80,7 +80,7 @@ function ChatCanvas({
 }: ChatCanvasProps) {
   return (
     <div
-      className="relative overflow-hidden border-t border-zinc-300 bg-zinc-50 cursor-grab active:cursor-grabbing"
+      className="relative cursor-grab overflow-hidden border-t border-border bg-secondary/60 active:cursor-grabbing"
       ref={canvasRef}
       onPointerDown={onCanvasPointerDown}
     >
