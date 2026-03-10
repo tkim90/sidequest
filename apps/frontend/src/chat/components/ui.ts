@@ -1,5 +1,5 @@
 export const eyebrowClassName =
-  "text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground";
+  "text-[32px] font-semibold uppercase italic";
 
 export const primaryButtonClassName =
   "inline-flex cursor-pointer items-center justify-center border border-primary bg-primary px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-default disabled:border-border disabled:bg-muted disabled:text-muted-foreground";
