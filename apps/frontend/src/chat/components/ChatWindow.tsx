@@ -1,4 +1,4 @@
-import { type PointerEvent as ReactPointerEvent } from "react";
+import { memo, type PointerEvent as ReactPointerEvent } from "react";
 
 import type {
   AnchorGroupsByMessageKey,
@@ -47,7 +47,7 @@ interface ChatWindowProps {
   zIndex: number;
 }
 
-function ChatWindow({
+const ChatWindow = memo(function ChatWindow({
   availableModels,
   anchorGroupsByMessageKey,
   isFocused,
@@ -152,6 +152,21 @@ function ChatWindow({
         windowId={windowData.id}
       />
     </article>
+  );
+}, areChatWindowPropsEqual);
+
+function areChatWindowPropsEqual(
+  previous: ChatWindowProps,
+  next: ChatWindowProps,
+): boolean {
+  return (
+    previous.windowData === next.windowData &&
+    previous.messages === next.messages &&
+    previous.isFocused === next.isFocused &&
+    previous.zIndex === next.zIndex &&
+    previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
+    previous.availableModels === next.availableModels &&
+    previous.savedScrollState === next.savedScrollState
   );
 }
 

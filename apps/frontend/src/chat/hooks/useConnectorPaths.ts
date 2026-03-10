@@ -1,6 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 
-import type { AnchorMap, ConnectorPath, MessagesByWindowId, Viewport, WindowMap } from "../../types";
+import type { AnchorMap, ConnectorPath, Viewport, WindowMap } from "../../types";
 import { clamp, getConnectorPath, areConnectorPathsEqual } from "../lib/geometry";
 
 interface UseConnectorPathsOptions {
@@ -8,7 +8,6 @@ interface UseConnectorPathsOptions {
   anchors: AnchorMap;
   canvasRef: RefObject<HTMLDivElement | null>;
   geometryVersion: number;
-  messagesByWindowId: MessagesByWindowId;
   viewport: Viewport;
   windowRefs: RefObject<Record<string, HTMLElement>>;
   windows: WindowMap;
@@ -20,7 +19,6 @@ export function useConnectorPaths({
   anchors,
   canvasRef,
   geometryVersion,
-  messagesByWindowId,
   viewport,
   windowRefs,
   windows,
@@ -75,7 +73,6 @@ export function useConnectorPaths({
     anchorRefs,
     canvasRef,
     geometryVersion,
-    messagesByWindowId,
     viewport,
     windowRefs,
     windows,

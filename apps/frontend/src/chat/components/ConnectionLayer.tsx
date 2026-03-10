@@ -1,10 +1,12 @@
+import { memo } from "react";
+
 import type { ConnectorPath } from "../../types";
 
 interface ConnectionLayerProps {
   paths: ConnectorPath[];
 }
 
-function ConnectionLayer({ paths }: ConnectionLayerProps) {
+const ConnectionLayer = memo(function ConnectionLayer({ paths }: ConnectionLayerProps) {
   return (
     <svg
       className="pointer-events-none absolute inset-0 h-full w-full"
@@ -19,6 +21,6 @@ function ConnectionLayer({ paths }: ConnectionLayerProps) {
       ))}
     </svg>
   );
-}
+});
 
 export default ConnectionLayer;
