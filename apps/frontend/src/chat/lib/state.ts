@@ -175,6 +175,18 @@ export function getDescendantIds(windows: WindowMap, rootId: string): string[] {
   return descendants;
 }
 
+export function getNextRootChatTitle(windows: WindowMap): string {
+  let max = 0;
+  for (const w of Object.values(windows)) {
+    if (w.parentId !== null) continue;
+    const match = w.title.match(/^Chat (\d+)$/);
+    if (match) {
+      max = Math.max(max, Number(match[1]));
+    }
+  }
+  return `Chat ${max + 1}`;
+}
+
 export function getCanvasMessages(
   windowMessages: MessagesByWindowId,
   windowId: string,

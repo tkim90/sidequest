@@ -18,7 +18,6 @@ import type {
 } from "../../types";
 import { fetchChatModelConfig, streamChat } from "../api/streamChat";
 import {
-  ROOT_WINDOW_TITLE,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
@@ -28,6 +27,7 @@ import {
   createMessage,
   createWindowRecord,
   getCanvasMessages,
+  getNextRootChatTitle,
   createInitialState,
   getDescendantIds,
 } from "../lib/state";
@@ -444,14 +444,16 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function openFreshRootWindow(): void {
-    const rootWindow = createWindowRecord({
-      title: ROOT_WINDOW_TITLE,
-      x: getCenteredRootX(WINDOW_WIDTH),
-      y: ROOT_WINDOW_Y,
-      selectedModel: defaultModel ?? availableModels[0] ?? null,
+    setAppState((current) => {
+      const title = getNextRootChatTitle(current.windows);
+      const rootWindow = createWindowRecord({
+        title,
+        x: getCenteredRootX(WINDOW_WIDTH),
+        y: ROOT_WINDOW_Y,
+        selectedModel: defaultModel ?? availableModels[0] ?? null,
+      });
+      return addRootWindow(current, rootWindow);
     });
-
-    setAppState((current) => addRootWindow(current, rootWindow));
   }
 
   function handleToggleHistoryExpanded(windowId: string): void {
