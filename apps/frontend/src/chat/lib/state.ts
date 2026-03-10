@@ -27,6 +27,8 @@ interface CreateWindowRecordOptions {
   parentId?: string | null;
   branchAnchorId?: string | null;
   branchFocus?: BranchFocus | null;
+  inheritedMessageCount?: number;
+  isHistoryExpanded?: boolean;
 }
 
 interface CreateAnchorGroupKeyOptions {
@@ -50,6 +52,8 @@ export function createWindowRecord({
   parentId = null,
   branchAnchorId = null,
   branchFocus = null,
+  inheritedMessageCount = 0,
+  isHistoryExpanded = true,
 }: CreateWindowRecordOptions): WindowRecord {
   return {
     id: crypto.randomUUID(),
@@ -62,6 +66,8 @@ export function createWindowRecord({
     childIds: [],
     branchAnchorId,
     branchFocus,
+    inheritedMessageCount,
+    isHistoryExpanded,
     composer: "",
     isStreaming: false,
   };

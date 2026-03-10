@@ -41,13 +41,24 @@ export type CodeBlock = {
   code: string;
 };
 
+export type TableAlignment = "left" | "center" | "right";
+
+export type TableBlock = {
+  id: number;
+  type: "table";
+  headers: string[];
+  alignments: TableAlignment[];
+  rows: string[][];
+};
+
 export type MarkdownBlock =
   | HeaderBlock
   | ParagraphBlock
   | BlockquoteBlock
   | UnorderedListBlock
   | OrderedListBlock
-  | CodeBlock;
+  | CodeBlock
+  | TableBlock;
 
 export type InlineTextNode = {
   type: "text";
@@ -106,6 +117,10 @@ export type ParserState = {
   codeId: number | null;
   codeLanguage: string;
   codeText: string;
+  tableId: number | null;
+  tableHeaders: string[];
+  tableAlignments: TableAlignment[];
+  tableRows: string[][];
 };
 
 export type ParseResult = {

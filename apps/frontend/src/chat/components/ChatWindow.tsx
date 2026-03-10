@@ -1,24 +1,21 @@
-import {
-  memo,
-  useEffect,
-  useRef,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { type PointerEvent as ReactPointerEvent } from "react";
 
 import type {
   AnchorGroupsByMessageKey,
   MessageRecord,
+  WindowScrollState,
   WindowRecord,
 } from "../../types";
-import type { ResizeEdges } from "../hooks/useCanvasInteractions";
-import MessageContent from "./MessageContent";
-import {
-  eyebrowClassName,
-  secondaryButtonClassName,
-} from "./ui";
+import { useChatWindowLayout } from "../hooks/useChatWindowLayout";
+import type { ResizeEdges } from "../hooks/canvasTypes";
+import ChatWindowComposer from "./ChatWindowComposer";
+import ChatWindowHeader from "./ChatWindowHeader";
+import ChatWindowMessages from "./ChatWindowMessages";
+import ChatWindowResizeHandles from "./ChatWindowResizeHandles";
 
 interface ChatWindowProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
+  isFocused: boolean;
   onClose: (windowId: string) => void;
   onComposerChange: (windowId: string, composer: string) => void;
   onGeometryChange: () => void;
@@ -31,165 +28,55 @@ interface ChatWindowProps {
     windowId: string,
     edges: ResizeEdges,
   ) => void;
-  onMessageMouseUp: React.ComponentProps<typeof MessageContent>["onMessageMouseUp"];
+  onMessageMouseDown: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseDown"];
   onSend: (windowId: string) => void | Promise<void>;
+  onToggleHistoryExpanded: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
+  onWindowScrollStateChange: (
+    windowId: string,
+    nextState: WindowScrollState,
+  ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
+  savedScrollState: WindowScrollState;
   windowData: WindowRecord;
   messages: MessageRecord[];
   zIndex: number;
 }
 
-interface ChatMessageCardProps {
-  windowId: string;
-  message: MessageRecord;
-  anchorGroups: AnchorGroupsByMessageKey[string];
-  registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
-  onMessageMouseUp: ChatWindowProps["onMessageMouseUp"];
-}
-
-const resizeHandles: Array<{
-  key: string;
-  className: string;
-  edges: ResizeEdges;
-}> = [
-    {
-      key: "top",
-      className: "absolute inset-x-3 top-0 z-20 h-2 cursor-n-resize",
-      edges: { north: true, south: false, east: false, west: false },
-    },
-    {
-      key: "right",
-      className: "absolute inset-y-3 right-0 z-20 w-2 cursor-e-resize",
-      edges: { north: false, south: false, east: true, west: false },
-    },
-    {
-      key: "bottom",
-      className: "absolute inset-x-3 bottom-0 z-20 h-2 cursor-s-resize",
-      edges: { north: false, south: true, east: false, west: false },
-    },
-    {
-      key: "left",
-      className: "absolute inset-y-3 left-0 z-20 w-2 cursor-w-resize",
-      edges: { north: false, south: false, east: false, west: true },
-    },
-    {
-      key: "top-left",
-      className: "absolute left-0 top-0 z-20 h-3 w-3 cursor-nwse-resize",
-      edges: { north: true, south: false, east: false, west: true },
-    },
-    {
-      key: "top-right",
-      className: "absolute right-0 top-0 z-20 h-3 w-3 cursor-nesw-resize",
-      edges: { north: true, south: false, east: true, west: false },
-    },
-    {
-      key: "bottom-right",
-      className: "absolute bottom-0 right-0 z-20 h-3 w-3 cursor-nwse-resize",
-      edges: { north: false, south: true, east: true, west: false },
-    },
-    {
-      key: "bottom-left",
-      className: "absolute bottom-0 left-0 z-20 h-3 w-3 cursor-nesw-resize",
-      edges: { north: false, south: true, east: false, west: true },
-    },
-  ];
-
-const ChatMessageCard = memo(function ChatMessageCard({
-  windowId,
-  message,
-  anchorGroups,
-  registerAnchorRef,
-  onMessageMouseUp,
-}: ChatMessageCardProps) {
-  const messageClassName =
-    message.role === "user"
-      ? "self-end border border-zinc-950 bg-zinc-950 text-zinc-50"
-      : "self-start border border-zinc-300 bg-white text-zinc-950";
-  const messageLabelClassName =
-    message.role === "user"
-      ? "mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400"
-      : `${eyebrowClassName} mb-3`;
-
-  return (
-    <section data-message-card className={`w-[92%] cursor-text select-text px-4 py-4 ${messageClassName}`}>
-      <p className={messageLabelClassName}>
-        {message.role === "user" ? "You" : "Assistant"}
-      </p>
-      <MessageContent
-        windowId={windowId}
-        message={message}
-        anchorGroups={anchorGroups}
-        registerAnchorRef={registerAnchorRef}
-        onMessageMouseUp={onMessageMouseUp}
-      />
-    </section>
-  );
-}, areChatMessageCardPropsEqual);
-
-function areChatMessageCardPropsEqual(
-  previous: ChatMessageCardProps,
-  next: ChatMessageCardProps,
-): boolean {
-  return (
-    previous.windowId === next.windowId &&
-    previous.message === next.message &&
-    previous.anchorGroups === next.anchorGroups
-  );
-}
-
 function ChatWindow({
   anchorGroupsByMessageKey,
+  isFocused,
   onClose,
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
   onResizePointerDown,
-  onMessageMouseUp,
+  onMessageMouseDown,
   onSend,
+  onToggleHistoryExpanded,
   onWindowFocus,
+  onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
+  savedScrollState,
   windowData,
   messages,
   zIndex,
 }: ChatWindowProps) {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const shouldAutoScrollRef = useRef(true);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  useEffect(() => {
-    const node = scrollRef.current;
-    if (!node) {
-      return;
-    }
-
-    if (shouldAutoScrollRef.current) {
-      node.scrollTop = node.scrollHeight;
-    }
-
-    onGeometryChange();
-  }, [messages, onGeometryChange, windowData.height, windowData.width]);
-
-  useEffect(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
-  }, [windowData.composer]);
-
-  function handleMessagesScroll(): void {
-    const node = scrollRef.current;
-    if (!node) {
-      return;
-    }
-
-    const distanceFromBottom =
-      node.scrollHeight - node.scrollTop - node.clientHeight;
-    shouldAutoScrollRef.current = distanceFromBottom <= 32;
-    onGeometryChange();
-  }
+  const { scrollRef, textareaRef, onMessagesScroll } = useChatWindowLayout({
+    composer: windowData.composer,
+    height: windowData.height,
+    inheritedMessageCount: windowData.inheritedMessageCount,
+    isFocused,
+    isHistoryExpanded: windowData.isHistoryExpanded,
+    messages,
+    onGeometryChange,
+    onWindowScrollStateChange,
+    savedScrollState,
+    windowId: windowData.id,
+    width: windowData.width,
+  });
 
   function handleWindowPointerDown(event: ReactPointerEvent<HTMLElement>): void {
     onWindowFocus(windowData.id);
@@ -197,12 +84,13 @@ function ChatWindow({
     if (target.closest("textarea, input, button, [data-message-card]")) {
       return;
     }
+
     onHeaderPointerDown(event, windowData.id);
   }
 
   return (
     <article
-      className="absolute grid grid-rows-[auto_1fr_auto] cursor-grab border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] origin-top-left will-change-transform active:cursor-grabbing"
+      className="absolute origin-top-left grid grid-rows-[auto_1fr_auto] cursor-grab border border-zinc-300 bg-white shadow-[8px_8px_0_0_rgba(24,24,27,0.08)] will-change-transform active:cursor-grabbing"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
@@ -213,118 +101,44 @@ function ChatWindow({
       }}
       onPointerDown={handleWindowPointerDown}
     >
-      {resizeHandles.map((handle) => (
-        <span
-          key={handle.key}
-          aria-hidden="true"
-          className={handle.className}
-          onPointerDown={(event) =>
-            onResizePointerDown(event, windowData.id, handle.edges)
-          }
-        />
-      ))}
+      <ChatWindowResizeHandles
+        onResizePointerDown={(event, edges) =>
+          onResizePointerDown(event, windowData.id, edges)
+        }
+      />
 
       <span className="absolute -top-7 rounded-sm border border-zinc-300 bg-white px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-zinc-500">
         {windowData.parentId ? "Branch" : "Main thread"}
       </span>
 
-      <header
-        className="flex justify-between gap-4 border-b border-zinc-300 bg-zinc-100 px-5 py-4"
-      >
-        <div>
-          <h2 className="text-2xl font-medium tracking-tight text-zinc-950">
-            {windowData.title}
-          </h2>
-          {windowData.branchFocus && (
-            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-700">
-              Focus: "{windowData.branchFocus.selectedText}"
-            </p>
-          )}
-        </div>
-        <button
-          className={`${secondaryButtonClassName} shrink-0 self-start`}
-          type="button"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => onClose(windowData.id)}
-        >
-          X
-        </button>
-      </header>
+      <ChatWindowHeader
+        branchFocus={windowData.branchFocus}
+        onClose={() => onClose(windowData.id)}
+        title={windowData.title}
+      />
 
-      <div
-        className="flex flex-col gap-4 overflow-auto p-5"
-        ref={scrollRef}
-        onScroll={handleMessagesScroll}
-      >
-        {messages.length === 0 ? (
-          <div className="my-auto border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-6 text-zinc-500">
-            <p className="m-0">No messages yet.</p>
-            <p className="mt-2 m-0">
-              Ask something here, then highlight a phrase to branch it.
-            </p>
-          </div>
-        ) : null}
+      <ChatWindowMessages
+        anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+        historyPreviewCount={windowData.inheritedMessageCount}
+        isFocused={isFocused}
+        isHistoryExpanded={windowData.isHistoryExpanded}
+        messages={messages}
+        onMessageMouseDown={onMessageMouseDown}
+        onScroll={onMessagesScroll}
+        onToggleHistoryExpanded={() => onToggleHistoryExpanded(windowData.id)}
+        registerAnchorRef={registerAnchorRef}
+        scrollRef={scrollRef}
+        windowId={windowData.id}
+      />
 
-        {messages.map((message) => {
-          const messageKey = `${windowData.id}:${message.id}`;
-          const anchorGroups = anchorGroupsByMessageKey[messageKey] || [];
-
-          return (
-            <ChatMessageCard
-              key={message.id}
-              windowId={windowData.id}
-              message={message}
-              anchorGroups={anchorGroups}
-              registerAnchorRef={registerAnchorRef}
-              onMessageMouseUp={onMessageMouseUp}
-            />
-          );
-        })}
-      </div>
-
-      <footer className="border-t border-zinc-300 bg-white p-4">
-        <div className="relative flex items-end rounded-2xl border border-zinc-300 bg-zinc-50 transition-colors focus-within:border-zinc-500">
-          <textarea
-            ref={textareaRef}
-            aria-label={`Message ${windowData.title}`}
-            autoFocus
-            rows={1}
-            className="min-h-[40px] max-h-[200px] flex-1 resize-none overflow-y-auto bg-transparent px-4 py-3 pr-12 text-sm leading-6 text-zinc-950 outline-none placeholder:text-zinc-400"
-            placeholder="Ask a follow-up..."
-            value={windowData.composer}
-            onChange={(event) => onComposerChange(windowData.id, event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void onSend(windowData.id);
-              }
-            }}
-          />
-          {windowData.composer.trim().length > 0 && !windowData.isStreaming && (
-            <button
-              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950 text-white transition-opacity hover:opacity-80"
-              type="button"
-              onClick={() => {
-                void onSend(windowData.id);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <line x1="12" y1="19" x2="12" y2="5" />
-                <polyline points="5 12 12 5 19 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </footer>
+      <ChatWindowComposer
+        composer={windowData.composer}
+        isStreaming={windowData.isStreaming}
+        onComposerChange={(composer) => onComposerChange(windowData.id, composer)}
+        onSend={() => onSend(windowData.id)}
+        textareaRef={textareaRef}
+        title={windowData.title}
+      />
     </article>
   );
 }

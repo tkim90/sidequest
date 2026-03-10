@@ -30,6 +30,8 @@ export interface WindowRecord {
   childIds: string[];
   branchAnchorId: string | null;
   branchFocus: BranchFocus | null;
+  inheritedMessageCount: number;
+  isHistoryExpanded: boolean;
   composer: string;
   isStreaming: boolean;
 }
@@ -71,20 +73,6 @@ export interface AppState {
   messagesByWindowId: MessagesByWindowId;
   anchors: AnchorMap;
 }
-
-type TextSegment = {
-  type: "text";
-  text: string;
-};
-
-type AnchorSegment = {
-  type: "anchor";
-  key: string;
-  text: string;
-  count: number;
-};
-
-export type MessageContentSegment = TextSegment | AnchorSegment;
 
 export type AnchorOverlapResult =
   | {

@@ -3,7 +3,6 @@ import type {
   AnchorGroupsByMessageKey,
   AnchorMap,
   AnchorOverlapResult,
-  MessageContentSegment,
 } from "../../types";
 import { createAnchorGroupKey } from "./state";
 
@@ -47,45 +46,6 @@ export function groupAnchorsByMessage(
       ),
     ]),
   ) as AnchorGroupsByMessageKey;
-}
-
-export function splitContentByAnchors(
-  content: string,
-  anchorGroups: AnchorGroup[],
-): MessageContentSegment[] {
-  if (anchorGroups.length === 0) {
-    return [{ type: "text", text: content }];
-  }
-
-  const segments: MessageContentSegment[] = [];
-  let cursor = 0;
-
-  anchorGroups.forEach((group) => {
-    if (cursor < group.startOffset) {
-      segments.push({
-        type: "text",
-        text: content.slice(cursor, group.startOffset),
-      });
-    }
-
-    segments.push({
-      type: "anchor",
-      key: group.key,
-      text: content.slice(group.startOffset, group.endOffset),
-      count: group.anchorIds.length,
-    });
-
-    cursor = group.endOffset;
-  });
-
-  if (cursor < content.length) {
-    segments.push({
-      type: "text",
-      text: content.slice(cursor),
-    });
-  }
-
-  return segments;
 }
 
 export function checkAnchorOverlap({

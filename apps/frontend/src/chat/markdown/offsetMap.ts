@@ -28,37 +28,29 @@ export interface AnnotatedSpan extends LeafSpan {
   anchorCount?: number;
 }
 
-export function getBlockRenderedText(block: MarkdownBlock): string {
+export function getRenderedTextForBlock(block: MarkdownBlock): string {
   switch (block.type) {
     case "header":
-      return block.text;
+      return getRenderedTextForInlineSource(block.text);
     case "paragraph":
-      return block.text;
+      return getRenderedTextForInlineSource(block.text);
     case "blockquote":
-      return block.text;
+      return getRenderedTextForInlineSource(block.text);
     case "code":
       return block.code;
     case "unordered_list":
-      return block.items.join("\n");
+      return block.items.map((item) => getRenderedTextForInlineSource(item)).join("\n");
     case "ordered_list":
-      return block.items.map((item) => item.text).join("\n");
-  }
-}
-
-export function getBlockInlineText(block: MarkdownBlock): string {
-  switch (block.type) {
-    case "header":
-      return block.text;
-    case "paragraph":
-      return block.text;
-    case "blockquote":
-      return block.text;
-    case "code":
-      return block.code;
-    case "unordered_list":
-      return block.items.join("\n");
-    case "ordered_list":
-      return block.items.map((item) => item.text).join("\n");
+      return block.items
+        .map((item) => getRenderedTextForInlineSource(item.text))
+        .join("\n");
+    case "table":
+      return [
+        block.headers.map((cell) => getRenderedTextForInlineSource(cell)).join("\t"),
+        ...block.rows.map((row) =>
+          row.map((cell) => getRenderedTextForInlineSource(cell)).join("\t"),
+        ),
+      ].join("\n");
   }
 }
 
@@ -87,20 +79,8 @@ export function computeBlockOffsets(blocks: MarkdownBlock[]): BlockOffset[] {
   const offsets: BlockOffset[] = [];
   let cursor = 0;
 
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i];
-    let renderedText: string;
-
-    if (block.type === "code") {
-      renderedText = block.code;
-    } else if (block.type === "unordered_list") {
-      renderedText = block.items.map((item) => getRenderedTextForInlineSource(item)).join("\n");
-    } else if (block.type === "ordered_list") {
-      renderedText = block.items.map((item) => getRenderedTextForInlineSource(item.text)).join("\n");
-    } else {
-      const inlineSource = block.type === "header" ? block.text : block.text;
-      renderedText = getRenderedTextForInlineSource(inlineSource);
-    }
+  for (let i = 0; i < blocks.length; i += 1) {
+    const renderedText = getRenderedTextForBlock(blocks[i]);
 
     const start = cursor;
     const end = cursor + renderedText.length;
@@ -150,7 +130,7 @@ export function flattenInlineLeaves(
       const childFormatting = { ...parentFormatting, link: node.href };
       const childLeaves = flattenInlineLeaves(node.children, cursor, childFormatting);
       leaves.push(...childLeaves);
-      const childLength = childLeaves.reduce((sum, l) => sum + l.text.length, 0);
+      const childLength = childLeaves.reduce((sum, leaf) => sum + leaf.text.length, 0);
       cursor += childLength;
     } else {
       // strong, em, strike
@@ -161,7 +141,7 @@ export function flattenInlineLeaves(
 
       const childLeaves = flattenInlineLeaves(node.children, cursor, childFormatting);
       leaves.push(...childLeaves);
-      const childLength = childLeaves.reduce((sum, l) => sum + l.text.length, 0);
+      const childLength = childLeaves.reduce((sum, leaf) => sum + leaf.text.length, 0);
       cursor += childLength;
     }
   }
@@ -179,7 +159,6 @@ interface AnchorRange {
 export function splitLeavesAtAnchors(
   leaves: LeafSpan[],
   anchors: AnchorRange[],
-  blockStart: number,
 ): AnnotatedSpan[] {
   if (anchors.length === 0) {
     return leaves.map((leaf) => ({

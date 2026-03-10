@@ -3,6 +3,7 @@ import type {
   ConnectorPath,
   MessagesByWindowId,
   Viewport,
+  WindowScrollState,
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
@@ -27,18 +28,24 @@ interface ChatCanvasProps {
     windowId: string,
     edges: ResizeEdges,
   ) => void;
-  onMessageMouseUp: (
+  onMessageMouseDown: (
     event: React.MouseEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
   onOpenFreshRootWindow: () => void;
   onSend: (windowId: string) => void | Promise<void>;
+  onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
+  onWindowScrollStateChange: (
+    windowId: string,
+    nextState: WindowScrollState,
+  ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
   viewport: Viewport;
+  windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
 }
 
@@ -52,14 +59,17 @@ function ChatCanvas({
   onGeometryChange,
   onHeaderPointerDown,
   onResizePointerDown,
-  onMessageMouseUp,
+  onMessageMouseDown,
   onOpenFreshRootWindow,
   onSend,
+  onToggleHistoryExpanded,
   onWindowClose,
   onWindowFocus,
+  onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
   viewport,
+  windowScrollStates,
   windows,
 }: ChatCanvasProps) {
   return (
@@ -86,17 +96,26 @@ function ChatCanvas({
             <ChatWindow
               key={windowData.id}
               anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+              isFocused={index === windows.length - 1}
               messages={messagesByWindowId[windowData.id] || []}
               onClose={onWindowClose}
               onComposerChange={onComposerChange}
               onGeometryChange={onGeometryChange}
               onHeaderPointerDown={onHeaderPointerDown}
               onResizePointerDown={onResizePointerDown}
-              onMessageMouseUp={onMessageMouseUp}
+              onMessageMouseDown={onMessageMouseDown}
               onSend={onSend}
+              onToggleHistoryExpanded={onToggleHistoryExpanded}
               onWindowFocus={onWindowFocus}
+              onWindowScrollStateChange={onWindowScrollStateChange}
               registerAnchorRef={registerAnchorRef}
               registerWindowRef={registerWindowRef}
+              savedScrollState={
+                windowScrollStates[windowData.id] || {
+                  scrollTop: null,
+                  shouldAutoScroll: true,
+                }
+              }
               windowData={windowData}
               zIndex={index + 1}
             />

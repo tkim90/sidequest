@@ -25,14 +25,17 @@ function ChatWorkspace() {
           onGeometryChange={workspace.onGeometryChange}
           onHeaderPointerDown={workspace.onHeaderPointerDown}
           onResizePointerDown={workspace.onResizePointerDown}
-          onMessageMouseUp={workspace.onMessageMouseUp}
+          onMessageMouseDown={workspace.onMessageMouseDown}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
           onSend={workspace.onSend}
+          onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
           onWindowClose={workspace.onWindowClose}
           onWindowFocus={workspace.onWindowFocus}
+          onWindowScrollStateChange={workspace.onWindowScrollStateChange}
           registerAnchorRef={workspace.registerAnchorRef}
           registerWindowRef={workspace.registerWindowRef}
           viewport={workspace.viewport}
+          windowScrollStates={workspace.windowScrollStates}
           windows={workspace.windows}
         />
       </section>
