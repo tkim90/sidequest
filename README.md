@@ -24,6 +24,7 @@ Set environment variables before running:
 ```bash
 export OPENAI_API_KEY=your_key_here
 export OPENAI_MODEL=your_model_here
+export OPENAI_MODEL_OPTIONS=gpt-4.1-mini,gpt-4.1,gpt-4o-mini
 ```
 
 Run the API:
@@ -36,6 +37,7 @@ uv run uvicorn app.main:app --reload
 The backend listens on `http://127.0.0.1:8000` and exposes:
 
 - `GET /api/health`
+- `GET /api/chat/models`
 - `POST /api/chat/stream`
 
 ## Frontend
@@ -61,6 +63,8 @@ The frontend listens on `http://127.0.0.1:5173` and proxies `/api` requests to t
 - Pannable and zoomable infinite canvas
 - Multiple draggable chat windows
 - Streaming model responses
+- Per-window model picker with backend-driven model options
+- Model badge on assistant responses
 - Phrase-level branching from any completed user or assistant message
 - Recursive child chats with inherited parent history snapshots
 - Connector lines from the anchored phrase to the child chat window
