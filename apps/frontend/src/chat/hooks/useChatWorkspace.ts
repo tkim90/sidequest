@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -12,6 +13,7 @@ import type {
   ClosePrompt,
   MessagesByWindowId,
   SelectionState,
+  WindowScrollState,
   WindowRecord,
 } from "../../types";
 import { streamChat } from "../api/streamChat";
@@ -38,6 +40,7 @@ import {
   failAssistantMessage,
   queueOutgoingMessages,
   removeWindowsFromState,
+  setWindowHistoryExpanded,
   updateComposer,
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
@@ -71,8 +74,13 @@ export interface ChatWorkspaceViewModel {
   onOpenFreshRootWindow: () => void;
   onSelectionBranch: () => void;
   onSend: (windowId: string) => Promise<void>;
+  onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
+  onWindowScrollStateChange: (
+    windowId: string,
+    nextState: WindowScrollState,
+  ) => void;
   popoverRef: RefObject<HTMLDivElement | null>;
   registerAnchorRef: ReturnType<
     typeof useCanvasInteractions
@@ -82,6 +90,7 @@ export interface ChatWorkspaceViewModel {
   >["registerWindowRef"];
   selectionState: SelectionState | null;
   viewport: AppState["viewport"];
+  windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
 }
 
@@ -101,6 +110,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [notice, setNotice] = useState("");
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
+  const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -146,6 +156,22 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   function handleComposerChange(windowId: string, composer: string): void {
     setAppState((current) => updateComposer(current, windowId, composer));
   }
+
+  const handleWindowScrollStateChange = useCallback((
+    windowId: string,
+    nextState: WindowScrollState,
+  ): void => {
+    const currentState = windowScrollStatesRef.current[windowId];
+    if (
+      currentState &&
+      currentState.scrollTop === nextState.scrollTop &&
+      currentState.shouldAutoScroll === nextState.shouldAutoScroll
+    ) {
+      return;
+    }
+
+    windowScrollStatesRef.current[windowId] = nextState;
+  }, []);
 
   async function handleSend(windowId: string): Promise<void> {
     const snapshot = appStateRef.current;
@@ -226,6 +252,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       abortControllersRef.current[windowId]?.abort();
       delete abortControllersRef.current[windowId];
       delete canvas.windowRefs.current[windowId];
+      delete windowScrollStatesRef.current[windowId];
     });
 
     setAppState((current) => removeWindowsFromState(current, windowIds));
@@ -274,6 +301,22 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setAppState((current) => addRootWindow(current, rootWindow));
   }
 
+  function handleToggleHistoryExpanded(windowId: string): void {
+    setAppState((current) => {
+      const windowData = current.windows[windowId];
+      if (!windowData || windowData.inheritedMessageCount === 0) {
+        return current;
+      }
+
+      return setWindowHistoryExpanded(
+        current,
+        windowId,
+        !windowData.isHistoryExpanded,
+      );
+    });
+    canvas.requestGeometryRefresh();
+  }
+
   const windows = appState.zOrder
     .map((windowId) => appState.windows[windowId])
     .filter((windowData): windowData is WindowRecord => Boolean(windowData));
@@ -308,13 +351,16 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onOpenFreshRootWindow: openFreshRootWindow,
     onSelectionBranch: selection.onSelectionBranch,
     onSend: handleSend,
+    onToggleHistoryExpanded: handleToggleHistoryExpanded,
     onWindowClose: handleClose,
     onWindowFocus: canvas.onWindowFocus,
+    onWindowScrollStateChange: handleWindowScrollStateChange,
     popoverRef: selection.popoverRef,
     registerAnchorRef: canvas.registerAnchorRef,
     registerWindowRef: canvas.registerWindowRef,
     selectionState: selection.selectionState,
     viewport: appState.viewport,
+    windowScrollStates: windowScrollStatesRef.current,
     windows,
   };
 }

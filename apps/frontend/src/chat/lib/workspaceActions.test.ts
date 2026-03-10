@@ -7,6 +7,7 @@ import {
   completeAssistantMessage,
   queueOutgoingMessages,
   removeWindowsFromState,
+  setWindowHistoryExpanded,
 } from "./workspaceActions";
 
 describe("workspaceActions", () => {
@@ -116,5 +117,40 @@ describe("workspaceActions", () => {
       windowIds: [childWindow.id],
       windowTitles: ["Chat 1.1"],
     });
+  });
+
+  it("updates inherited history visibility per window", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+    const childWindow = createWindowRecord({
+      title: "Chat 1.1",
+      x: 400,
+      y: 80,
+      parentId: rootWindowId,
+      inheritedMessageCount: 2,
+      isHistoryExpanded: false,
+    });
+
+    const stateWithChild = {
+      ...initialState,
+      windows: {
+        ...initialState.windows,
+        [childWindow.id]: childWindow,
+      },
+      zOrder: [...initialState.zOrder, childWindow.id],
+      messagesByWindowId: {
+        ...initialState.messagesByWindowId,
+        [childWindow.id]: [],
+      },
+    };
+
+    const nextState = setWindowHistoryExpanded(
+      stateWithChild,
+      childWindow.id,
+      true,
+    );
+
+    expect(nextState.windows[childWindow.id]?.isHistoryExpanded).toBe(true);
+    expect(nextState.windows[rootWindowId]?.isHistoryExpanded).toBe(true);
   });
 });

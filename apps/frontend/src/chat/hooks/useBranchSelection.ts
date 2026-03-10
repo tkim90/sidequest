@@ -225,6 +225,10 @@ export function useBranchSelection({
       return;
     }
 
+    const inheritedMessages = cloneMessagesForBranch(
+      parentMessages.slice(0, anchorIndex + 1),
+    );
+
     const childWindow = createWindowRecord({
       title: `${parentWindow.title}.${parentWindow.childIds.length + 1}`,
       x: parentWindow.x + parentWindow.width + WINDOW_GAP,
@@ -238,6 +242,8 @@ export function useBranchSelection({
         parentWindowTitle: parentWindow.title,
         parentMessageRole: anchorMessage.role,
       },
+      inheritedMessageCount: inheritedMessages.length,
+      isHistoryExpanded: inheritedMessages.length === 0,
     });
 
     const anchor = createAnchorRecord({
@@ -248,10 +254,6 @@ export function useBranchSelection({
       startOffset,
       endOffset,
     });
-
-    const inheritedMessages = cloneMessagesForBranch(
-      parentMessages.slice(0, anchorIndex + 1),
-    );
 
     setAppState((current) => {
       const currentParentWindow = current.windows[parentWindow.id];

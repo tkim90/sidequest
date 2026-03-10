@@ -17,6 +17,11 @@ export interface ClosePrompt {
   windowTitles: string[];
 }
 
+export interface WindowScrollState {
+  scrollTop: number | null;
+  shouldAutoScroll: boolean;
+}
+
 export interface ConnectorPath {
   id: string;
   path: string;

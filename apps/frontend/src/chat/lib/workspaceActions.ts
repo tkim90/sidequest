@@ -16,11 +16,16 @@ function updateExistingWindow(
     return state;
   }
 
+  const nextWindowData = updateWindow(windowData);
+  if (nextWindowData === windowData) {
+    return state;
+  }
+
   return {
     ...state,
     windows: {
       ...state.windows,
-      [windowId]: updateWindow(windowData),
+      [windowId]: nextWindowData,
     },
   };
 }
@@ -70,6 +75,23 @@ export function updateComposer(
     ...windowData,
     composer,
   }));
+}
+
+export function setWindowHistoryExpanded(
+  state: AppState,
+  windowId: string,
+  isHistoryExpanded: boolean,
+): AppState {
+  return updateExistingWindow(state, windowId, (windowData) => {
+    if (windowData.isHistoryExpanded === isHistoryExpanded) {
+      return windowData;
+    }
+
+    return {
+      ...windowData,
+      isHistoryExpanded,
+    };
+  });
 }
 
 export function queueOutgoingMessages(

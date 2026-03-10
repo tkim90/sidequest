@@ -30,6 +30,8 @@ export interface WindowRecord {
   childIds: string[];
   branchAnchorId: string | null;
   branchFocus: BranchFocus | null;
+  inheritedMessageCount: number;
+  isHistoryExpanded: boolean;
   composer: string;
   isStreaming: boolean;
 }

@@ -9,10 +9,13 @@ import { eyebrowClassName } from "./ui";
 
 interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
+  historyPreviewCount: number;
   isFocused: boolean;
+  isHistoryExpanded: boolean;
   messages: MessageRecord[];
   onMessageMouseUp: React.ComponentProps<typeof MessageContent>["onMessageMouseUp"];
   onScroll: () => void;
+  onToggleHistoryExpanded: () => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
   windowId: string;
@@ -78,14 +81,41 @@ function areChatMessageCardPropsEqual(
 
 function ChatWindowMessages({
   anchorGroupsByMessageKey,
+  historyPreviewCount,
   isFocused,
+  isHistoryExpanded,
   messages,
   onMessageMouseUp,
   onScroll,
+  onToggleHistoryExpanded,
   registerAnchorRef,
   scrollRef,
   windowId,
 }: ChatWindowMessagesProps) {
+  const clampedHistoryPreviewCount = Math.min(historyPreviewCount, messages.length);
+  const historyMessages = messages.slice(0, clampedHistoryPreviewCount);
+  const visibleMessages =
+    clampedHistoryPreviewCount > 0
+      ? messages.slice(clampedHistoryPreviewCount)
+      : messages;
+
+  function renderMessage(message: MessageRecord) {
+    const messageKey = `${windowId}:${message.id}`;
+    const anchorGroups = anchorGroupsByMessageKey[messageKey] || [];
+
+    return (
+      <ChatMessageCard
+        key={message.id}
+        anchorGroups={anchorGroups}
+        isFocused={isFocused}
+        message={message}
+        onMessageMouseUp={onMessageMouseUp}
+        registerAnchorRef={registerAnchorRef}
+        windowId={windowId}
+      />
+    );
+  }
+
   return (
     <div
       className="flex flex-col gap-4 overflow-auto p-5"
@@ -101,22 +131,29 @@ function ChatWindowMessages({
         </div>
       ) : null}
 
-      {messages.map((message) => {
-        const messageKey = `${windowId}:${message.id}`;
-        const anchorGroups = anchorGroupsByMessageKey[messageKey] || [];
+      {historyMessages.length > 0 ? (
+        <section className="border border-dashed border-zinc-300 bg-zinc-50 px-4 py-4 text-zinc-700">
+          <button
+            aria-expanded={isHistoryExpanded}
+            className="cursor-pointer text-sm font-semibold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:text-zinc-950"
+            type="button"
+            onClick={onToggleHistoryExpanded}
+          >
+            {isHistoryExpanded ? "Hide previous history" : "See previous history"}
+          </button>
+          {isHistoryExpanded ? (
+            <div className="mt-4 flex flex-col gap-4">
+              {historyMessages.map(renderMessage)}
+            </div>
+          ) : (
+            <p className="mt-2 mb-0 text-sm leading-6 text-zinc-500">
+              Earlier messages stay tucked away until you need them.
+            </p>
+          )}
+        </section>
+      ) : null}
 
-        return (
-          <ChatMessageCard
-            key={message.id}
-            anchorGroups={anchorGroups}
-            isFocused={isFocused}
-            message={message}
-            onMessageMouseUp={onMessageMouseUp}
-            registerAnchorRef={registerAnchorRef}
-            windowId={windowId}
-          />
-        );
-      })}
+      {visibleMessages.map(renderMessage)}
     </div>
   );
 }

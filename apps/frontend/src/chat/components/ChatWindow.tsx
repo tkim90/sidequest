@@ -3,6 +3,7 @@ import { type PointerEvent as ReactPointerEvent } from "react";
 import type {
   AnchorGroupsByMessageKey,
   MessageRecord,
+  WindowScrollState,
   WindowRecord,
 } from "../../types";
 import { useChatWindowLayout } from "../hooks/useChatWindowLayout";
@@ -29,9 +30,15 @@ interface ChatWindowProps {
   ) => void;
   onMessageMouseUp: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseUp"];
   onSend: (windowId: string) => void | Promise<void>;
+  onToggleHistoryExpanded: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
+  onWindowScrollStateChange: (
+    windowId: string,
+    nextState: WindowScrollState,
+  ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
+  savedScrollState: WindowScrollState;
   windowData: WindowRecord;
   messages: MessageRecord[];
   zIndex: number;
@@ -47,9 +54,12 @@ function ChatWindow({
   onResizePointerDown,
   onMessageMouseUp,
   onSend,
+  onToggleHistoryExpanded,
   onWindowFocus,
+  onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
+  savedScrollState,
   windowData,
   messages,
   zIndex,
@@ -57,8 +67,14 @@ function ChatWindow({
   const { scrollRef, textareaRef, onMessagesScroll } = useChatWindowLayout({
     composer: windowData.composer,
     height: windowData.height,
+    inheritedMessageCount: windowData.inheritedMessageCount,
+    isFocused,
+    isHistoryExpanded: windowData.isHistoryExpanded,
     messages,
     onGeometryChange,
+    onWindowScrollStateChange,
+    savedScrollState,
+    windowId: windowData.id,
     width: windowData.width,
   });
 
@@ -103,10 +119,13 @@ function ChatWindow({
 
       <ChatWindowMessages
         anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+        historyPreviewCount={windowData.inheritedMessageCount}
         isFocused={isFocused}
+        isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
         onMessageMouseUp={onMessageMouseUp}
         onScroll={onMessagesScroll}
+        onToggleHistoryExpanded={() => onToggleHistoryExpanded(windowData.id)}
         registerAnchorRef={registerAnchorRef}
         scrollRef={scrollRef}
         windowId={windowData.id}
