@@ -4,9 +4,10 @@ import { Highlight, themes } from "prism-react-renderer";
 interface CodeBlockProps {
   code: string;
   language?: string;
+  variant?: "default" | "monochrome";
 }
 
-function CopyButton({ code }: { code: string }) {
+function CopyButton({ code, variant = "default" }: { code: string; variant?: "default" | "monochrome" }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -19,7 +20,11 @@ function CopyButton({ code }: { code: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
+      className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+        variant === "monochrome"
+          ? "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          : "text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+      }`}
       aria-label="Copy code"
     >
       {copied ? (
@@ -37,17 +42,27 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
-export default function CodeBlock({ code, language }: CodeBlockProps) {
+export default function CodeBlock({ code, language, variant = "default" }: CodeBlockProps) {
+  const isMonochrome = variant === "monochrome";
+
   return (
     <div className="my-3">
-      <div className="overflow-x-auto rounded-md bg-[#282c34]">
-        <div className="flex items-center justify-between border-b border-zinc-700 px-3 py-1">
-          <span className="text-xs text-zinc-400">
+      <div
+        className={`overflow-x-auto rounded-md ${
+          isMonochrome ? "border border-border bg-card text-card-foreground shadow-sm" : "bg-[#282c34]"
+        }`}
+      >
+        <div
+          className={`flex items-center justify-between px-3 py-1 ${
+            isMonochrome ? "border-b border-border bg-muted" : "border-b border-zinc-700"
+          }`}
+        >
+          <span className={`text-xs ${isMonochrome ? "text-muted-foreground" : "text-zinc-400"}`}>
             {language || "text"}
           </span>
-          <CopyButton code={code} />
+          <CopyButton code={code} variant={variant} />
         </div>
-        <Highlight theme={themes.oneDark} code={code} language={language || "text"}>
+        <Highlight theme={isMonochrome ? themes.github : themes.oneDark} code={code} language={language || "text"}>
           {({ tokens, getLineProps, getTokenProps }) => (
             <pre className="p-3 text-sm leading-6 font-mono" style={{ background: "transparent" }}>
               <code>

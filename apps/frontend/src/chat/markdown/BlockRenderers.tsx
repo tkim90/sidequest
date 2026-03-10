@@ -1,6 +1,12 @@
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { AnchorGroup } from "../../types";
+import ImageRenderer, { ImageRendererSkeleton } from "../jsonrender/ImageRenderer";
+import { mergeJsonRenderSpec } from "../jsonrender/mergeSpec";
+import { partialJsonParse, tryParseSpec } from "../jsonrender/partialJsonParse";
+import registry from "../jsonrender/registry";
+import SpecRenderer, { SpecRendererSkeleton } from "../jsonrender/SpecRenderer";
+import type { JsonRenderSpec } from "../jsonrender/types";
 import CodeBlock from "./CodeBlock";
 import {
   computeBlockOffsets,
@@ -83,6 +89,40 @@ function IncrementalTokenText({
       ))}
     </>
   );
+}
+
+function StreamingJsonRenderBlock({
+  code,
+  streamKey,
+}: {
+  code: string;
+  streamKey: string;
+}) {
+  const [stableSpec, setStableSpec] = useState<JsonRenderSpec | null>(() =>
+    partialJsonParse(code),
+  );
+  const prevKeyRef = useRef(streamKey);
+
+  useLayoutEffect(() => {
+    if (prevKeyRef.current !== streamKey) {
+      prevKeyRef.current = streamKey;
+      setStableSpec(partialJsonParse(code));
+      return;
+    }
+
+    const parsedSpec = partialJsonParse(code);
+    if (!parsedSpec) {
+      return;
+    }
+
+    setStableSpec((previous) => mergeJsonRenderSpec(previous, parsedSpec));
+  }, [code, streamKey]);
+
+  if (!stableSpec) {
+    return <SpecRendererSkeleton />;
+  }
+
+  return <SpecRenderer spec={stableSpec} registry={registry} partial rawJson={code} />;
 }
 
 function getBlockAnchorRanges(ctx: BlockRenderContext): AnchorRange[] {
@@ -252,6 +292,20 @@ export function RenderFinalizedBlock({
     );
   }
 
+  if (block.type === "code" && block.language === "jsonrender") {
+    const spec = tryParseSpec(block.code);
+    if (spec) {
+      return <SpecRenderer spec={spec} registry={registry} rawJson={block.code} />;
+    }
+  }
+
+  if (block.type === "code" && block.language === "imagerender") {
+    const spec = tryParseSpec(block.code);
+    if (spec) {
+      return <ImageRenderer spec={spec} rawJson={block.code} />;
+    }
+  }
+
   if (block.type === "code") {
     if (anchors.length === 0) {
       return <CodeBlock code={block.code} language={block.language} />;
@@ -418,6 +472,18 @@ export function RenderActiveBlock({
         </HeadingTag>
       </div>
     );
+  }
+
+  if (block.type === "code" && block.language === "jsonrender") {
+    return <StreamingJsonRenderBlock code={block.code} streamKey={streamKey} />;
+  }
+
+  if (block.type === "code" && block.language === "imagerender") {
+    const spec = partialJsonParse(block.code);
+    if (spec) {
+      return <ImageRenderer spec={spec} partial rawJson={block.code} />;
+    }
+    return <ImageRendererSkeleton />;
   }
 
   if (block.type === "code") {

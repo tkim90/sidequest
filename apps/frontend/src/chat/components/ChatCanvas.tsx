@@ -124,19 +124,13 @@ function ChatCanvas({
       </div>
 
       {windows.length === 0 ? (
-        <div className="absolute bottom-6 left-6 w-[min(440px,calc(100%-3rem))] border border-zinc-300 bg-white p-6 shadow-[8px_8px_0_0_rgba(24,24,27,0.08)]">
-          <div>
-            <p className={eyebrowClassName}>Board is empty</p>
-            <h2 className="mt-2 text-2xl font-medium tracking-tight text-zinc-950">
-              Open a fresh main chat to start branching again.
-            </h2>
-          </div>
+        <div className="absolute bottom-6 left-6 w-[min(440px,calc(100%-3rem))]">
           <button
             className={`${primaryButtonClassName} mt-5`}
             type="button"
             onClick={onOpenFreshRootWindow}
           >
-            Open main chat
+            New Chat
           </button>
         </div>
       ) : null}
