@@ -92,3 +92,42 @@ def test_chat_stream_shapes_ndjson(monkeypatch):
         {"role": "assistant", "content": "Hi there"},
         {"role": "user", "content": "Follow up"},
     ]
+
+
+def test_chat_stream_uses_requested_model(monkeypatch):
+    monkeypatch.setenv("OPENAI_MODEL", "default-model")
+    monkeypatch.setenv("OPENAI_MODEL_OPTIONS", "default-model,alt-model")
+    fake_client = FakeClient()
+
+    with TestClient(app) as client:
+        app.state.openai_client = fake_client
+
+        response = client.post(
+            "/api/chat/stream",
+            json={
+                "messages": [
+                    {"role": "user", "content": "Use another model"},
+                ],
+                "model": "alt-model",
+            },
+        )
+
+    lines = [json.loads(line) for line in response.text.splitlines() if line.strip()]
+
+    assert response.status_code == 200
+    assert lines[-1] == {"type": "done"}
+    assert fake_client.responses.calls[0]["model"] == "alt-model"
+
+
+def test_chat_models_endpoint_returns_options(monkeypatch):
+    monkeypatch.setenv("OPENAI_MODEL", "model-b")
+    monkeypatch.setenv("OPENAI_MODEL_OPTIONS", "model-a,model-b")
+
+    with TestClient(app) as client:
+        response = client.get("/api/chat/models")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "models": ["model-a", "model-b"],
+        "default_model": "model-b",
+    }
