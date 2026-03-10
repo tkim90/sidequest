@@ -1,0 +1,20 @@
+{
+  "name": "sidequest-image-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.tsx",
+    "start": "node --import tsx src/server.tsx"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "geist": "^1.7.0",
+    "react": "^19.1.1",
+    "satori": "^0.19.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,5 +1,68 @@
 @import "tailwindcss";
 
+:root {
+  color-scheme: light;
+  --background: oklch(0.984 0.006 224);
+  --foreground: oklch(0.235 0.028 258);
+  --card: oklch(0.995 0.002 225);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.997 0.002 225);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.61 0.14 241);
+  --primary-foreground: oklch(0.985 0.003 247);
+  --secondary: oklch(0.94 0.024 224);
+  --secondary-foreground: oklch(0.34 0.037 257);
+  --muted: oklch(0.96 0.012 230);
+  --muted-foreground: oklch(0.53 0.03 257);
+  --accent: oklch(0.92 0.034 186);
+  --accent-foreground: oklch(0.27 0.03 194);
+  --destructive: oklch(0.63 0.227 25);
+  --destructive-foreground: oklch(0.985 0.003 247);
+  --border: oklch(0.88 0.013 238);
+  --input: oklch(0.9 0.011 238);
+  --ring: oklch(0.61 0.14 241);
+  --success: oklch(0.66 0.152 160);
+  --success-foreground: oklch(0.985 0.003 247);
+  --warning: oklch(0.82 0.163 84);
+  --warning-foreground: oklch(0.29 0.03 65);
+  --chart-1: oklch(0.62 0.19 255);
+  --chart-2: oklch(0.71 0.16 167);
+  --chart-3: oklch(0.78 0.16 85);
+  --chart-4: oklch(0.68 0.2 24);
+  --chart-5: oklch(0.67 0.14 210);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -20,8 +83,8 @@
     min-width: 320px;
     min-height: 100vh;
     overflow: hidden;
-    background: #f4f4f5;
-    color: #09090b;
+    background: var(--background);
+    color: var(--foreground);
   }
 
   button,

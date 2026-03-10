@@ -14,6 +14,7 @@ interface ChatWindowMessagesProps {
   isHistoryExpanded: boolean;
   messages: MessageRecord[];
   onMessageMouseDown: React.ComponentProps<typeof MessageContent>["onMessageMouseDown"];
+  onRetry: (messageId: string) => void;
   onScroll: () => void;
   onToggleHistoryExpanded: () => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
@@ -26,6 +27,7 @@ interface ChatMessageCardProps {
   isFocused: boolean;
   message: MessageRecord;
   onMessageMouseDown: ChatWindowMessagesProps["onMessageMouseDown"];
+  onRetry: ChatWindowMessagesProps["onRetry"];
   registerAnchorRef: ChatWindowMessagesProps["registerAnchorRef"];
   windowId: string;
 }
@@ -35,6 +37,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
   isFocused,
   message,
   onMessageMouseDown,
+  onRetry,
   registerAnchorRef,
   windowId,
 }: ChatMessageCardProps) {
@@ -42,19 +45,26 @@ const ChatMessageCard = memo(function ChatMessageCard({
     message.role === "user"
       ? "self-end border border-zinc-950 bg-zinc-950 text-zinc-50"
       : "self-start border border-zinc-300 bg-white text-zinc-950";
-  const messageLabelClassName =
-    message.role === "user"
-      ? "mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400"
-      : `${eyebrowClassName} mb-3`;
 
   return (
     <section
       data-message-card
-      className={`${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName}`}
+      className={`relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName}`}
     >
-      <p className={messageLabelClassName}>
-        {message.role === "user" ? "You" : "Assistant"}
-      </p>
+      {message.role === "user" ? (
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-400">
+          You
+        </p>
+      ) : (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p className={eyebrowClassName}>Assistant</p>
+          {message.model ? (
+            <span className="inline-flex items-center border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-zinc-600">
+              {message.model}
+            </span>
+          ) : null}
+        </div>
+      )}
       <MessageContent
         windowId={windowId}
         message={message}
@@ -63,6 +73,28 @@ const ChatMessageCard = memo(function ChatMessageCard({
         registerAnchorRef={registerAnchorRef}
         onMessageMouseDown={onMessageMouseDown}
       />
+      {message.role === "assistant" && message.status === "complete" ? (
+        <button
+          className="absolute right-2 bottom-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-400 transition-colors hover:border-zinc-400 hover:text-zinc-700"
+          title="Retry"
+          type="button"
+          onClick={() => onRetry(message.id)}
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 4v5h5M20 20v-5h-5M5.1 15A7 7 0 0 0 19 12M18.9 9A7 7 0 0 0 5 12"
+            />
+          </svg>
+        </button>
+      ) : null}
     </section>
   );
 }, areChatMessageCardPropsEqual);
@@ -75,7 +107,8 @@ function areChatMessageCardPropsEqual(
     previous.windowId === next.windowId &&
     previous.message === next.message &&
     previous.anchorGroups === next.anchorGroups &&
-    previous.isFocused === next.isFocused
+    previous.isFocused === next.isFocused &&
+    previous.onRetry === next.onRetry
   );
 }
 
@@ -86,6 +119,7 @@ function ChatWindowMessages({
   isHistoryExpanded,
   messages,
   onMessageMouseDown,
+  onRetry,
   onScroll,
   onToggleHistoryExpanded,
   registerAnchorRef,
@@ -110,6 +144,7 @@ function ChatWindowMessages({
         isFocused={isFocused}
         message={message}
         onMessageMouseDown={onMessageMouseDown}
+        onRetry={onRetry}
         registerAnchorRef={registerAnchorRef}
         windowId={windowId}
       />

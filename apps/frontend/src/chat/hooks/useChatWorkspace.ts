@@ -16,9 +16,8 @@ import type {
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import { streamChat } from "../api/streamChat";
+import { fetchChatModelConfig, streamChat } from "../api/streamChat";
 import {
-  ROOT_WINDOW_TITLE,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
@@ -28,6 +27,7 @@ import {
   createMessage,
   createWindowRecord,
   getCanvasMessages,
+  getNextRootChatTitle,
   createInitialState,
   getDescendantIds,
 } from "../lib/state";
@@ -38,15 +38,18 @@ import {
   buildCloseBranchPrompt,
   completeAssistantMessage,
   failAssistantMessage,
+  retryAssistantMessage,
   queueOutgoingMessages,
   removeWindowsFromState,
   setWindowHistoryExpanded,
   updateComposer,
+  updateWindowModel,
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
 import { useCanvasInteractions } from "./useCanvasInteractions";
 
 export interface ChatWorkspaceViewModel {
+  availableModels: string[];
   anchorGroupsByMessageKey: ReturnType<
     typeof useCanvasInteractions
   >["anchorGroupsByMessageKey"];
@@ -61,6 +64,7 @@ export interface ChatWorkspaceViewModel {
   onClosePromptCancel: () => void;
   onClosePromptConfirm: () => void;
   onComposerChange: (windowId: string, composer: string) => void;
+  onModelChange: (windowId: string, model: string) => void;
   onGeometryChange: () => void;
   onHeaderPointerDown: ReturnType<
     typeof useCanvasInteractions
@@ -72,6 +76,7 @@ export interface ChatWorkspaceViewModel {
     typeof useBranchSelection
   >["onMessageMouseDown"];
   onOpenFreshRootWindow: () => void;
+  onRetry: (windowId: string, messageId: string) => Promise<void>;
   onSelectionBranch: () => void;
   onSend: (windowId: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
@@ -107,6 +112,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     createInitialState(getViewportCenteredRootX(WINDOW_WIDTH)),
   );
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
@@ -129,6 +136,61 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       window.clearTimeout(timer);
     };
   }, [notice]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void (async () => {
+      try {
+        const config = await fetchChatModelConfig(controller.signal);
+        const fallbackModel = config.defaultModel ?? config.models[0] ?? null;
+
+        setAvailableModels(config.models);
+        setDefaultModel(fallbackModel);
+
+        if (!fallbackModel) {
+          return;
+        }
+
+        setAppState((current) => {
+          let changed = false;
+          const nextWindows = Object.fromEntries(
+            Object.entries(current.windows).map(([windowId, windowData]) => {
+              if (windowData.selectedModel) {
+                return [windowId, windowData];
+              }
+
+              changed = true;
+              return [
+                windowId,
+                {
+                  ...windowData,
+                  selectedModel: fallbackModel,
+                },
+              ];
+            }),
+          );
+
+          if (!changed) {
+            return current;
+          }
+
+          return {
+            ...current,
+            windows: nextWindows,
+          };
+        });
+      } catch (error: unknown) {
+        if (!isAbortError(error)) {
+          setNotice(getErrorMessage(error));
+        }
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   const canvas = useCanvasInteractions({
     appState,
@@ -155,6 +217,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
   function handleComposerChange(windowId: string, composer: string): void {
     setAppState((current) => updateComposer(current, windowId, composer));
+  }
+
+  function handleModelChange(windowId: string, model: string): void {
+    setAppState((current) => updateWindowModel(current, windowId, model));
   }
 
   const handleWindowScrollStateChange = useCallback((
@@ -189,7 +255,14 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     selection.dismissSelection();
 
     const userMessage = createMessage("user", composer);
-    const assistantMessage = createMessage("assistant", "", "streaming");
+    const resolvedModel =
+      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+    const assistantMessage = createMessage(
+      "assistant",
+      "",
+      "streaming",
+      resolvedModel,
+    );
     const requestMessages: ChatMessage[] = [
       ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
       { role: "user", content: composer },
@@ -206,6 +279,85 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       await streamChat({
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
+        model: resolvedModel,
+        signal: controller.signal,
+        onDelta: (delta) => {
+          setAppState((current) =>
+            appendAssistantDelta(
+              current,
+              windowId,
+              assistantMessage.id,
+              delta,
+            ),
+          );
+          canvas.requestGeometryRefresh();
+        },
+      });
+
+      setAppState((current) =>
+        completeAssistantMessage(current, windowId, assistantMessage.id),
+      );
+    } catch (error: unknown) {
+      const aborted = isAbortError(error);
+      const message = getErrorMessage(error);
+
+      if (!aborted) {
+        setNotice(message);
+      }
+
+      setAppState((current) =>
+        failAssistantMessage(
+          current,
+          windowId,
+          assistantMessage.id,
+          aborted
+            ? "Streaming stopped."
+            : `Sorry, something went wrong: ${message}`,
+        ),
+      );
+    } finally {
+      delete abortControllersRef.current[windowId];
+      canvas.requestGeometryRefresh();
+    }
+  }
+
+  async function handleRetry(windowId: string, messageId: string): Promise<void> {
+    const snapshot = appStateRef.current;
+    const windowData = snapshot.windows[windowId];
+    const messages = snapshot.messagesByWindowId[windowId];
+    if (!windowData || !messages || windowData.isStreaming) {
+      return;
+    }
+
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1 || messages[messageIndex].role !== "assistant") {
+      return;
+    }
+
+    canvas.onWindowFocus(windowId);
+    selection.dismissSelection();
+
+    const resolvedModel =
+      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+    const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
+
+    const requestMessages: ChatMessage[] = messages
+      .slice(0, messageIndex)
+      .filter((m) => m.status !== "streaming")
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    setAppState((current) =>
+      retryAssistantMessage(current, windowId, messageId, assistantMessage),
+    );
+
+    const controller = new AbortController();
+    abortControllersRef.current[windowId] = controller;
+
+    try {
+      await streamChat({
+        messages: requestMessages,
+        branchFocus: windowData.branchFocus,
+        model: resolvedModel,
         signal: controller.signal,
         onDelta: (delta) => {
           setAppState((current) =>
@@ -292,13 +444,16 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function openFreshRootWindow(): void {
-    const rootWindow = createWindowRecord({
-      title: ROOT_WINDOW_TITLE,
-      x: getCenteredRootX(WINDOW_WIDTH),
-      y: ROOT_WINDOW_Y,
+    setAppState((current) => {
+      const title = getNextRootChatTitle(current.windows);
+      const rootWindow = createWindowRecord({
+        title,
+        x: getCenteredRootX(WINDOW_WIDTH),
+        y: ROOT_WINDOW_Y,
+        selectedModel: defaultModel ?? availableModels[0] ?? null,
+      });
+      return addRootWindow(current, rootWindow);
     });
-
-    setAppState((current) => addRootWindow(current, rootWindow));
   }
 
   function handleToggleHistoryExpanded(windowId: string): void {
@@ -323,6 +478,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const hasChildWindows = windows.some((windowData) => windowData.parentId !== null);
 
   return {
+    availableModels,
     anchorGroupsByMessageKey: canvas.anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
@@ -338,6 +494,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onClosePromptCancel: dismissClosePrompt,
     onClosePromptConfirm: confirmClosePrompt,
     onComposerChange: handleComposerChange,
+    onModelChange: handleModelChange,
     onGeometryChange: canvas.requestGeometryRefresh,
     onHeaderPointerDown: (event, windowId) => {
       selection.dismissSelection();
@@ -349,6 +506,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     },
     onMessageMouseDown: selection.onMessageMouseDown,
     onOpenFreshRootWindow: openFreshRootWindow,
+    onRetry: handleRetry,
     onSelectionBranch: selection.onSelectionBranch,
     onSend: handleSend,
     onToggleHistoryExpanded: handleToggleHistoryExpanded,

@@ -29,6 +29,7 @@ interface CreateWindowRecordOptions {
   branchFocus?: BranchFocus | null;
   inheritedMessageCount?: number;
   isHistoryExpanded?: boolean;
+  selectedModel?: string | null;
 }
 
 interface CreateAnchorGroupKeyOptions {
@@ -54,6 +55,7 @@ export function createWindowRecord({
   branchFocus = null,
   inheritedMessageCount = 0,
   isHistoryExpanded = true,
+  selectedModel = null,
 }: CreateWindowRecordOptions): WindowRecord {
   return {
     id: crypto.randomUUID(),
@@ -69,6 +71,7 @@ export function createWindowRecord({
     inheritedMessageCount,
     isHistoryExpanded,
     composer: "",
+    selectedModel,
     isStreaming: false,
   };
 }
@@ -102,12 +105,14 @@ export function createMessage(
   role: ChatRole,
   content: string,
   status: MessageStatus = "complete",
+  model?: string,
 ): MessageRecord {
   return {
     id: crypto.randomUUID(),
     role,
     content,
     status,
+    model,
   };
 }
 
@@ -168,6 +173,18 @@ export function getDescendantIds(windows: WindowMap, rootId: string): string[] {
   }
 
   return descendants;
+}
+
+export function getNextRootChatTitle(windows: WindowMap): string {
+  let max = 0;
+  for (const w of Object.values(windows)) {
+    if (w.parentId !== null) continue;
+    const match = w.title.match(/^Chat (\d+)$/);
+    if (match) {
+      max = Math.max(max, Number(match[1]));
+    }
+  }
+  return `Chat ${max + 1}`;
 }
 
 export function getCanvasMessages(

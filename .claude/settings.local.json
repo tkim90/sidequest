@@ -22,7 +22,10 @@
       "Bash(source:*)",
       "Bash(PATH=\"/Users/taekim/.nvm/versions/node/v25.3.0/bin:$PATH\" npx tsc:*)",
       "Bash(/Users/taekim/.nvm/versions/node/v25.3.0/bin/npx tsc:*)",
-      "Bash(/Users/taekim/.nvm/versions/node/v25.3.0/bin/npx vitest:*)"
+      "Bash(/Users/taekim/.nvm/versions/node/v25.3.0/bin/npx vitest:*)",
+      "Bash(find /Users/taekim/Documents/projects/tinkering/sidequest/apps/frontend/src/chat -type f \\\\\\( -name \"*.css\" -o -name \"*.module.css\" \\\\\\) 2>/dev/null | head -10)",
+      "Bash(/Users/taekim/.nvm/versions/node/v20.18.1/bin/npx --prefix /Users/taekim/Documents/projects/tinkering/sidequest/apps/frontend tsc --noEmit --pretty 2>&1 | head -60)",
+      "Bash(/Users/taekim/Library/pnpm/tsc --noEmit --project apps/frontend/tsconfig.json 2>&1 | head -40)"
     ]
   }
 }
