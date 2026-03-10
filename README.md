@@ -4,8 +4,9 @@ Fork side bars into separate chats without disrupting your main conversation flo
 
 <img width="1982" height="1323" alt="CleanShot 2026-03-09 at 22 03 25" src="https://github.com/user-attachments/assets/61426cb2-fc0d-4bb7-8d88-ef06cae32e2e" />
 
-<img width="1424" height="1039" alt="image" src="https://github.com/user-attachments/assets/8a12aa95-2e77-4716-859f-a6adb48c474b" />
+It also uses `json-render` to let LLMs reliably call your custom React components like this `AlgorithmVisualizer`!
 
+<img width="1339" height="1256" alt="CleanShot 2026-03-09 at 22 28 24" src="https://github.com/user-attachments/assets/34be5779-4eb1-4140-a737-d24b992cb8ea" />
 
 ## Structure
 
