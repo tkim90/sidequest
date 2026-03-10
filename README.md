@@ -14,6 +14,7 @@ It also uses [json-render](https://json-render.dev) to let LLMs reliably call yo
 
 - `apps/backend`: FastAPI app managed with `uv`
 - `apps/frontend`: Vite + React infinite-canvas UI
+- `apps/imageservice`: Express service for SVG/PNG image rendering
 
 ## Backend
 
@@ -63,8 +64,27 @@ npm run dev
 
 The frontend listens on `http://127.0.0.1:5173` and proxies `/api` requests to the backend.
 
+## Image Service
+
+Install dependencies:
+
+```bash
+cd apps/imageservice
+npm install
+```
+
+Run the service:
+
+```bash
+cd apps/imageservice
+npm start
+```
+
+The image service listens on `http://127.0.0.1:3001`.
+
 ## Features
 
+### Canvas & Chat
 - Pannable and zoomable infinite canvas
 - Multiple draggable chat windows
 - Streaming model responses
@@ -74,6 +94,18 @@ The frontend listens on `http://127.0.0.1:5173` and proxies `/api` requests to t
 - Recursive child chats with inherited parent history snapshots
 - Connector lines from the anchored phrase to the child chat window
 - Cascade-close confirmation when a parent has descendants
+- Starter questions for new chats
+- Code syntax highlighting in messages
+
+### JSON-Render Interactive Components
+- LLM-driven interactive React components rendered inline in chat via [json-render](https://json-render.dev)
+- Cards, charts, tables, tabs, alerts, progress bars, and more
+- AlgorithmStepper: step-through algorithm walkthroughs
+- AlgorithmVisualizer: synchronized code + graph visualization with step highlighting
+- Diagram component for trees, graphs, and state machines (nodes/edges)
+
+### Image Rendering
+- Image rendering service for static SVG/PNG generation
 
 ## Quick Start
 
