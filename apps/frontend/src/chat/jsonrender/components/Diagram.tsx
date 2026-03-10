@@ -64,26 +64,44 @@ function getBoundaryPoint(
 export default function Diagram({ title, nodes, edges }: DiagramProps) {
   if (!nodes || nodes.length === 0) return null;
 
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const padding = 60;
-  const minX = Math.min(...nodes.map((n) => n.x)) - padding;
-  const minY = Math.min(...nodes.map((n) => n.y)) - padding;
-  const maxX = Math.max(...nodes.map((n) => n.x)) + padding;
-  const maxY = Math.max(...nodes.map((n) => n.y)) + padding;
+  const sanitizedNodes = nodes.map((n, i) => {
+    const x = Number(n.x);
+    const y = Number(n.y);
+    return {
+      ...n,
+      x: Number.isFinite(x) ? x : (i % 5) * 120 + 60,
+      y: Number.isFinite(y) ? y : Math.floor(i / 5) * 100 + 60,
+    };
+  });
+
+  const nodeMap = new Map(sanitizedNodes.map((n) => [n.id, n]));
+  const PAD = 100;
+  const rawMinX = Math.min(...sanitizedNodes.map((n) => n.x));
+  const rawMinY = Math.min(...sanitizedNodes.map((n) => n.y));
+  const rawMaxX = Math.max(...sanitizedNodes.map((n) => n.x));
+  const rawMaxY = Math.max(...sanitizedNodes.map((n) => n.y));
+  const vbX = Math.floor((rawMinX - PAD) / 50) * 50;
+  const vbY = Math.floor((rawMinY - PAD) / 50) * 50;
+  const vbW = Math.ceil((rawMaxX + PAD - vbX) / 50) * 50;
+  const vbH = Math.ceil((rawMaxY + PAD - vbY) / 50) * 50;
 
   const safeEdges = (edges ?? []).filter(
     (e) => nodeMap.has(e.from) && nodeMap.has(e.to),
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" style={{ minHeight: 200 }}>
       {title && <span className={titleClass}>{title}</span>}
       <svg
-        viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`}
+        viewBox={
+          Number.isFinite(vbX + vbY + vbW + vbH)
+            ? `${vbX} ${vbY} ${vbW} ${vbH}`
+            : "0 0 500 300"
+        }
         className="w-full"
-        style={{ maxHeight: 400 }}
+        style={{ maxHeight: 400, transition: "viewBox 0.15s ease-out, height 0.15s ease-out" }}
       >
-        <defs>
+        <defs key="defs">
           <marker
             id="arrow"
             viewBox="0 0 10 10"
@@ -147,7 +165,7 @@ export default function Diagram({ title, nodes, edges }: DiagramProps) {
           );
         })}
 
-        {nodes.map((node) => {
+        {sanitizedNodes.map((node, i) => {
           const shape = node.shape ?? "circle";
           const strokeColor = node.highlight
             ? "var(--primary)"
@@ -155,7 +173,7 @@ export default function Diagram({ title, nodes, edges }: DiagramProps) {
           const strokeWidth = node.highlight ? 2.5 : 1.5;
 
           return (
-            <g key={node.id}>
+            <g key={`node-${node.id}-${i}`}>
               {shape === "circle" && (
                 <circle
                   cx={node.x}

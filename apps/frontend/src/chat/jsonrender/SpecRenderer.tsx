@@ -89,7 +89,8 @@ function SpecElementNodeImpl({
         })
       : null;
 
-  const props = (element.props ?? {}) as Record<string, unknown>;
+  const { type: _type, children: _children, props: explicitProps, ...extraKeys } = element as Record<string, unknown>;
+  const props = { ...extraKeys, ...((explicitProps ?? {}) as Record<string, unknown>) };
 
   return (
     <ElementErrorBoundary>

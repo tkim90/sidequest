@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { AnchorGroup } from "../../types";
 import ImageRenderer, { ImageRendererSkeleton } from "../jsonrender/ImageRenderer";
@@ -15,7 +15,6 @@ import {
 } from "./offsetMap";
 import {
   renderAnchoredInlineSource,
-  renderAnchoredPlainText,
   renderInlineMarkdown,
   type AnchorRange,
 } from "./renderInlineAnchors";
@@ -103,7 +102,7 @@ function StreamingJsonRenderBlock({
   );
   const prevKeyRef = useRef(streamKey);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (prevKeyRef.current !== streamKey) {
       prevKeyRef.current = streamKey;
       setStableSpec(partialJsonParse(code));
@@ -123,6 +122,38 @@ function StreamingJsonRenderBlock({
   }
 
   return <SpecRenderer spec={stableSpec} registry={registry} partial rawJson={code} />;
+}
+
+function StreamingImageRenderBlock({
+  code,
+  streamKey,
+}: {
+  code: string;
+  streamKey: string;
+}) {
+  const [stableSpec, setStableSpec] = useState<JsonRenderSpec | null>(() =>
+    partialJsonParse(code),
+  );
+  const prevKeyRef = useRef(streamKey);
+
+  useLayoutEffect(() => {
+    if (prevKeyRef.current !== streamKey) {
+      prevKeyRef.current = streamKey;
+      setStableSpec(partialJsonParse(code));
+      return;
+    }
+
+    const parsedSpec = partialJsonParse(code);
+    if (!parsedSpec) return;
+
+    setStableSpec(parsedSpec);
+  }, [code, streamKey]);
+
+  if (!stableSpec) {
+    return <ImageRendererSkeleton />;
+  }
+
+  return <ImageRenderer spec={stableSpec} partial rawJson={code} />;
 }
 
 function getBlockAnchorRanges(ctx: BlockRenderContext): AnchorRange[] {
@@ -297,6 +328,17 @@ export function RenderFinalizedBlock({
     if (spec) {
       return <SpecRenderer spec={spec} registry={registry} rawJson={block.code} />;
     }
+    return (
+      <div className="my-3">
+        <div className="flex items-center gap-1.5 rounded-t-md bg-destructive/10 border border-b-0 border-destructive/20 px-3 py-1.5 text-xs text-destructive">
+          <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM7.25 4.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5ZM8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+          </svg>
+          Failed to render UI — invalid JSON
+        </div>
+        <CodeBlock code={block.code} language="json" />
+      </div>
+    );
   }
 
   if (block.type === "code" && block.language === "imagerender") {
@@ -304,35 +346,28 @@ export function RenderFinalizedBlock({
     if (spec) {
       return <ImageRenderer spec={spec} rawJson={block.code} />;
     }
+    return (
+      <div className="my-3">
+        <div className="flex items-center gap-1.5 rounded-t-md bg-destructive/10 border border-b-0 border-destructive/20 px-3 py-1.5 text-xs text-destructive">
+          <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM7.25 4.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5ZM8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+          </svg>
+          Failed to render image — invalid JSON
+        </div>
+        <CodeBlock code={block.code} language="json" />
+      </div>
+    );
   }
 
   if (block.type === "code") {
-    if (anchors.length === 0) {
-      return <CodeBlock code={block.code} language={block.language} />;
-    }
-
     return (
-      <div className="my-3">
-        <div className="overflow-x-auto rounded-md bg-zinc-900 text-zinc-100">
-          {block.language ? (
-            <div className="border-b border-zinc-700 px-3 py-1 text-xs text-zinc-300">
-              {block.language}
-            </div>
-          ) : null}
-          <pre className="p-3 font-mono text-sm leading-6">
-            <code>
-              {renderAnchoredPlainText({
-                anchors,
-                darkBackground: true,
-                isFocused: ctx.isFocused,
-                keyPrefix,
-                registerAnchorRef: ctx.registerAnchorRef,
-                text: block.code,
-              })}
-            </code>
-          </pre>
-        </div>
-      </div>
+      <CodeBlock
+        code={block.code}
+        language={block.language}
+        anchorRanges={anchors}
+        isFocused={ctx.isFocused}
+        registerAnchorRef={ctx.registerAnchorRef}
+      />
     );
   }
 
@@ -479,11 +514,7 @@ export function RenderActiveBlock({
   }
 
   if (block.type === "code" && block.language === "imagerender") {
-    const spec = partialJsonParse(block.code);
-    if (spec) {
-      return <ImageRenderer spec={spec} partial rawJson={block.code} />;
-    }
-    return <ImageRendererSkeleton />;
+    return <StreamingImageRenderBlock code={block.code} streamKey={streamKey} />;
   }
 
   if (block.type === "code") {

@@ -83,19 +83,16 @@ function propsEqual(
 }
 
 function elementsEqual(left: JsonRenderElement, right: JsonRenderElement): boolean {
-  return (
-    left.type === right.type &&
-    childrenEqual(left.children, right.children) &&
-    propsEqual(left.props, right.props)
-  );
+  if (left.type !== right.type) return false;
+  if (!childrenEqual(left.children, right.children)) return false;
+  if (!propsEqual(left.props, right.props)) return false;
+  const { type: _lt, props: _lp, children: _lc, ...leftExtra } = left;
+  const { type: _rt, props: _rp, children: _rc, ...rightExtra } = right;
+  return deepEqual(leftExtra, rightExtra);
 }
 
 function cloneElementReference(element: JsonRenderElement): JsonRenderElement {
-  return {
-    type: element.type,
-    props: element.props,
-    children: element.children,
-  };
+  return { ...element };
 }
 
 function buildParentsByChild(
