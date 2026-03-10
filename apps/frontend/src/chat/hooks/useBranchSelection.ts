@@ -178,6 +178,17 @@ export function useBranchSelection({
       return { startOffset: idx, endOffset: idx + selectedText.length };
     }
 
+    // Browser selection may produce double newlines between block-level
+    // elements (e.g. <p>…</p><p>…</p>), but rendered segments are joined
+    // with a single "\n". Collapse runs of 2+ newlines to retry.
+    const normalizedSelected = selectedText.replace(/[ \t]*\n([ \t]*\n)+[ \t]*/g, "\n");
+    if (normalizedSelected !== selectedText) {
+      const nIdx = fullRendered.indexOf(normalizedSelected);
+      if (nIdx >= 0) {
+        return { startOffset: nIdx, endOffset: nIdx + normalizedSelected.length };
+      }
+    }
+
     // Fallback: match against individual blocks (handles code blocks
     // where DOM selection includes language label / button text)
     for (let i = 0; i < blocks.length; i++) {
@@ -194,6 +205,21 @@ export function useBranchSelection({
           startOffset: bo.renderedStart + inner,
           endOffset: bo.renderedStart + inner + selectedText.length,
         };
+      }
+
+      // Retry per-block match with normalized selection text
+      if (normalizedSelected !== selectedText) {
+        if (normalizedSelected.includes(blockText) && blockText.length > 0) {
+          return { startOffset: bo.renderedStart, endOffset: bo.renderedEnd };
+        }
+
+        const nInner = blockText.indexOf(normalizedSelected);
+        if (nInner >= 0) {
+          return {
+            startOffset: bo.renderedStart + nInner,
+            endOffset: bo.renderedStart + nInner + normalizedSelected.length,
+          };
+        }
       }
     }
 

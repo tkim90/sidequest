@@ -34,12 +34,12 @@ function SelectionPopover({
     >
       <p className="m-0">Sidebar this selection into a new chat?</p>
       <div className="flex items-center gap-2">
-        <div className="flex-1 rounded-lg border border-border bg-secondary transition-colors focus-within:border-ring">
+        <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
           <input
             autoFocus
             type="text"
-            className="w-full bg-transparent px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Sidebar this conversation..."
+            className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+            placeholder="Ask a new question..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
