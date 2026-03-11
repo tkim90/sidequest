@@ -132,7 +132,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     if (!pending) return;
 
     const windowData = appState.windows[pending.windowId];
-    if (!windowData) return;
+    if (!windowData) {
+      pendingBranchSendRef.current = null;
+      return;
+    }
 
     pendingBranchSendRef.current = null;
     void handleSend(pending.windowId, pending.prompt);
