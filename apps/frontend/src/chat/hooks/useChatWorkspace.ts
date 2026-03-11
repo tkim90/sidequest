@@ -128,6 +128,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [isGlobalStreaming, setIsGlobalStreaming] = useState(false);
+  const isStreamingRef = useRef(false);
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
@@ -291,8 +292,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
-    // Enforce one in-flight stream globally
-    if (isGlobalStreaming) {
+    // Enforce one in-flight stream globally (ref is the authoritative guard)
+    if (isStreamingRef.current) {
       setNotice("Please wait for the current stream to finish.");
       return;
     }
@@ -306,6 +307,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
     lastSendTimeRef.current = now;
+
+    // Lock streaming BEFORE any async work to prevent races
+    isStreamingRef.current = true;
+    setIsGlobalStreaming(true);
 
     canvas.onWindowFocus(windowId);
     selection.dismissSelection();
@@ -330,7 +335,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setAppState((current) =>
       queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
     );
-    setIsGlobalStreaming(true);
 
     const controller = new AbortController();
     abortControllersRef.current[windowId] = controller;
@@ -378,6 +382,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         ),
       );
     } finally {
+      isStreamingRef.current = false;
       setIsGlobalStreaming(false);
       delete abortControllersRef.current[windowId];
       canvas.requestGeometryRefresh();
@@ -392,16 +397,30 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
-    // Enforce one in-flight stream globally
-    if (isGlobalStreaming) {
+    // Enforce one in-flight stream globally (ref is the authoritative guard)
+    if (isStreamingRef.current) {
       setNotice("Please wait for the current stream to finish.");
       return;
     }
+
+    // Enforce cooldown between retries
+    const now = Date.now();
+    const elapsed = now - lastSendTimeRef.current;
+    if (elapsed < SEND_COOLDOWN_MS) {
+      const remaining = Math.ceil((SEND_COOLDOWN_MS - elapsed) / 1000);
+      setNotice(`Please wait ${remaining}s before retrying.`);
+      return;
+    }
+    lastSendTimeRef.current = now;
 
     const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1 || messages[messageIndex].role !== "assistant") {
       return;
     }
+
+    // Lock streaming BEFORE any async work to prevent races
+    isStreamingRef.current = true;
+    setIsGlobalStreaming(true);
 
     canvas.onWindowFocus(windowId);
     selection.dismissSelection();
@@ -421,7 +440,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setAppState((current) =>
       retryAssistantMessage(current, windowId, messageId, assistantMessage),
     );
-    setIsGlobalStreaming(true);
 
     const controller = new AbortController();
     abortControllersRef.current[windowId] = controller;
@@ -468,6 +486,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         ),
       );
     } finally {
+      isStreamingRef.current = false;
       setIsGlobalStreaming(false);
       delete abortControllersRef.current[windowId];
       canvas.requestGeometryRefresh();
