@@ -51,7 +51,11 @@ function loadScript(): Promise<void> {
       `script[src^="https://challenges.cloudflare.com/turnstile"]`,
     );
     if (existing) {
-      existing.addEventListener("load", () => resolve());
+      if (window.turnstile) {
+        resolve();
+      } else {
+        existing.addEventListener("load", () => resolve());
+      }
       return;
     }
 

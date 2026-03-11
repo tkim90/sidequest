@@ -16,8 +16,7 @@ from dataclasses import dataclass, field
 import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +96,7 @@ class RateLimiter:
         self._buckets: dict[str, _BucketEntry] = defaultdict(_BucketEntry)
 
     def check(self, key: str) -> tuple[bool, int]:
-        """Return (allowed, retry_after_seconds). retry_after is 0 when allowed."""
+        """Return (allowed, retry_after_seconds). Does NOT record the request."""
         now = time.time()
         bucket = self._buckets[key]
 
@@ -121,10 +120,14 @@ class RateLimiter:
             retry_after = int(oldest + self.window_seconds - now) + 1
             return False, max(retry_after, 1)
 
-        # Record this request
+        return True, 0
+
+    def record(self, key: str) -> None:
+        """Record a request. Call only after all checks pass."""
+        now = time.time()
+        bucket = self._buckets[key]
         bucket.timestamps.append(now)
         bucket.daily_count += 1
-        return True, 0
 
 
 # ---------------------------------------------------------------------------
@@ -202,41 +205,74 @@ rate_limiter = RateLimiter()
 stream_tracker = StreamTracker()
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Apply rate limiting to POST /api/chat/stream."""
+class RateLimitMiddleware:
+    """Pure ASGI middleware: rate limiting + concurrent-stream tracking.
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
-        # Only rate-limit the chat stream endpoint
-        if request.url.path != "/api/chat/stream" or request.method != "POST":
-            return await call_next(request)
+    Uses a raw ASGI implementation instead of Starlette's BaseHTTPMiddleware
+    so that the stream-tracker slot is released only after the full response
+    body has been sent to the client (not just when headers are ready).
+    """
 
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        method = scope.get("method", "")
+
+        if path != "/api/chat/stream" or method != "POST":
+            await self.app(scope, receive, send)
+            return
+
+        # Build a minimal Request object for IP extraction
+        request = Request(scope)
         client_ip = get_client_ip(request)
 
-        # Check rate limit
-        allowed, retry_after = rate_limiter.check(client_ip)
-        if not allowed:
-            return JSONResponse(
-                status_code=429,
-                content={
-                    "detail": "Rate limit exceeded. Please try again later.",
-                },
-                headers={"Retry-After": str(retry_after)},
-            )
-
-        # Check concurrent streams
+        # 1. Check concurrent streams FIRST (doesn't consume quota)
         if not stream_tracker.acquire(client_ip):
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=429,
                 content={
                     "detail": "Too many concurrent streams. Please wait for the current stream to finish.",
                 },
                 headers={"Retry-After": "5"},
             )
+            await response(scope, receive, send)
+            return
+
+        # 2. Check rate limit (only after concurrent stream is acquired)
+        allowed, retry_after = rate_limiter.check(client_ip)
+        if not allowed:
+            stream_tracker.release(client_ip)
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "detail": "Rate limit exceeded. Please try again later.",
+                },
+                headers={"Retry-After": str(retry_after)},
+            )
+            await response(scope, receive, send)
+            return
+
+        # 3. Record the request now that all checks passed
+        rate_limiter.record(client_ip)
+
+        # 4. Wrap send to release stream slot after body is fully sent
+        async def send_with_tracking(message: Message) -> None:
+            await send(message)
+            if (
+                message.get("type") == "http.response.body"
+                and not message.get("more_body", False)
+            ):
+                stream_tracker.release(client_ip)
 
         try:
-            response = await call_next(request)
-            return response
-        finally:
+            await self.app(scope, receive, send_with_tracking)
+        except Exception:
+            # Ensure slot is released even on error
             stream_tracker.release(client_ip)
+            raise

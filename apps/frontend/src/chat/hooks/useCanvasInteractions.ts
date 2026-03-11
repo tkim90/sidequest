@@ -59,7 +59,6 @@ export function useCanvasInteractions({
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const windowRefs = useRef<Record<string, HTMLElement>>({});
   const anchorRefs = useRef<Record<string, HTMLSpanElement>>({});
-  const zoomCommitTimerRef = useRef<number | null>(null);
   const geometryRefreshFrameRef = useRef<number | null>(null);
 
   const requestGeometryRefresh = useCallback(() => {
@@ -77,34 +76,6 @@ export function useCanvasInteractions({
       setGeometryVersion((version) => version + 1);
     });
   }, []);
-
-  const clearZoomCommitTimer = useCallback(() => {
-    if (zoomCommitTimerRef.current !== null) {
-      window.clearTimeout(zoomCommitTimerRef.current);
-      zoomCommitTimerRef.current = null;
-    }
-  }, []);
-
-  const commitViewportZoom = useCallback(() => {
-    clearZoomCommitTimer();
-
-    setAppState((current) => {
-      if (current.viewport.scale === 1) {
-        return current;
-      }
-
-      return {
-        ...current,
-        viewport: {
-          ...current.viewport,
-          zoom: current.viewport.zoom * current.viewport.scale,
-          scale: 1,
-        },
-      };
-    });
-  }, [clearZoomCommitTimer, setAppState]);
-
-  useEffect(() => clearZoomCommitTimer, [clearZoomCommitTimer]);
 
   useEffect(
     () => () => {
@@ -130,10 +101,7 @@ export function useCanvasInteractions({
   useViewportWheel({
     appStateRef,
     canvasRef,
-    clearZoomCommitTimer,
-    commitViewportZoom,
     setAppState,
-    zoomCommitTimerRef,
   });
 
   const pointerInteractions = usePointerInteractions({
@@ -152,7 +120,6 @@ export function useCanvasInteractions({
     anchors: appState.anchors,
     canvasRef,
     geometryVersion,
-    messagesByWindowId: appState.messagesByWindowId,
     viewport: appState.viewport,
     windowRefs,
     windows: appState.windows,

@@ -9,4 +9,3 @@ export const MIN_WINDOW_WIDTH = 420;
 export const MIN_WINDOW_HEIGHT = 360;
 export const MIN_VIEWPORT_ZOOM = 0.55;
 export const MAX_VIEWPORT_ZOOM = 1.5;
-export const ZOOM_COMMIT_DELAY_MS = 140;

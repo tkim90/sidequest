@@ -1,4 +1,4 @@
-import { type PointerEvent as ReactPointerEvent } from "react";
+import { memo, type PointerEvent as ReactPointerEvent } from "react";
 
 import type {
   AnchorGroupsByMessageKey,
@@ -6,8 +6,9 @@ import type {
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import { useChatWindowLayout } from "../hooks/useChatWindowLayout";
+import { snapToDevicePixel } from "../hooks/canvasUtils";
 import type { ResizeEdges } from "../hooks/canvasTypes";
+import { useChatWindowLayout } from "../hooks/useChatWindowLayout";
 import ChatWindowComposer from "./ChatWindowComposer";
 import ChatWindowHeader from "./ChatWindowHeader";
 import ChatWindowMessages from "./ChatWindowMessages";
@@ -47,7 +48,7 @@ interface ChatWindowProps {
   zIndex: number;
 }
 
-function ChatWindow({
+const ChatWindow = memo(function ChatWindow({
   availableModels,
   anchorGroupsByMessageKey,
   isFocused,
@@ -84,6 +85,9 @@ function ChatWindow({
     width: windowData.width,
   });
 
+  const snappedWindowX = snapToDevicePixel(windowData.x);
+  const snappedWindowY = snapToDevicePixel(windowData.y);
+
   function handleWindowPointerDown(event: ReactPointerEvent<HTMLElement>): void {
     onWindowFocus(windowData.id);
     const target = event.target as HTMLElement;
@@ -96,11 +100,11 @@ function ChatWindow({
 
   return (
     <article
-      className="absolute origin-top-left grid cursor-grab grid-rows-[auto_1fr_auto] border border-border bg-card shadow-[var(--window-shadow)] will-change-transform active:cursor-grabbing"
+      className="absolute origin-top-left grid cursor-grab grid-rows-[auto_1fr_auto] border border-border bg-card shadow-[var(--window-shadow)] active:cursor-grabbing"
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={{
-        transform: `translate3d(${windowData.x}px, ${windowData.y}px, 0)`,
+        transform: `translate(${snappedWindowX}px, ${snappedWindowY}px)`,
         width: windowData.width,
         height: windowData.height,
         zIndex,
@@ -152,6 +156,21 @@ function ChatWindow({
         windowId={windowData.id}
       />
     </article>
+  );
+}, areChatWindowPropsEqual);
+
+function areChatWindowPropsEqual(
+  previous: ChatWindowProps,
+  next: ChatWindowProps,
+): boolean {
+  return (
+    previous.windowData === next.windowData &&
+    previous.messages === next.messages &&
+    previous.isFocused === next.isFocused &&
+    previous.zIndex === next.zIndex &&
+    previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
+    previous.availableModels === next.availableModels &&
+    previous.savedScrollState === next.savedScrollState
   );
 }
 

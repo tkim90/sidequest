@@ -26,6 +26,7 @@ export interface AnnotatedSpan extends LeafSpan {
   highlighted: boolean;
   anchorGroupKey?: string;
   anchorCount?: number;
+  preview?: boolean;
 }
 
 export function getRenderedTextForBlock(block: MarkdownBlock): string {
@@ -154,6 +155,7 @@ interface AnchorRange {
   startOffset: number;
   endOffset: number;
   count: number;
+  preview?: boolean;
 }
 
 export function splitLeavesAtAnchors(
@@ -216,6 +218,7 @@ export function splitLeavesAtAnchors(
         highlighted: !!coveringAnchor,
         anchorGroupKey: coveringAnchor?.key,
         anchorCount: coveringAnchor?.count,
+        preview: coveringAnchor?.preview,
       });
     }
   }

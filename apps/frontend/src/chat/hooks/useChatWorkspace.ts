@@ -1,13 +1,18 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
 
+import { useDeltaBatcher } from "./useDeltaBatcher";
+
 import type {
+  AnchorGroup,
+  AnchorGroupsByMessageKey,
   AppState,
   ChatMessage,
   ClosePrompt,
@@ -38,7 +43,6 @@ import {
 } from "../lib/state";
 import {
   addRootWindow,
-  appendAssistantDelta,
   buildCloseAllChildrenPrompt,
   buildCloseBranchPrompt,
   completeAssistantMessage,
@@ -84,7 +88,7 @@ export interface ChatWorkspaceViewModel {
   >["onMessageMouseDown"];
   onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
-  onSelectionBranch: () => void;
+  onSelectionBranch: (prompt?: string) => void;
   onSend: (windowId: string, promptOverride?: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
@@ -128,11 +132,26 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
   const lastSendTimeRef = useRef(0);
+  const pendingBranchSendRef = useRef<{ windowId: string; prompt: string } | null>(null);
 
   const { getToken, containerRef: turnstileContainerRef } = useTurnstile();
 
   useEffect(() => {
     appStateRef.current = appState;
+  }, [appState]);
+
+  useEffect(() => {
+    const pending = pendingBranchSendRef.current;
+    if (!pending) return;
+
+    const windowData = appState.windows[pending.windowId];
+    if (!windowData) {
+      pendingBranchSendRef.current = null;
+      return;
+    }
+
+    pendingBranchSendRef.current = null;
+    void handleSend(pending.windowId, pending.prompt);
   }, [appState]);
 
   useEffect(() => {
@@ -217,6 +236,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     setNotice,
     windowRefs: canvas.windowRefs,
   });
+
+  const deltaBatcher = useDeltaBatcher(setAppState, canvas.requestGeometryRefresh);
 
   function getCenteredRootX(windowWidth: number): number {
     const canvasWidth = canvas.canvasRef.current?.clientWidth;
@@ -315,24 +336,18 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     abortControllersRef.current[windowId] = controller;
 
     try {
+      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
       await streamChat({
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
         turnstileToken,
         signal: controller.signal,
-        onDelta: (delta) => {
-          setAppState((current) =>
-            appendAssistantDelta(
-              current,
-              windowId,
-              assistantMessage.id,
-              delta,
-            ),
-          );
-          canvas.requestGeometryRefresh();
-        },
+        onDelta: batcher.push,
       });
+
+      batcher.flush();
 
       setAppState((current) =>
         completeAssistantMessage(current, windowId, assistantMessage.id),
@@ -349,6 +364,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
           setNotice(message);
         }
       }
+
+      deltaBatcher.cancel(windowId);
 
       setAppState((current) =>
         failAssistantMessage(
@@ -410,24 +427,18 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     abortControllersRef.current[windowId] = controller;
 
     try {
+      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
       await streamChat({
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
         turnstileToken,
         signal: controller.signal,
-        onDelta: (delta) => {
-          setAppState((current) =>
-            appendAssistantDelta(
-              current,
-              windowId,
-              assistantMessage.id,
-              delta,
-            ),
-          );
-          canvas.requestGeometryRefresh();
-        },
+        onDelta: batcher.push,
       });
+
+      batcher.flush();
 
       setAppState((current) =>
         completeAssistantMessage(current, windowId, assistantMessage.id),
@@ -443,6 +454,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
           setNotice(message);
         }
       }
+
+      deltaBatcher.cancel(windowId);
 
       setAppState((current) =>
         failAssistantMessage(
@@ -534,6 +547,37 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.requestGeometryRefresh();
   }
 
+  const anchorGroupsByMessageKey = useMemo((): AnchorGroupsByMessageKey => {
+    const base = canvas.anchorGroupsByMessageKey;
+    const sel = selection.selectionState;
+    if (!sel || sel.startOffset === undefined || sel.endOffset === undefined) {
+      return base;
+    }
+
+    const messageKey = `${sel.parentWindowId}:${sel.parentMessageId}`;
+    const previewGroup: AnchorGroup = {
+      key: `__preview__`,
+      startOffset: sel.startOffset,
+      endOffset: sel.endOffset,
+      anchorIds: [],
+      preview: true,
+    };
+
+    const existing = base[messageKey] ?? [];
+    const groupsWithPreview = [...existing, previewGroup].sort((left, right) => {
+      if (left.startOffset !== right.startOffset) {
+        return left.startOffset - right.startOffset;
+      }
+
+      return left.endOffset - right.endOffset;
+    });
+
+    return {
+      ...base,
+      [messageKey]: groupsWithPreview,
+    };
+  }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
+
   const windows = appState.zOrder
     .map((windowId) => appState.windows[windowId])
     .filter((windowData): windowData is WindowRecord => Boolean(windowData));
@@ -541,7 +585,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
   return {
     availableModels,
-    anchorGroupsByMessageKey: canvas.anchorGroupsByMessageKey,
+    anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
     connectorPaths: canvas.connectorPaths,
@@ -570,7 +614,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onMessageMouseDown: selection.onMessageMouseDown,
     onOpenFreshRootWindow: openFreshRootWindow,
     onRetry: handleRetry,
-    onSelectionBranch: selection.onSelectionBranch,
+    onSelectionBranch: (prompt?: string) => {
+      const childWindowId = selection.onSelectionBranch();
+      if (childWindowId && prompt?.trim()) {
+        pendingBranchSendRef.current = { windowId: childWindowId, prompt: prompt.trim() };
+      }
+    },
     onSend: handleSend,
     onToggleHistoryExpanded: handleToggleHistoryExpanded,
     onWindowClose: handleClose,
