@@ -262,17 +262,22 @@ class RateLimitMiddleware:
         rate_limiter.record(client_ip)
 
         # 4. Wrap send to release stream slot after body is fully sent
+        released = False
+
         async def send_with_tracking(message: Message) -> None:
+            nonlocal released
             await send(message)
             if (
                 message.get("type") == "http.response.body"
                 and not message.get("more_body", False)
             ):
                 stream_tracker.release(client_ip)
+                released = True
 
         try:
             await self.app(scope, receive, send_with_tracking)
         except Exception:
-            # Ensure slot is released even on error
-            stream_tracker.release(client_ip)
+            # Ensure slot is released even on error (but not double-released)
+            if not released:
+                stream_tracker.release(client_ip)
             raise

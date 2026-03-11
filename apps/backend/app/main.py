@@ -256,7 +256,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Sidequest API", lifespan=lifespan)
 
-# --- CORS middleware ---
+# --- Middleware stack ---
+# Starlette wraps in reverse registration order, so the LAST added
+# middleware is the OUTERMOST.  We want: CORS(RateLimit(app)) so that
+# 429 responses from the rate limiter still get CORS headers.
+
+# 1. Register rate-limit middleware first (inner)
+app.add_middleware(RateLimitMiddleware)
+
+# 2. Register CORS middleware second (outer — wraps rate-limit)
 _cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
 _cors_origins = (
     [origin.strip() for origin in _cors_origins_raw.split(",") if origin.strip()]
@@ -271,9 +279,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
-
-# --- Rate-limit + concurrent-stream middleware ---
-app.add_middleware(RateLimitMiddleware)
 
 
 @app.get("/api/health")
