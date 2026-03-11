@@ -6,19 +6,25 @@ import {
 } from "react";
 
 import type { AppState } from "../../types";
-import { appendAssistantDelta } from "../lib/workspaceActions";
+import {
+  appendAssistantDelta,
+  appendAssistantReasoningDelta,
+} from "../lib/workspaceActions";
 
 const BATCH_INTERVAL_MS = 80;
 
 interface DeltaStream {
   windowId: string;
   assistantMessageId: string;
-  buffer: string;
+  contentBuffer: string;
+  reasoningRawBuffer: string;
+  reasoningSummaryBuffer: string;
   timerId: number | null;
 }
 
 interface DeltaBatcherHandle {
-  push: (delta: string) => void;
+  pushContent: (delta: string) => void;
+  pushReasoning: (format: "raw" | "summary", delta: string) => void;
   flush: () => void;
 }
 
@@ -36,21 +42,59 @@ export function useDeltaBatcher(
   const flushStream = useCallback(
     (windowId: string) => {
       const stream = streamsRef.current[windowId];
-      if (!stream || stream.buffer.length === 0) {
+      if (
+        !stream ||
+        (
+          stream.contentBuffer.length === 0 &&
+          stream.reasoningRawBuffer.length === 0 &&
+          stream.reasoningSummaryBuffer.length === 0
+        )
+      ) {
         return;
       }
 
-      const buffered = stream.buffer;
-      stream.buffer = "";
+      const contentBuffer = stream.contentBuffer;
+      const reasoningRawBuffer = stream.reasoningRawBuffer;
+      const reasoningSummaryBuffer = stream.reasoningSummaryBuffer;
 
-      setAppState((current) =>
-        appendAssistantDelta(
-          current,
-          stream.windowId,
-          stream.assistantMessageId,
-          buffered,
-        ),
-      );
+      stream.contentBuffer = "";
+      stream.reasoningRawBuffer = "";
+      stream.reasoningSummaryBuffer = "";
+
+      setAppState((current) => {
+        let nextState = current;
+
+        if (contentBuffer) {
+          nextState = appendAssistantDelta(
+            nextState,
+            stream.windowId,
+            stream.assistantMessageId,
+            contentBuffer,
+          );
+        }
+
+        if (reasoningRawBuffer) {
+          nextState = appendAssistantReasoningDelta(
+            nextState,
+            stream.windowId,
+            stream.assistantMessageId,
+            reasoningRawBuffer,
+            "raw",
+          );
+        }
+
+        if (reasoningSummaryBuffer) {
+          nextState = appendAssistantReasoningDelta(
+            nextState,
+            stream.windowId,
+            stream.assistantMessageId,
+            reasoningSummaryBuffer,
+            "summary",
+          );
+        }
+
+        return nextState;
+      });
       requestGeometryRefresh();
     },
     [setAppState, requestGeometryRefresh],
@@ -88,14 +132,24 @@ export function useDeltaBatcher(
       const stream: DeltaStream = {
         windowId,
         assistantMessageId,
-        buffer: "",
+        contentBuffer: "",
+        reasoningRawBuffer: "",
+        reasoningSummaryBuffer: "",
         timerId: null,
       };
       streamsRef.current[windowId] = stream;
 
       return {
-        push: (delta: string) => {
-          stream.buffer += delta;
+        pushContent: (delta: string) => {
+          stream.contentBuffer += delta;
+          scheduleFlush(windowId);
+        },
+        pushReasoning: (format: "raw" | "summary", delta: string) => {
+          if (format === "raw") {
+            stream.reasoningRawBuffer += delta;
+          } else {
+            stream.reasoningSummaryBuffer += delta;
+          }
           scheduleFlush(windowId);
         },
         flush: () => {

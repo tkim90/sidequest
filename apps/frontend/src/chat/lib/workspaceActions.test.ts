@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import { createAnchorRecord, createInitialState, createMessage, createWindowRecord } from "./state";
 import {
   appendAssistantDelta,
+  appendAssistantReasoningDelta,
   buildCloseAllChildrenPrompt,
   completeAssistantMessage,
   queueOutgoingMessages,
   removeWindowsFromState,
   setWindowHistoryExpanded,
+  updateWindowEffort,
 } from "./workspaceActions";
 
 describe("workspaceActions", () => {
@@ -41,6 +43,41 @@ describe("workspaceActions", () => {
       "complete",
     );
     expect(completeState.windows[rootWindowId]?.isStreaming).toBe(false);
+  });
+
+  it("tracks raw and summary reasoning separately and prefers raw when present", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+    const assistantMessage = createMessage("assistant", "", "streaming");
+
+    const queuedState = queueOutgoingMessages(
+      initialState,
+      rootWindowId,
+      createMessage("user", "Hello"),
+      assistantMessage,
+    );
+    const withSummary = appendAssistantReasoningDelta(
+      queuedState,
+      rootWindowId,
+      assistantMessage.id,
+      "summary text",
+      "summary",
+    );
+    const withRaw = appendAssistantReasoningDelta(
+      withSummary,
+      rootWindowId,
+      assistantMessage.id,
+      "raw text",
+      "raw",
+    );
+
+    expect(withSummary.messagesByWindowId[rootWindowId]?.[1]?.reasoningSummaryContent).toBe(
+      "summary text",
+    );
+    expect(withSummary.messagesByWindowId[rootWindowId]?.[1]?.reasoningRawContent).toBe("");
+    expect(withRaw.messagesByWindowId[rootWindowId]?.[1]?.reasoningRawContent).toBe(
+      "raw text",
+    );
   });
 
   it("removes child windows and their anchors from state", () => {
@@ -152,5 +189,18 @@ describe("workspaceActions", () => {
 
     expect(nextState.windows[childWindow.id]?.isHistoryExpanded).toBe(true);
     expect(nextState.windows[rootWindowId]?.isHistoryExpanded).toBe(true);
+  });
+
+  it("stores reasoning effort per window", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+
+    const nextState = updateWindowEffort(
+      initialState,
+      rootWindowId,
+      "high",
+    );
+
+    expect(nextState.windows[rootWindowId]?.selectedEffort).toBe("high");
   });
 });

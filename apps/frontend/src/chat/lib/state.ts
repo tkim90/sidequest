@@ -7,6 +7,7 @@ import type {
   MessageRecord,
   MessageStatus,
   MessagesByWindowId,
+  ReasoningEffort,
   WindowMap,
   WindowRecord,
 } from "../../types";
@@ -30,6 +31,7 @@ interface CreateWindowRecordOptions {
   inheritedMessageCount?: number;
   isHistoryExpanded?: boolean;
   selectedModel?: string | null;
+  selectedEffort?: ReasoningEffort | null;
 }
 
 interface CreateAnchorGroupKeyOptions {
@@ -56,6 +58,7 @@ export function createWindowRecord({
   inheritedMessageCount = 0,
   isHistoryExpanded = true,
   selectedModel = null,
+  selectedEffort = null,
 }: CreateWindowRecordOptions): WindowRecord {
   return {
     id: crypto.randomUUID(),
@@ -72,6 +75,7 @@ export function createWindowRecord({
     isHistoryExpanded,
     composer: "",
     selectedModel,
+    selectedEffort,
     isStreaming: false,
   };
 }
@@ -113,6 +117,8 @@ export function createMessage(
     content,
     status,
     model,
+    reasoningRawContent: "",
+    reasoningSummaryContent: "",
   };
 }
 

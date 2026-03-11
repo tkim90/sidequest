@@ -15,7 +15,6 @@ import ChatWindowMessages from "./ChatWindowMessages";
 import ChatWindowResizeHandles from "./ChatWindowResizeHandles";
 
 interface ChatWindowProps {
-  availableModels: string[];
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   isFocused: boolean;
   onClose: (windowId: string) => void;
@@ -26,6 +25,7 @@ interface ChatWindowProps {
     windowId: string,
   ) => void;
   onModelChange: (windowId: string, model: string) => void;
+  onEffortChange: (windowId: string, effort: WindowRecord["selectedEffort"]) => void;
   onResizePointerDown: (
     event: ReactPointerEvent<HTMLElement>,
     windowId: string,
@@ -49,7 +49,6 @@ interface ChatWindowProps {
 }
 
 const ChatWindow = memo(function ChatWindow({
-  availableModels,
   anchorGroupsByMessageKey,
   isFocused,
   onClose,
@@ -57,6 +56,7 @@ const ChatWindow = memo(function ChatWindow({
   onGeometryChange,
   onHeaderPointerDown,
   onModelChange,
+  onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
   onRetry,
@@ -144,16 +144,16 @@ const ChatWindow = memo(function ChatWindow({
       />
 
       <ChatWindowComposer
-        availableModels={availableModels}
         composer={windowData.composer}
         isStreaming={windowData.isStreaming}
         onComposerChange={(composer) => onComposerChange(windowData.id, composer)}
         onModelChange={(model) => onModelChange(windowData.id, model)}
+        onEffortChange={(effort) => onEffortChange(windowData.id, effort)}
         onSend={() => onSend(windowData.id)}
         selectedModel={windowData.selectedModel}
+        selectedEffort={windowData.selectedEffort}
         textareaRef={textareaRef}
         title={windowData.title}
-        windowId={windowData.id}
       />
     </article>
   );
@@ -169,7 +169,6 @@ function areChatWindowPropsEqual(
     previous.isFocused === next.isFocused &&
     previous.zIndex === next.zIndex &&
     previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
-    previous.availableModels === next.availableModels &&
     previous.savedScrollState === next.savedScrollState
   );
 }

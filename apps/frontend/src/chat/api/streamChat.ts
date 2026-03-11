@@ -1,22 +1,43 @@
-import type { BranchFocus, ChatMessage } from "../../types";
+import type {
+  BranchFocus,
+  ChatMessage,
+  ChatModelOption,
+  ReasoningEffort,
+} from "../../types";
+
+const DEFAULT_REASONING_EFFORTS: ReasoningEffort[] = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+];
 
 interface StreamChatOptions {
   messages: ChatMessage[];
   branchFocus: BranchFocus | null;
   model?: string | null;
+  effort?: ReasoningEffort | null;
   signal?: AbortSignal;
-  onDelta: (delta: string) => void;
+  onContentDelta: (delta: string) => void;
+  onReasoningDelta: (format: "raw" | "summary", delta: string) => void;
 }
 
 export interface ChatModelConfig {
-  models: string[];
+  models: ChatModelOption[];
   defaultModel: string | null;
 }
 
 type StreamEvent =
   | {
-      type: "delta";
+      type: "content_delta";
       text: string;
+    }
+  | {
+      type: "reasoning_delta";
+      text: string;
+      format: "raw" | "summary";
     }
   | {
       type: "error";
@@ -35,10 +56,25 @@ function parseStreamEvent(line: string): StreamEvent {
 
   const event = value as Record<string, unknown>;
 
-  if (event.type === "delta" && typeof event.text === "string") {
+  if (
+    (event.type === "delta" || event.type === "content_delta") &&
+    typeof event.text === "string"
+  ) {
     return {
-      type: "delta",
+      type: "content_delta",
       text: event.text,
+    };
+  }
+
+  if (
+    event.type === "reasoning_delta" &&
+    typeof event.text === "string" &&
+    (event.format === "raw" || event.format === "summary")
+  ) {
+    return {
+      type: "reasoning_delta",
+      text: event.text,
+      format: event.format,
     };
   }
 
@@ -62,8 +98,10 @@ export async function streamChat({
   messages,
   branchFocus,
   model,
+  effort,
   signal,
-  onDelta,
+  onContentDelta,
+  onReasoningDelta,
 }: StreamChatOptions): Promise<void> {
   const response = await fetch("/api/chat/stream", {
     method: "POST",
@@ -80,6 +118,7 @@ export async function streamChat({
           }
         : null,
       model,
+      effort: effort ?? null,
     }),
     signal,
   });
@@ -109,8 +148,10 @@ export async function streamChat({
       if (line) {
         const event = parseStreamEvent(line);
 
-        if (event.type === "delta") {
-          onDelta(event.text);
+        if (event.type === "content_delta") {
+          onContentDelta(event.text);
+        } else if (event.type === "reasoning_delta") {
+          onReasoningDelta(event.format, event.text);
         } else if (event.type === "error") {
           throw new Error(event.message || "The model stream failed.");
         } else {
@@ -132,8 +173,13 @@ export async function streamChat({
 
   const finalEvent = parseStreamEvent(buffer.trim());
 
-  if (finalEvent.type === "delta") {
-    onDelta(finalEvent.text);
+  if (finalEvent.type === "content_delta") {
+    onContentDelta(finalEvent.text);
+    return;
+  }
+
+  if (finalEvent.type === "reasoning_delta") {
+    onReasoningDelta(finalEvent.format, finalEvent.text);
     return;
   }
 
@@ -162,16 +208,46 @@ export async function fetchChatModelConfig(
   }
 
   const payload = value as Record<string, unknown>;
-  const modelValues = Array.isArray(payload.models)
-    ? payload.models.filter((model): model is string => typeof model === "string")
-    : [];
   const defaultModel =
     typeof payload.default_model === "string"
       ? payload.default_model
       : null;
+  const models = Array.isArray(payload.models)
+    ? payload.models.flatMap((model): ChatModelOption[] => {
+        if (!model || typeof model !== "object") {
+          return [];
+        }
+
+        const candidate = model as Record<string, unknown>;
+        if (typeof candidate.id !== "string") {
+          return [];
+        }
+
+        const efforts = Array.isArray(candidate.efforts)
+          ? candidate.efforts.filter(
+              (effort): effort is ReasoningEffort =>
+                typeof effort === "string" &&
+                DEFAULT_REASONING_EFFORTS.includes(effort as ReasoningEffort),
+            )
+          : [];
+        const defaultEffort =
+          typeof candidate.default_effort === "string" &&
+          efforts.includes(candidate.default_effort as ReasoningEffort)
+            ? (candidate.default_effort as ReasoningEffort)
+            : null;
+
+        return [
+          {
+            id: candidate.id,
+            efforts,
+            defaultEffort,
+          },
+        ];
+      })
+    : [];
 
   return {
-    models: modelValues,
+    models,
     defaultModel,
   };
 }

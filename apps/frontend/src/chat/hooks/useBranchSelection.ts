@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import type { AppState, SelectionState } from "../../types";
+import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
 import {
   CHILD_VERTICAL_STAGGER,
@@ -31,7 +32,6 @@ interface UseBranchSelectionOptions {
   appStateRef: RefObject<AppState>;
   requestGeometryRefresh: () => void;
   setAppState: Dispatch<SetStateAction<AppState>>;
-  setNotice: Dispatch<SetStateAction<string>>;
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
 
@@ -57,7 +57,6 @@ export function useBranchSelection({
   appStateRef,
   requestGeometryRefresh,
   setAppState,
-  setNotice,
   windowRefs,
 }: UseBranchSelectionOptions): UseBranchSelectionResult {
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
@@ -274,7 +273,7 @@ export function useBranchSelection({
       );
 
       if (!computed) {
-        setNotice(
+        useNoticeStore.getState().showNotice(
           "Could not determine selection position. Try selecting again.",
         );
         dismissSelection();
@@ -294,7 +293,7 @@ export function useBranchSelection({
     });
 
     if (overlap.type === "partial") {
-      setNotice(
+      useNoticeStore.getState().showNotice(
         "Overlapping branch anchors in the same message are blocked in this version.",
       );
       dismissSelection();

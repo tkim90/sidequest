@@ -1,6 +1,6 @@
 import { memo, type MouseEvent as ReactMouseEvent } from "react";
 
-import type { AnchorGroup, MessageRecord } from "../../types";
+import type { AnchorGroup, MessageRecord, MessageStatus } from "../../types";
 import { computeBlockOffsets } from "./offsetMap";
 import {
   FinalizedBlocksList,
@@ -14,7 +14,9 @@ interface MarkdownContentProps {
   message: MessageRecord;
   anchorGroups: AnchorGroup[];
   isFocused: boolean;
+  className?: string;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
+  renderStatus?: MessageStatus;
   onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
@@ -27,10 +29,13 @@ const MarkdownContent = memo(function MarkdownContent({
   message,
   anchorGroups,
   isFocused,
+  className,
   registerAnchorRef,
+  renderStatus,
   onMessageMouseDown,
 }: MarkdownContentProps) {
-  const isComplete = message.status === "complete";
+  const status = renderStatus ?? message.status;
+  const isComplete = status === "complete";
   const { finalizedBlocks, activeBlock } = useIncrementalMarkdownParse(
     message.content,
     message.id,
@@ -42,11 +47,11 @@ const MarkdownContent = memo(function MarkdownContent({
     : finalizedBlocks;
 
   const hasContent = finalizedBlocks.length > 0 || activeBlock !== null;
-  const showSkeleton = message.status === "streaming" && !hasContent;
+  const showSkeleton = status === "streaming" && !hasContent;
 
   return (
     <div
-      className="cursor-text break-words text-[20px] leading-7"
+      className={`cursor-text break-words text-[20px] leading-7 ${className ?? ""}`.trim()}
       data-message-id={message.id}
       onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
@@ -58,7 +63,7 @@ const MarkdownContent = memo(function MarkdownContent({
         registerAnchorRef={registerAnchorRef}
       />
       {activeBlock ? (
-        message.status === "streaming" ? (
+        status === "streaming" ? (
           <RenderActiveBlock
             block={activeBlock}
             streamKey={`${message.id}:active`}
@@ -83,7 +88,7 @@ const MarkdownContent = memo(function MarkdownContent({
           <div className="h-4 w-2/5 rounded bg-muted" />
         </div>
       ) : null}
-      {message.status === "streaming" && !showSkeleton ? (
+      {status === "streaming" && !showSkeleton ? (
         <span className="ml-0.5 inline-block animate-pulse font-semibold" aria-hidden="true">
           |
         </span>
@@ -100,7 +105,9 @@ function areMarkdownContentPropsEqual(
     previous.windowId === next.windowId &&
     previous.message === next.message &&
     previous.anchorGroups === next.anchorGroups &&
-    previous.isFocused === next.isFocused
+    previous.isFocused === next.isFocused &&
+    previous.className === next.className &&
+    previous.renderStatus === next.renderStatus
   );
 }
 
