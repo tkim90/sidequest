@@ -75,7 +75,12 @@ export function useBranchSelection({
         return;
       }
 
-      dismissSelection();
+      // Don't clear selection on mousedown within message text. If we clear
+      // selectionState here, React unmounts the preview highlight <span>s,
+      // which can destroy the browser's selection anchor mid-drag. Instead,
+      // let handleDocumentMouseUp manage the transition.
+      if (target instanceof Element && target.closest('[data-message-id]')) return;
+      setSelectionState(null);
     }
 
     document.addEventListener("mousedown", clearSelectionOnOutsideClick);
@@ -99,6 +104,7 @@ export function useBranchSelection({
       requestAnimationFrame(() => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          setSelectionState(null);
           return;
         }
 
