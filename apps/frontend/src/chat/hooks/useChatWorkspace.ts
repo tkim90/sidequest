@@ -510,9 +510,17 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     };
 
     const existing = base[messageKey] ?? [];
+    const groupsWithPreview = [...existing, previewGroup].sort((left, right) => {
+      if (left.startOffset !== right.startOffset) {
+        return left.startOffset - right.startOffset;
+      }
+
+      return left.endOffset - right.endOffset;
+    });
+
     return {
       ...base,
-      [messageKey]: [...existing, previewGroup],
+      [messageKey]: groupsWithPreview,
     };
   }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
 
