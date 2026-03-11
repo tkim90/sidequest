@@ -1,0 +1,36 @@
+server {
+    listen ${NGINX_PORT};
+    server_name _;
+
+    # Frontend static files
+    root /srv/frontend;
+    index index.html;
+
+    # Image service: /api/image -> localhost:3001/render
+    location = /api/image {
+        proxy_pass http://127.0.0.1:3001/render;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_http_version 1.1;
+        client_max_body_size 2m;
+    }
+
+    # Backend API: /api/* -> localhost:8000
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_http_version 1.1;
+
+        # Streaming support for /api/chat/stream
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_set_header Connection '';
+        chunked_transfer_encoding on;
+    }
+
+    # SPA fallback: all other routes serve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

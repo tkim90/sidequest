@@ -1,0 +1,25 @@
+# Version control
+.git
+.gitignore
+
+# Node artifacts
+**/node_modules
+apps/frontend/dist
+
+# Python artifacts
+**/__pycache__
+**/.venv
+*.pyc
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deploy scripts (not needed in image)
+deploy/build-and-run.sh
+deploy/test-docker.sh

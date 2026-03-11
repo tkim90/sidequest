@@ -10,11 +10,11 @@
     "@resvg/resvg-js": "^2.6.2",
     "geist": "^1.7.0",
     "react": "^19.1.1",
-    "satori": "^0.19.2"
+    "satori": "^0.19.2",
+    "tsx": "^4.19.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "tsx": "^4.19.0",
     "typescript": "^5.9.3"
   }
 }
