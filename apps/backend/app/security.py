@@ -183,15 +183,19 @@ async def verify_turnstile_token(token: str, ip: str) -> bool:
         # Turnstile not configured — allow all (dev mode)
         return True
 
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        response = await client.post(
-            TURNSTILE_VERIFY_URL,
-            data={
-                "secret": secret_key,
-                "response": token,
-                "remoteip": ip,
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                TURNSTILE_VERIFY_URL,
+                data={
+                    "secret": secret_key,
+                    "response": token,
+                    "remoteip": ip,
+                },
+            )
+    except httpx.HTTPError:
+        # Fail closed: if we can't reach Cloudflare, reject the request
+        return False
 
     if response.status_code != 200:
         return False

@@ -312,80 +312,83 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     isStreamingRef.current = true;
     setIsGlobalStreaming(true);
 
-    canvas.onWindowFocus(windowId);
-    selection.dismissSelection();
-
-    // Get turnstile token (non-blocking if not configured)
-    const turnstileToken = await getToken();
-
-    const userMessage = createMessage("user", composer);
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
-    const assistantMessage = createMessage(
-      "assistant",
-      "",
-      "streaming",
-      resolvedModel,
-    );
-    const requestMessages: ChatMessage[] = [
-      ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
-      { role: "user", content: composer },
-    ];
-
-    setAppState((current) =>
-      queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
-    );
-
-    const controller = new AbortController();
-    abortControllersRef.current[windowId] = controller;
-
     try {
-      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+      canvas.onWindowFocus(windowId);
+      selection.dismissSelection();
 
-      await streamChat({
-        messages: requestMessages,
-        branchFocus: windowData.branchFocus,
-        model: resolvedModel,
-        turnstileToken,
-        signal: controller.signal,
-        onDelta: batcher.push,
-      });
+      // Get turnstile token (non-blocking if not configured)
+      const turnstileToken = await getToken();
 
-      batcher.flush();
+      const userMessage = createMessage("user", composer);
+      const resolvedModel =
+        windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+      const assistantMessage = createMessage(
+        "assistant",
+        "",
+        "streaming",
+        resolvedModel,
+      );
+      const requestMessages: ChatMessage[] = [
+        ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
+        { role: "user", content: composer },
+      ];
 
       setAppState((current) =>
-        completeAssistantMessage(current, windowId, assistantMessage.id),
+        queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
       );
-    } catch (error: unknown) {
-      const aborted = isAbortError(error);
-      const message = getErrorMessage(error);
 
-      if (!aborted) {
-        // Show rate-limit countdown if available
-        if (error instanceof RateLimitError && error.retryAfter) {
-          setNotice(formatRetryAfter(error.retryAfter));
-        } else {
-          setNotice(message);
+      const controller = new AbortController();
+      abortControllersRef.current[windowId] = controller;
+
+      try {
+        const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
+        await streamChat({
+          messages: requestMessages,
+          branchFocus: windowData.branchFocus,
+          model: resolvedModel,
+          turnstileToken,
+          signal: controller.signal,
+          onDelta: batcher.push,
+        });
+
+        batcher.flush();
+
+        setAppState((current) =>
+          completeAssistantMessage(current, windowId, assistantMessage.id),
+        );
+      } catch (error: unknown) {
+        const aborted = isAbortError(error);
+        const message = getErrorMessage(error);
+
+        if (!aborted) {
+          // Show rate-limit countdown if available
+          if (error instanceof RateLimitError && error.retryAfter) {
+            setNotice(formatRetryAfter(error.retryAfter));
+          } else {
+            setNotice(message);
+          }
         }
+
+        deltaBatcher.cancel(windowId);
+
+        setAppState((current) =>
+          failAssistantMessage(
+            current,
+            windowId,
+            assistantMessage.id,
+            aborted
+              ? "Streaming stopped."
+              : `Sorry, something went wrong: ${message}`,
+          ),
+        );
+      } finally {
+        delete abortControllersRef.current[windowId];
+        canvas.requestGeometryRefresh();
       }
-
-      deltaBatcher.cancel(windowId);
-
-      setAppState((current) =>
-        failAssistantMessage(
-          current,
-          windowId,
-          assistantMessage.id,
-          aborted
-            ? "Streaming stopped."
-            : `Sorry, something went wrong: ${message}`,
-        ),
-      );
     } finally {
       isStreamingRef.current = false;
       setIsGlobalStreaming(false);
-      delete abortControllersRef.current[windowId];
-      canvas.requestGeometryRefresh();
     }
   }
 
@@ -422,74 +425,77 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     isStreamingRef.current = true;
     setIsGlobalStreaming(true);
 
-    canvas.onWindowFocus(windowId);
-    selection.dismissSelection();
-
-    // Get turnstile token
-    const turnstileToken = await getToken();
-
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
-    const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
-
-    const requestMessages: ChatMessage[] = messages
-      .slice(0, messageIndex)
-      .filter((m) => m.status !== "streaming")
-      .map((m) => ({ role: m.role, content: m.content }));
-
-    setAppState((current) =>
-      retryAssistantMessage(current, windowId, messageId, assistantMessage),
-    );
-
-    const controller = new AbortController();
-    abortControllersRef.current[windowId] = controller;
-
     try {
-      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+      canvas.onWindowFocus(windowId);
+      selection.dismissSelection();
 
-      await streamChat({
-        messages: requestMessages,
-        branchFocus: windowData.branchFocus,
-        model: resolvedModel,
-        turnstileToken,
-        signal: controller.signal,
-        onDelta: batcher.push,
-      });
+      // Get turnstile token
+      const turnstileToken = await getToken();
 
-      batcher.flush();
+      const resolvedModel =
+        windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+      const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
+
+      const requestMessages: ChatMessage[] = messages
+        .slice(0, messageIndex)
+        .filter((m) => m.status !== "streaming")
+        .map((m) => ({ role: m.role, content: m.content }));
 
       setAppState((current) =>
-        completeAssistantMessage(current, windowId, assistantMessage.id),
+        retryAssistantMessage(current, windowId, messageId, assistantMessage),
       );
-    } catch (error: unknown) {
-      const aborted = isAbortError(error);
-      const message = getErrorMessage(error);
 
-      if (!aborted) {
-        if (error instanceof RateLimitError && error.retryAfter) {
-          setNotice(formatRetryAfter(error.retryAfter));
-        } else {
-          setNotice(message);
+      const controller = new AbortController();
+      abortControllersRef.current[windowId] = controller;
+
+      try {
+        const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
+        await streamChat({
+          messages: requestMessages,
+          branchFocus: windowData.branchFocus,
+          model: resolvedModel,
+          turnstileToken,
+          signal: controller.signal,
+          onDelta: batcher.push,
+        });
+
+        batcher.flush();
+
+        setAppState((current) =>
+          completeAssistantMessage(current, windowId, assistantMessage.id),
+        );
+      } catch (error: unknown) {
+        const aborted = isAbortError(error);
+        const message = getErrorMessage(error);
+
+        if (!aborted) {
+          if (error instanceof RateLimitError && error.retryAfter) {
+            setNotice(formatRetryAfter(error.retryAfter));
+          } else {
+            setNotice(message);
+          }
         }
+
+        deltaBatcher.cancel(windowId);
+
+        setAppState((current) =>
+          failAssistantMessage(
+            current,
+            windowId,
+            assistantMessage.id,
+            aborted
+              ? "Streaming stopped."
+              : `Sorry, something went wrong: ${message}`,
+          ),
+        );
+      } finally {
+        delete abortControllersRef.current[windowId];
+        canvas.requestGeometryRefresh();
       }
-
-      deltaBatcher.cancel(windowId);
-
-      setAppState((current) =>
-        failAssistantMessage(
-          current,
-          windowId,
-          assistantMessage.id,
-          aborted
-            ? "Streaming stopped."
-            : `Sorry, something went wrong: ${message}`,
-        ),
-      );
     } finally {
       isStreamingRef.current = false;
       setIsGlobalStreaming(false);
-      delete abortControllersRef.current[windowId];
-      canvas.requestGeometryRefresh();
     }
   }
 
