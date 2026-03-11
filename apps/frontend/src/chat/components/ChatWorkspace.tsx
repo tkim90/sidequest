@@ -60,6 +60,12 @@ function ChatWorkspace() {
       ) : null}
 
       <NoticeToast notice={workspace.notice} />
+
+      {/* Hidden Turnstile widget container */}
+      <div
+        ref={workspace.turnstileContainerRef}
+        style={{ position: "fixed", bottom: 0, right: 0, zIndex: -1, opacity: 0, pointerEvents: "none" }}
+      />
     </main>
   );
 }

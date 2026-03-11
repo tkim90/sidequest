@@ -21,13 +21,18 @@ import type {
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import { fetchChatModelConfig, streamChat } from "../api/streamChat";
+import { fetchChatModelConfig, RateLimitError, streamChat } from "../api/streamChat";
 import {
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
+import {
+  MAX_CHARS_PER_MESSAGE,
+  SEND_COOLDOWN_MS,
+  formatRetryAfter,
+} from "../lib/safeguards";
 import {
   createMessage,
   createWindowRecord,
@@ -51,6 +56,7 @@ import {
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
 import { useCanvasInteractions } from "./useCanvasInteractions";
+import { useTurnstile } from "./useTurnstile";
 
 export interface ChatWorkspaceViewModel {
   availableModels: string[];
@@ -61,6 +67,7 @@ export interface ChatWorkspaceViewModel {
   closePrompt: ClosePrompt | null;
   connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
   hasChildWindows: boolean;
+  isGlobalStreaming: boolean;
   messagesByWindowId: MessagesByWindowId;
   notice: string;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -98,6 +105,7 @@ export interface ChatWorkspaceViewModel {
     typeof useCanvasInteractions
   >["registerWindowRef"];
   selectionState: SelectionState | null;
+  turnstileContainerRef: RefObject<HTMLDivElement | null>;
   viewport: AppState["viewport"];
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
@@ -119,10 +127,15 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [isGlobalStreaming, setIsGlobalStreaming] = useState(false);
+  const isStreamingRef = useRef(false);
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
+  const lastSendTimeRef = useRef(0);
   const pendingBranchSendRef = useRef<{ windowId: string; prompt: string } | null>(null);
+
+  const { getToken, containerRef: turnstileContainerRef } = useTurnstile();
 
   useEffect(() => {
     appStateRef.current = appState;
@@ -237,7 +250,11 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function handleComposerChange(windowId: string, composer: string): void {
-    setAppState((current) => updateComposer(current, windowId, composer));
+    // Enforce client-side character limit
+    const clamped = composer.length > MAX_CHARS_PER_MESSAGE
+      ? composer.slice(0, MAX_CHARS_PER_MESSAGE)
+      : composer;
+    setAppState((current) => updateComposer(current, windowId, clamped));
   }
 
   function handleModelChange(windowId: string, model: string): void {
@@ -275,69 +292,103 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
-    canvas.onWindowFocus(windowId);
-    selection.dismissSelection();
+    // Enforce one in-flight stream globally (ref is the authoritative guard)
+    if (isStreamingRef.current) {
+      setNotice("Please wait for the current stream to finish.");
+      return;
+    }
 
-    const userMessage = createMessage("user", composer);
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
-    const assistantMessage = createMessage(
-      "assistant",
-      "",
-      "streaming",
-      resolvedModel,
-    );
-    const requestMessages: ChatMessage[] = [
-      ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
-      { role: "user", content: composer },
-    ];
+    // Enforce cooldown between sends
+    const now = Date.now();
+    const elapsed = now - lastSendTimeRef.current;
+    if (elapsed < SEND_COOLDOWN_MS) {
+      const remaining = Math.ceil((SEND_COOLDOWN_MS - elapsed) / 1000);
+      setNotice(`Please wait ${remaining}s before sending again.`);
+      return;
+    }
+    lastSendTimeRef.current = now;
 
-    setAppState((current) =>
-      queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
-    );
-
-    const controller = new AbortController();
-    abortControllersRef.current[windowId] = controller;
+    // Lock streaming BEFORE any async work to prevent races
+    isStreamingRef.current = true;
+    setIsGlobalStreaming(true);
 
     try {
-      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+      canvas.onWindowFocus(windowId);
+      selection.dismissSelection();
 
-      await streamChat({
-        messages: requestMessages,
-        branchFocus: windowData.branchFocus,
-        model: resolvedModel,
-        signal: controller.signal,
-        onDelta: batcher.push,
-      });
+      // Get turnstile token (non-blocking if not configured)
+      const turnstileToken = await getToken();
 
-      batcher.flush();
+      const userMessage = createMessage("user", composer);
+      const resolvedModel =
+        windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+      const assistantMessage = createMessage(
+        "assistant",
+        "",
+        "streaming",
+        resolvedModel,
+      );
+      const requestMessages: ChatMessage[] = [
+        ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
+        { role: "user", content: composer },
+      ];
 
       setAppState((current) =>
-        completeAssistantMessage(current, windowId, assistantMessage.id),
+        queueOutgoingMessages(current, windowId, userMessage, assistantMessage),
       );
-    } catch (error: unknown) {
-      const aborted = isAbortError(error);
-      const message = getErrorMessage(error);
 
-      if (!aborted) {
-        setNotice(message);
+      const controller = new AbortController();
+      abortControllersRef.current[windowId] = controller;
+
+      try {
+        const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
+        await streamChat({
+          messages: requestMessages,
+          branchFocus: windowData.branchFocus,
+          model: resolvedModel,
+          turnstileToken,
+          signal: controller.signal,
+          onDelta: batcher.push,
+        });
+
+        batcher.flush();
+
+        setAppState((current) =>
+          completeAssistantMessage(current, windowId, assistantMessage.id),
+        );
+      } catch (error: unknown) {
+        const aborted = isAbortError(error);
+        const message = getErrorMessage(error);
+
+        if (!aborted) {
+          // Show rate-limit countdown if available
+          if (error instanceof RateLimitError && error.retryAfter) {
+            setNotice(formatRetryAfter(error.retryAfter));
+          } else {
+            setNotice(message);
+          }
+        }
+
+        deltaBatcher.cancel(windowId);
+
+        setAppState((current) =>
+          failAssistantMessage(
+            current,
+            windowId,
+            assistantMessage.id,
+            aborted
+              ? "Streaming stopped."
+              : `Sorry, something went wrong: ${message}`,
+          ),
+        );
+      } finally {
+        delete abortControllersRef.current[windowId];
+        canvas.requestGeometryRefresh();
       }
-
-      deltaBatcher.cancel(windowId);
-
-      setAppState((current) =>
-        failAssistantMessage(
-          current,
-          windowId,
-          assistantMessage.id,
-          aborted
-            ? "Streaming stopped."
-            : `Sorry, something went wrong: ${message}`,
-        ),
-      );
     } finally {
-      delete abortControllersRef.current[windowId];
-      canvas.requestGeometryRefresh();
+      isStreamingRef.current = false;
+      setIsGlobalStreaming(false);
     }
   }
 
@@ -349,69 +400,102 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       return;
     }
 
+    // Enforce one in-flight stream globally (ref is the authoritative guard)
+    if (isStreamingRef.current) {
+      setNotice("Please wait for the current stream to finish.");
+      return;
+    }
+
+    // Enforce cooldown between retries
+    const now = Date.now();
+    const elapsed = now - lastSendTimeRef.current;
+    if (elapsed < SEND_COOLDOWN_MS) {
+      const remaining = Math.ceil((SEND_COOLDOWN_MS - elapsed) / 1000);
+      setNotice(`Please wait ${remaining}s before retrying.`);
+      return;
+    }
+    lastSendTimeRef.current = now;
+
     const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1 || messages[messageIndex].role !== "assistant") {
       return;
     }
 
-    canvas.onWindowFocus(windowId);
-    selection.dismissSelection();
-
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
-    const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
-
-    const requestMessages: ChatMessage[] = messages
-      .slice(0, messageIndex)
-      .filter((m) => m.status !== "streaming")
-      .map((m) => ({ role: m.role, content: m.content }));
-
-    setAppState((current) =>
-      retryAssistantMessage(current, windowId, messageId, assistantMessage),
-    );
-
-    const controller = new AbortController();
-    abortControllersRef.current[windowId] = controller;
+    // Lock streaming BEFORE any async work to prevent races
+    isStreamingRef.current = true;
+    setIsGlobalStreaming(true);
 
     try {
-      const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+      canvas.onWindowFocus(windowId);
+      selection.dismissSelection();
 
-      await streamChat({
-        messages: requestMessages,
-        branchFocus: windowData.branchFocus,
-        model: resolvedModel,
-        signal: controller.signal,
-        onDelta: batcher.push,
-      });
+      // Get turnstile token
+      const turnstileToken = await getToken();
 
-      batcher.flush();
+      const resolvedModel =
+        windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+      const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
+
+      const requestMessages: ChatMessage[] = messages
+        .slice(0, messageIndex)
+        .filter((m) => m.status !== "streaming")
+        .map((m) => ({ role: m.role, content: m.content }));
 
       setAppState((current) =>
-        completeAssistantMessage(current, windowId, assistantMessage.id),
+        retryAssistantMessage(current, windowId, messageId, assistantMessage),
       );
-    } catch (error: unknown) {
-      const aborted = isAbortError(error);
-      const message = getErrorMessage(error);
 
-      if (!aborted) {
-        setNotice(message);
+      const controller = new AbortController();
+      abortControllersRef.current[windowId] = controller;
+
+      try {
+        const batcher = deltaBatcher.start(windowId, assistantMessage.id);
+
+        await streamChat({
+          messages: requestMessages,
+          branchFocus: windowData.branchFocus,
+          model: resolvedModel,
+          turnstileToken,
+          signal: controller.signal,
+          onDelta: batcher.push,
+        });
+
+        batcher.flush();
+
+        setAppState((current) =>
+          completeAssistantMessage(current, windowId, assistantMessage.id),
+        );
+      } catch (error: unknown) {
+        const aborted = isAbortError(error);
+        const message = getErrorMessage(error);
+
+        if (!aborted) {
+          if (error instanceof RateLimitError && error.retryAfter) {
+            setNotice(formatRetryAfter(error.retryAfter));
+          } else {
+            setNotice(message);
+          }
+        }
+
+        deltaBatcher.cancel(windowId);
+
+        setAppState((current) =>
+          failAssistantMessage(
+            current,
+            windowId,
+            assistantMessage.id,
+            aborted
+              ? "Streaming stopped."
+              : `Sorry, something went wrong: ${message}`,
+          ),
+        );
+      } finally {
+        delete abortControllersRef.current[windowId];
+        canvas.requestGeometryRefresh();
       }
-
-      deltaBatcher.cancel(windowId);
-
-      setAppState((current) =>
-        failAssistantMessage(
-          current,
-          windowId,
-          assistantMessage.id,
-          aborted
-            ? "Streaming stopped."
-            : `Sorry, something went wrong: ${message}`,
-        ),
-      );
     } finally {
-      delete abortControllersRef.current[windowId];
-      canvas.requestGeometryRefresh();
+      isStreamingRef.current = false;
+      setIsGlobalStreaming(false);
     }
   }
 
@@ -531,6 +615,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     closePrompt,
     connectorPaths: canvas.connectorPaths,
     hasChildWindows,
+    isGlobalStreaming,
     messagesByWindowId: appState.messagesByWindowId,
     notice,
     onCanvasPointerDown: (event) => {
@@ -569,6 +654,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     registerAnchorRef: canvas.registerAnchorRef,
     registerWindowRef: canvas.registerWindowRef,
     selectionState: selection.selectionState,
+    turnstileContainerRef,
     viewport: appState.viewport,
     windowScrollStates: windowScrollStatesRef.current,
     windows,

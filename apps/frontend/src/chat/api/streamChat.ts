@@ -1,9 +1,11 @@
 import type { BranchFocus, ChatMessage } from "../../types";
+import { parseRateLimitResponse } from "../lib/safeguards";
 
 interface StreamChatOptions {
   messages: ChatMessage[];
   branchFocus: BranchFocus | null;
   model?: string | null;
+  turnstileToken?: string | null;
   signal?: AbortSignal;
   onDelta: (delta: string) => void;
 }
@@ -58,10 +60,21 @@ function parseStreamEvent(line: string): StreamEvent {
   throw new Error("The server returned an unknown stream event.");
 }
 
+export class RateLimitError extends Error {
+  retryAfter: number | null;
+
+  constructor(message: string, retryAfter: number | null) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function streamChat({
   messages,
   branchFocus,
   model,
+  turnstileToken,
   signal,
   onDelta,
 }: StreamChatOptions): Promise<void> {
@@ -80,12 +93,38 @@ export async function streamChat({
           }
         : null,
       model,
+      turnstile_token: turnstileToken ?? null,
     }),
     signal,
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    const body = await response.text();
+    const retryAfterHeader = response.headers.get("Retry-After");
+    const rateLimitInfo = parseRateLimitResponse(
+      response.status,
+      body,
+      retryAfterHeader,
+    );
+
+    if (rateLimitInfo) {
+      throw new RateLimitError(rateLimitInfo.detail, rateLimitInfo.retryAfter);
+    }
+
+    // Try to extract detail from JSON error responses (422, 403, 503)
+    let message = body;
+    try {
+      const parsed: unknown = JSON.parse(body);
+      if (parsed && typeof parsed === "object" && "detail" in parsed) {
+        const obj = parsed as { detail: string };
+        if (typeof obj.detail === "string") {
+          message = obj.detail;
+        }
+      }
+    } catch {
+      // Use raw body
+    }
+
     throw new Error(message || `Request failed with ${response.status}`);
   }
 
