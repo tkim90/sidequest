@@ -59,14 +59,28 @@ MAX_OUTPUT_TOKENS = _env_int("MAX_OUTPUT_TOKENS", 800)
 # Client IP extraction
 # ---------------------------------------------------------------------------
 
+# Number of trusted reverse proxies in front of the app.  When set to 0
+# (the default) proxy headers are ignored entirely — only the TCP peer
+# address is used.  Set to 1 when behind a single proxy (e.g. Cloudflare,
+# nginx), 2 when behind two, etc.  The client IP is extracted by counting
+# that many entries from the RIGHT of the X-Forwarded-For chain.
+TRUSTED_PROXY_COUNT = _env_int("TRUSTED_PROXY_COUNT", 0)
+
+
 def get_client_ip(request: Request) -> str:
-    """Return the best-effort client IP, respecting common proxy headers."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
+    """Return the client IP, respecting proxy headers only when trusted.
+
+    When TRUSTED_PROXY_COUNT is 0 (default / direct deployment), proxy
+    headers are ignored to prevent IP spoofing.  When set to N, the Nth
+    entry from the right of X-Forwarded-For is used.
+    """
+    if TRUSTED_PROXY_COUNT > 0:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            parts = [p.strip() for p in forwarded.split(",")]
+            # Pick the entry at position -(TRUSTED_PROXY_COUNT) from the right
+            idx = max(0, len(parts) - TRUSTED_PROXY_COUNT)
+            return parts[idx]
     return request.client.host if request.client else "unknown"
 
 
@@ -258,8 +272,9 @@ class RateLimitMiddleware:
             await response(scope, receive, send)
             return
 
-        # 3. Record the request now that all checks passed
-        rate_limiter.record(client_ip)
+        # 3. Do NOT record rate-limit yet — the endpoint still needs to
+        #    run Turnstile verification.  The endpoint calls
+        #    rate_limiter.record() after all application-level checks pass.
 
         # 4. Wrap send to release stream slot after body is fully sent
         released = False

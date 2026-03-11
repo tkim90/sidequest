@@ -78,7 +78,7 @@ export function useTurnstile(): TurnstileHook {
   useEffect(() => {
     if (!SITE_KEY) return;
 
-    void loadScript().then(() => setScriptLoaded(true));
+    void loadScript().then(() => setScriptLoaded(true)).catch(() => {});
   }, []);
 
   // Render widget once script + container are ready

@@ -19,6 +19,7 @@ from app.security import (
     RateLimitMiddleware,
     get_client_ip,
     is_ai_disabled,
+    rate_limiter,
     verify_turnstile_token,
 )
 
@@ -308,6 +309,10 @@ async def chat_stream(
                 "detail": "Captcha verification failed. Please refresh and try again.",
             },
         )
+
+    # Record rate-limit hit now that Turnstile passed (middleware only checked,
+    # didn't record, so failed captcha requests don't consume quota).
+    rate_limiter.record(client_ip)
 
     # Request size validation
     size_error = validate_request_size(payload)
