@@ -15,6 +15,7 @@ interface MarkdownContentProps {
   anchorGroups: AnchorGroup[];
   isFocused: boolean;
   className?: string;
+  hideStreamingChrome?: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   renderStatus?: MessageStatus;
   onMessageMouseDown: (
@@ -30,6 +31,7 @@ const MarkdownContent = memo(function MarkdownContent({
   anchorGroups,
   isFocused,
   className,
+  hideStreamingChrome,
   registerAnchorRef,
   renderStatus,
   onMessageMouseDown,
@@ -47,7 +49,10 @@ const MarkdownContent = memo(function MarkdownContent({
     : finalizedBlocks;
 
   const hasContent = finalizedBlocks.length > 0 || activeBlock !== null;
-  const showSkeleton = status === "streaming" && !hasContent;
+  const showSkeleton =
+    status === "streaming" && !hasContent && !hideStreamingChrome;
+  const showStreamingCursor =
+    status === "streaming" && !showSkeleton && !hideStreamingChrome;
 
   return (
     <div
@@ -88,7 +93,7 @@ const MarkdownContent = memo(function MarkdownContent({
           <div className="h-4 w-2/5 rounded bg-muted" />
         </div>
       ) : null}
-      {status === "streaming" && !showSkeleton ? (
+      {showStreamingCursor ? (
         <span className="ml-0.5 inline-block animate-pulse font-semibold" aria-hidden="true">
           |
         </span>
@@ -107,6 +112,7 @@ function areMarkdownContentPropsEqual(
     previous.anchorGroups === next.anchorGroups &&
     previous.isFocused === next.isFocused &&
     previous.className === next.className &&
+    previous.hideStreamingChrome === next.hideStreamingChrome &&
     previous.renderStatus === next.renderStatus
   );
 }

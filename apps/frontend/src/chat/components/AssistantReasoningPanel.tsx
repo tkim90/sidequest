@@ -69,8 +69,9 @@ const AssistantReasoningPanel = memo(function AssistantReasoningPanel({
             anchorGroups={EMPTY_ANCHORS}
             isFocused={false}
             className="text-[16px] leading-6 text-muted-foreground"
+            hideStreamingChrome
             registerAnchorRef={noopRegisterAnchorRef}
-            renderStatus="complete"
+            renderStatus={message.status}
             onMessageMouseDown={noopMouseDown}
           />
         </div>
