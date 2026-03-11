@@ -6,6 +6,7 @@ interface CodeBlockAnchorRange {
   startOffset: number;
   endOffset: number;
   count: number;
+  preview?: boolean;
 }
 
 interface TokenSegment {
@@ -135,7 +136,11 @@ function splitTokenByAnchors(
   return segments;
 }
 
-function getAnchorHighlightClass(isMonochrome: boolean, isFocused: boolean): string {
+function getAnchorHighlightClass(isMonochrome: boolean, isFocused: boolean, isPreview?: boolean): string {
+  if (isPreview) {
+    return "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+  }
+
   if (isMonochrome) {
     return isFocused
       ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
@@ -297,6 +302,7 @@ export default function CodeBlock({
                           }
 
                           const showBadge =
+                            !anchor.preview &&
                             anchor.count > 1 &&
                             !renderedBadgeKeys.has(anchor.key);
                           if (showBadge) {
@@ -306,7 +312,7 @@ export default function CodeBlock({
                           return (
                             <span
                               key={`r${runIndex}`}
-                              className={getAnchorHighlightClass(isMonochrome, isFocused)}
+                              className={getAnchorHighlightClass(isMonochrome, isFocused, anchor.preview)}
                               ref={
                                 shouldAttachRef
                                   ? (node) => registerAnchorRef(anchor.key, node)

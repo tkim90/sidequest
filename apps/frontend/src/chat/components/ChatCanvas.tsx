@@ -8,6 +8,10 @@ import type {
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
+import {
+  getViewportEffectiveScale,
+  snapToDevicePixel,
+} from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
 import { primaryButtonClassName } from "./ui";
@@ -85,6 +89,10 @@ function ChatCanvas({
   windowScrollStates,
   windows,
 }: ChatCanvasProps) {
+  const effectiveScale = getViewportEffectiveScale(viewport);
+  const snappedViewportX = snapToDevicePixel(viewport.x);
+  const snappedViewportY = snapToDevicePixel(viewport.y);
+
   return (
     <div
       className="relative cursor-grab overflow-hidden border-t border-border bg-secondary/60 active:cursor-grabbing"
@@ -94,15 +102,15 @@ function ChatCanvas({
       <ConnectionLayer paths={connectorPaths} />
 
       <div
-        className="absolute inset-0 origin-top-left will-change-transform"
+        className="absolute inset-0 origin-top-left"
         style={{
-          transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.scale})`,
+          transform: `translate(${snappedViewportX}px, ${snappedViewportY}px)`,
         }}
       >
         <div
           className="relative min-h-full min-w-full origin-top-left"
           style={{
-            zoom: viewport.zoom,
+            zoom: effectiveScale,
           }}
         >
           {windows.map((windowData, index) => (

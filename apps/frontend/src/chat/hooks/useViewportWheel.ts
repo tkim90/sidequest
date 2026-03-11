@@ -1,7 +1,6 @@
 import {
   useEffect,
   type Dispatch,
-  type MutableRefObject,
   type RefObject,
   type SetStateAction,
 } from "react";
@@ -10,7 +9,6 @@ import type { AppState } from "../../types";
 import {
   MAX_VIEWPORT_ZOOM,
   MIN_VIEWPORT_ZOOM,
-  ZOOM_COMMIT_DELAY_MS,
 } from "../lib/constants";
 import { clamp } from "../lib/geometry";
 import { getViewportEffectiveScale } from "./canvasUtils";
@@ -18,19 +16,13 @@ import { getViewportEffectiveScale } from "./canvasUtils";
 interface UseViewportWheelOptions {
   appStateRef: RefObject<AppState>;
   canvasRef: RefObject<HTMLDivElement | null>;
-  clearZoomCommitTimer: () => void;
-  commitViewportZoom: () => void;
   setAppState: Dispatch<SetStateAction<AppState>>;
-  zoomCommitTimerRef: MutableRefObject<number | null>;
 }
 
 export function useViewportWheel({
   appStateRef,
   canvasRef,
-  clearZoomCommitTimer,
-  commitViewportZoom,
   setAppState,
-  zoomCommitTimerRef,
 }: UseViewportWheelOptions): void {
   useEffect(() => {
     const canvasNode = canvasRef.current;
@@ -60,22 +52,16 @@ export function useViewportWheel({
           MAX_VIEWPORT_ZOOM,
         );
 
-        clearZoomCommitTimer();
-
         setAppState((current) => ({
           ...current,
           viewport: {
             ...current.viewport,
-            scale: nextScale / current.viewport.zoom,
+            zoom: nextScale,
+            scale: 1,
             x: pointerX - contentX * nextScale,
             y: pointerY - contentY * nextScale,
           },
         }));
-
-        zoomCommitTimerRef.current = window.setTimeout(
-          commitViewportZoom,
-          ZOOM_COMMIT_DELAY_MS,
-        );
         return;
       }
 
@@ -97,12 +83,5 @@ export function useViewportWheel({
     return () => {
       sceneNode.removeEventListener("wheel", handleCanvasWheel);
     };
-  }, [
-    appStateRef,
-    canvasRef,
-    clearZoomCommitTimer,
-    commitViewportZoom,
-    setAppState,
-    zoomCommitTimerRef,
-  ]);
+  }, [appStateRef, canvasRef, setAppState]);
 }
