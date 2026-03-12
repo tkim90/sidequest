@@ -15,7 +15,7 @@ const MODELS: ChatModelOption[] = [
   },
   {
     id: "gpt-5.4",
-    efforts: ["minimal", "low", "medium", "high", "xhigh"],
+    efforts: ["minimal", "low", "medium", "high"],
     defaultEffort: "medium",
   },
 ];

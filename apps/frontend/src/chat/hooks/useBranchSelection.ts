@@ -310,9 +310,9 @@ export function useBranchSelection({
       );
 
       if (!computed) {
-        useNoticeStore.getState().showNotice(
-          "Could not determine selection position. Try selecting again.",
-        );
+          useNoticeStore.getState().showNotice(
+            "Could not determine selection position. Try selecting again.",
+          );
         dismissSelection();
         return null;
       }

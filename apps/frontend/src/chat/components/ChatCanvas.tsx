@@ -14,7 +14,6 @@ import {
 } from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
-import { primaryButtonClassName } from "./ui";
 
 const EMPTY_MESSAGES: MessageRecord[] = [];
 const DEFAULT_SCROLL_STATE: WindowScrollState = {
@@ -46,7 +45,6 @@ interface ChatCanvasProps {
     windowId: string,
     messageId: string,
   ) => void;
-  onOpenFreshRootWindow: () => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
@@ -76,7 +74,6 @@ function ChatCanvas({
   onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
-  onOpenFreshRootWindow,
   onRetry,
   onSend,
   onToggleHistoryExpanded,
@@ -140,16 +137,6 @@ function ChatCanvas({
             />
           ))}
         </div>
-      </div>
-
-      <div className="absolute top-6 left-6">
-        <button
-          className={primaryButtonClassName}
-          type="button"
-          onClick={onOpenFreshRootWindow}
-        >
-          New Chat
-        </button>
       </div>
     </div>
   );

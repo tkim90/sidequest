@@ -16,6 +16,7 @@ function ChatWorkspace() {
         <WorkspaceHeader
           hasChildWindows={workspace.hasChildWindows}
           onCloseAllChildWindows={workspace.onCloseAllChildWindows}
+          onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
         />
         <ChatCanvas
           anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
@@ -30,7 +31,6 @@ function ChatWorkspace() {
           onEffortChange={workspace.onEffortChange}
           onResizePointerDown={workspace.onResizePointerDown}
           onMessageMouseDown={workspace.onMessageMouseDown}
-          onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
           onRetry={workspace.onRetry}
           onSend={workspace.onSend}
           onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
