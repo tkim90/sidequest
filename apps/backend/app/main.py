@@ -10,6 +10,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from app.catalog_prompt import CATALOG_PROMPT
+from app.model_capabilities import ReasoningEffort, get_model_capability
 
 
 class ChatMessage(BaseModel):
@@ -27,9 +28,10 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
     branch_focus: BranchFocus | None = None
     model: str | None = Field(default=None, min_length=1)
+    effort: ReasoningEffort | None = None
 
 
-def encode_line(payload: dict[str, str]) -> bytes:
+def encode_line(payload: dict[str, object]) -> bytes:
     return f"{json.dumps(payload)}\n".encode("utf-8")
 
 
@@ -91,6 +93,15 @@ def get_model_config() -> tuple[list[str], str | None]:
     return options, options[0]
 
 
+def build_model_option(model_name: str) -> dict[str, object]:
+    capability = get_model_capability(model_name)
+    return {
+        "id": model_name,
+        "efforts": capability["efforts"],
+        "default_effort": capability["default_effort"],
+    }
+
+
 def resolve_model_name(payload_model: str | None) -> tuple[str | None, str | None]:
     options, default_model = get_model_config()
     requested_model = payload_model.strip() if payload_model else None
@@ -107,6 +118,31 @@ def resolve_model_name(payload_model: str | None) -> tuple[str | None, str | Non
         return default_model, None
 
     return None, "No model configured. Set OPENAI_MODEL or OPENAI_MODEL_OPTIONS."
+
+
+def resolve_effort(
+    model: str,
+    payload_effort: ReasoningEffort | None,
+) -> tuple[ReasoningEffort | None, str | None]:
+    capability = get_model_capability(model)
+    efforts = capability["efforts"]
+    default_effort = capability["default_effort"]
+
+    if payload_effort is not None:
+        if payload_effort not in efforts:
+            return (
+                None,
+                (
+                    f"Model {json.dumps(model)} does not support effort "
+                    f"{json.dumps(payload_effort)}."
+                ),
+            )
+        return payload_effort, None
+
+    if default_effort is not None:
+        return default_effort, None
+
+    return None, None
 
 
 def get_client(app: FastAPI) -> AsyncOpenAI | None:
@@ -153,19 +189,53 @@ async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncItera
         )
         return
 
+    effort, effort_error = resolve_effort(model, payload.effort)
+    if effort_error:
+        yield encode_line(
+            {
+                "type": "error",
+                "message": effort_error,
+            }
+        )
+        return
+
     done_sent = False
 
     try:
-        stream = await client.responses.create(
-            model=model,
-            input=cast(Any, build_input(payload.messages)),
-            instructions=build_instructions(payload.branch_focus),
-            stream=True,
-        )
+        request_kwargs: dict[str, object] = {
+            "model": model,
+            "input": cast(Any, build_input(payload.messages)),
+            "instructions": build_instructions(payload.branch_focus),
+            "stream": True,
+        }
+
+        if effort is not None:
+            reasoning_config: dict[str, str] = {"effort": effort}
+            if effort != "none":
+                reasoning_config["summary"] = "auto"
+            request_kwargs["reasoning"] = reasoning_config
+
+        stream = await client.responses.create(**request_kwargs)
 
         async for event in stream:
             if event.type == "response.output_text.delta" and event.delta:
-                yield encode_line({"type": "delta", "text": event.delta})
+                yield encode_line({"type": "content_delta", "text": event.delta})
+            elif event.type == "response.reasoning_text.delta" and event.delta:
+                yield encode_line(
+                    {
+                        "type": "reasoning_delta",
+                        "text": event.delta,
+                        "format": "raw",
+                    }
+                )
+            elif event.type == "response.reasoning_summary_text.delta" and event.delta:
+                yield encode_line(
+                    {
+                        "type": "reasoning_delta",
+                        "text": event.delta,
+                        "format": "summary",
+                    }
+                )
             elif event.type == "response.completed":
                 yield encode_line({"type": "done"})
                 done_sent = True
@@ -216,6 +286,6 @@ async def chat_stream(payload: ChatRequest) -> StreamingResponse:
 async def chat_models() -> dict[str, object]:
     models, default_model = get_model_config()
     return {
-        "models": models,
+        "models": [build_model_option(model) for model in models],
         "default_model": default_model,
     }

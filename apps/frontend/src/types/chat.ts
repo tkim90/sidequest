@@ -1,5 +1,18 @@
 export type ChatRole = "user" | "assistant";
 export type MessageStatus = "complete" | "streaming";
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
+
+export interface ChatModelOption {
+  id: string;
+  efforts: ReasoningEffort[];
+  defaultEffort: ReasoningEffort | null;
+}
 
 export interface ChatMessage {
   role: ChatRole;
@@ -34,6 +47,7 @@ export interface WindowRecord {
   isHistoryExpanded: boolean;
   composer: string;
   selectedModel: string | null;
+  selectedEffort: ReasoningEffort | null;
   isStreaming: boolean;
 }
 
@@ -43,6 +57,8 @@ export interface MessageRecord {
   content: string;
   status: MessageStatus;
   model?: string;
+  reasoningRawContent: string;
+  reasoningSummaryContent: string;
 }
 
 export interface AnchorRecord {

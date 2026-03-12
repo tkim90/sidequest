@@ -9,7 +9,8 @@ import {
   type SetStateAction,
 } from "react";
 
-import type { AppState, SelectionState } from "../../types";
+import type { AppState, MessageRecord, SelectionState, WindowRecord } from "../../types";
+import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
 import {
   CHILD_VERTICAL_STAGGER,
@@ -31,7 +32,6 @@ interface UseBranchSelectionOptions {
   appStateRef: RefObject<AppState>;
   requestGeometryRefresh: () => void;
   setAppState: Dispatch<SetStateAction<AppState>>;
-  setNotice: Dispatch<SetStateAction<string>>;
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
 
@@ -53,11 +53,47 @@ interface UseBranchSelectionResult {
   selectionState: SelectionState | null;
 }
 
+interface CreateBranchWindowOptions {
+  childIndex: number;
+  inheritedMessageCount: number;
+  parentWindow: WindowRecord;
+  selectedText: string;
+  windowLocalY: number;
+  anchorMessage: MessageRecord;
+}
+
+export function createBranchWindow({
+  childIndex,
+  inheritedMessageCount,
+  parentWindow,
+  selectedText,
+  windowLocalY,
+  anchorMessage,
+}: CreateBranchWindowOptions): WindowRecord {
+  return createWindowRecord({
+    title: `${parentWindow.title}.${childIndex + 1}`,
+    x: parentWindow.x + parentWindow.width + WINDOW_GAP,
+    y:
+      parentWindow.y +
+      clamp(windowLocalY - 120, 24, 260) +
+      childIndex * CHILD_VERTICAL_STAGGER,
+    parentId: parentWindow.id,
+    selectedModel: parentWindow.selectedModel,
+    selectedEffort: parentWindow.selectedEffort,
+    branchFocus: {
+      selectedText,
+      parentWindowTitle: parentWindow.title,
+      parentMessageRole: anchorMessage.role,
+    },
+    inheritedMessageCount,
+    isHistoryExpanded: inheritedMessageCount === 0,
+  });
+}
+
 export function useBranchSelection({
   appStateRef,
   requestGeometryRefresh,
   setAppState,
-  setNotice,
   windowRefs,
 }: UseBranchSelectionOptions): UseBranchSelectionResult {
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
@@ -274,7 +310,7 @@ export function useBranchSelection({
       );
 
       if (!computed) {
-        setNotice(
+        useNoticeStore.getState().showNotice(
           "Could not determine selection position. Try selecting again.",
         );
         dismissSelection();
@@ -294,7 +330,7 @@ export function useBranchSelection({
     });
 
     if (overlap.type === "partial") {
-      setNotice(
+      useNoticeStore.getState().showNotice(
         "Overlapping branch anchors in the same message are blocked in this version.",
       );
       dismissSelection();
@@ -305,22 +341,13 @@ export function useBranchSelection({
       parentMessages.slice(0, anchorIndex + 1),
     );
 
-    const childWindow = createWindowRecord({
-      title: `${parentWindow.title}.${parentWindow.childIds.length + 1}`,
-      x: parentWindow.x + parentWindow.width + WINDOW_GAP,
-      y:
-        parentWindow.y +
-        clamp(currentSelection.windowLocalY - 120, 24, 260) +
-        parentWindow.childIds.length * CHILD_VERTICAL_STAGGER,
-      parentId: parentWindow.id,
-      selectedModel: parentWindow.selectedModel,
-      branchFocus: {
-        selectedText: currentSelection.selectedText,
-        parentWindowTitle: parentWindow.title,
-        parentMessageRole: anchorMessage.role,
-      },
+    const childWindow = createBranchWindow({
+      childIndex: parentWindow.childIds.length,
       inheritedMessageCount: inheritedMessages.length,
-      isHistoryExpanded: inheritedMessages.length === 0,
+      parentWindow,
+      selectedText: currentSelection.selectedText,
+      windowLocalY: currentSelection.windowLocalY,
+      anchorMessage,
     });
 
     const anchor = createAnchorRecord({

@@ -4,6 +4,7 @@ import type {
   AnchorGroupsByMessageKey,
   MessageRecord,
 } from "../../types";
+import AssistantReasoningPanel from "./AssistantReasoningPanel";
 import MessageContent from "./MessageContent";
 
 const STARTER_QUESTIONS = [
@@ -71,6 +72,9 @@ const ChatMessageCard = memo(function ChatMessageCard({
           ) : null}
         </div>
       )}
+      {message.role === "assistant" ? (
+        <AssistantReasoningPanel message={message} />
+      ) : null}
       <MessageContent
         windowId={windowId}
         message={message}

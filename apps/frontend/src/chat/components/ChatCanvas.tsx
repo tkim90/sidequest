@@ -23,7 +23,6 @@ const DEFAULT_SCROLL_STATE: WindowScrollState = {
 };
 
 interface ChatCanvasProps {
-  availableModels: string[];
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   connectorPaths: ConnectorPath[];
@@ -36,6 +35,7 @@ interface ChatCanvasProps {
     windowId: string,
   ) => void;
   onModelChange: (windowId: string, model: string) => void;
+  onEffortChange: (windowId: string, effort: WindowRecord["selectedEffort"]) => void;
   onResizePointerDown: (
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
@@ -64,7 +64,6 @@ interface ChatCanvasProps {
 }
 
 function ChatCanvas({
-  availableModels,
   anchorGroupsByMessageKey,
   canvasRef,
   connectorPaths,
@@ -74,6 +73,7 @@ function ChatCanvas({
   onGeometryChange,
   onHeaderPointerDown,
   onModelChange,
+  onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
   onOpenFreshRootWindow,
@@ -124,6 +124,7 @@ function ChatCanvas({
               onGeometryChange={onGeometryChange}
               onHeaderPointerDown={onHeaderPointerDown}
               onModelChange={onModelChange}
+              onEffortChange={onEffortChange}
               onResizePointerDown={onResizePointerDown}
               onMessageMouseDown={onMessageMouseDown}
               onRetry={onRetry}
@@ -135,7 +136,6 @@ function ChatCanvas({
               registerWindowRef={registerWindowRef}
               savedScrollState={windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE}
               windowData={windowData}
-              availableModels={availableModels}
               zIndex={index + 1}
             />
           ))}

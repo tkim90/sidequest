@@ -17,17 +17,21 @@ import type {
   ChatMessage,
   ClosePrompt,
   MessagesByWindowId,
+  ReasoningEffort,
   SelectionState,
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import { fetchChatModelConfig, streamChat } from "../api/streamChat";
+import { streamChat } from "../api/streamChat";
+import { useNoticeStore } from "../../stores/noticeStore";
+import { useModelStore } from "../../stores/modelStore";
 import {
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
+import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
 import {
   createMessage,
   createWindowRecord,
@@ -48,12 +52,12 @@ import {
   setWindowHistoryExpanded,
   updateComposer,
   updateWindowModel,
+  updateWindowEffort,
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
 import { useCanvasInteractions } from "./useCanvasInteractions";
 
 export interface ChatWorkspaceViewModel {
-  availableModels: string[];
   anchorGroupsByMessageKey: ReturnType<
     typeof useCanvasInteractions
   >["anchorGroupsByMessageKey"];
@@ -62,13 +66,13 @@ export interface ChatWorkspaceViewModel {
   connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
   hasChildWindows: boolean;
   messagesByWindowId: MessagesByWindowId;
-  notice: string;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onCloseAllChildWindows: () => void;
   onClosePromptCancel: () => void;
   onClosePromptConfirm: () => void;
   onComposerChange: (windowId: string, composer: string) => void;
   onModelChange: (windowId: string, model: string) => void;
+  onEffortChange: (windowId: string, effort: ReasoningEffort | null) => void;
   onGeometryChange: () => void;
   onHeaderPointerDown: ReturnType<
     typeof useCanvasInteractions
@@ -116,9 +120,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     createInitialState(getViewportCenteredRootX(WINDOW_WIDTH)),
   );
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [defaultModel, setDefaultModel] = useState<string | null>(null);
-  const [notice, setNotice] = useState("");
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
@@ -143,67 +144,60 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }, [appState]);
 
   useEffect(() => {
-    if (!notice) {
-      return undefined;
-    }
-
-    const timer = window.setTimeout(() => {
-      setNotice("");
-    }, 2800);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [notice]);
-
-  useEffect(() => {
     const controller = new AbortController();
 
     void (async () => {
-      try {
-        const config = await fetchChatModelConfig(controller.signal);
-        const fallbackModel = config.defaultModel ?? config.models[0] ?? null;
+      await useModelStore.getState().fetchModels(controller.signal);
 
-        setAvailableModels(config.models);
-        setDefaultModel(fallbackModel);
-
-        if (!fallbackModel) {
-          return;
-        }
-
-        setAppState((current) => {
-          let changed = false;
-          const nextWindows = Object.fromEntries(
-            Object.entries(current.windows).map(([windowId, windowData]) => {
-              if (windowData.selectedModel) {
-                return [windowId, windowData];
-              }
-
-              changed = true;
-              return [
-                windowId,
-                {
-                  ...windowData,
-                  selectedModel: fallbackModel,
-                },
-              ];
-            }),
-          );
-
-          if (!changed) {
-            return current;
-          }
-
-          return {
-            ...current,
-            windows: nextWindows,
-          };
-        });
-      } catch (error: unknown) {
-        if (!isAbortError(error)) {
-          setNotice(getErrorMessage(error));
-        }
+      const { defaultModel: fallbackModel, models, modelsById } = useModelStore.getState();
+      if (!fallbackModel && models.length === 0) {
+        return;
       }
+
+      setAppState((current) => {
+        let changed = false;
+        const nextWindows = Object.fromEntries(
+          Object.entries(current.windows).map(([windowId, windowData]) => {
+            const modelOption = resolveModelOption(
+              modelsById,
+              windowData.selectedModel,
+              fallbackModel,
+              models,
+            );
+            const nextModel = windowData.selectedModel ?? modelOption?.id ?? null;
+            const nextEffort = resolveEffortForModel(
+              modelOption,
+              windowData.selectedEffort,
+            );
+
+            if (
+              windowData.selectedModel === nextModel &&
+              windowData.selectedEffort === nextEffort
+            ) {
+              return [windowId, windowData];
+            }
+
+            changed = true;
+            return [
+              windowId,
+              {
+                ...windowData,
+                selectedModel: nextModel,
+                selectedEffort: nextEffort,
+              },
+            ];
+          }),
+        );
+
+        if (!changed) {
+          return current;
+        }
+
+        return {
+          ...current,
+          windows: nextWindows,
+        };
+      });
     })();
 
     return () => {
@@ -221,7 +215,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     appStateRef,
     requestGeometryRefresh: canvas.requestGeometryRefresh,
     setAppState,
-    setNotice,
     windowRefs: canvas.windowRefs,
   });
 
@@ -241,7 +234,36 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function handleModelChange(windowId: string, model: string): void {
-    setAppState((current) => updateWindowModel(current, windowId, model));
+    const { models, modelsById, defaultModel } = useModelStore.getState();
+
+    setAppState((current) => {
+      const windowData = current.windows[windowId];
+      if (!windowData) {
+        return current;
+      }
+
+      const nextModelOption = resolveModelOption(
+        modelsById,
+        model,
+        defaultModel,
+        models,
+      );
+      const nextEffort = resolveEffortForModel(
+        nextModelOption,
+        windowData.selectedEffort,
+      );
+
+      let nextState = updateWindowModel(current, windowId, model);
+      nextState = updateWindowEffort(nextState, windowId, nextEffort);
+      return nextState;
+    });
+  }
+
+  function handleEffortChange(
+    windowId: string,
+    effort: ReasoningEffort | null,
+  ): void {
+    setAppState((current) => updateWindowEffort(current, windowId, effort));
   }
 
   const handleWindowScrollStateChange = useCallback((
@@ -279,8 +301,18 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     selection.dismissSelection();
 
     const userMessage = createMessage("user", composer);
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+    const { defaultModel, models, modelsById } = useModelStore.getState();
+    const modelOption = resolveModelOption(
+      modelsById,
+      windowData.selectedModel,
+      defaultModel,
+      models,
+    );
+    const resolvedModel = modelOption?.id;
+    const resolvedEffort = resolveEffortForModel(
+      modelOption,
+      windowData.selectedEffort,
+    );
     const assistantMessage = createMessage(
       "assistant",
       "",
@@ -306,8 +338,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
+        effort: resolvedEffort,
         signal: controller.signal,
-        onDelta: batcher.push,
+        onContentDelta: batcher.pushContent,
+        onReasoningDelta: batcher.pushReasoning,
       });
 
       batcher.flush();
@@ -320,7 +354,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       const message = getErrorMessage(error);
 
       if (!aborted) {
-        setNotice(message);
+        useNoticeStore.getState().showNotice(message);
       }
 
       deltaBatcher.cancel(windowId);
@@ -357,8 +391,18 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.onWindowFocus(windowId);
     selection.dismissSelection();
 
-    const resolvedModel =
-      windowData.selectedModel ?? defaultModel ?? availableModels[0] ?? undefined;
+    const { defaultModel, models, modelsById } = useModelStore.getState();
+    const modelOption = resolveModelOption(
+      modelsById,
+      windowData.selectedModel,
+      defaultModel,
+      models,
+    );
+    const resolvedModel = modelOption?.id;
+    const resolvedEffort = resolveEffortForModel(
+      modelOption,
+      windowData.selectedEffort,
+    );
     const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
 
     const requestMessages: ChatMessage[] = messages
@@ -380,8 +424,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         messages: requestMessages,
         branchFocus: windowData.branchFocus,
         model: resolvedModel,
+        effort: resolvedEffort,
         signal: controller.signal,
-        onDelta: batcher.push,
+        onContentDelta: batcher.pushContent,
+        onReasoningDelta: batcher.pushReasoning,
       });
 
       batcher.flush();
@@ -394,7 +440,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       const message = getErrorMessage(error);
 
       if (!aborted) {
-        setNotice(message);
+        useNoticeStore.getState().showNotice(message);
       }
 
       deltaBatcher.cancel(windowId);
@@ -460,13 +506,16 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   function openFreshRootWindow(): void {
+    const { defaultModel, models, modelsById } = useModelStore.getState();
     setAppState((current) => {
       const title = getNextRootChatTitle(current.windows);
+      const modelOption = resolveModelOption(modelsById, null, defaultModel, models);
       const rootWindow = createWindowRecord({
         title,
         x: getCenteredRootX(WINDOW_WIDTH),
         y: ROOT_WINDOW_Y,
-        selectedModel: defaultModel ?? availableModels[0] ?? null,
+        selectedModel: modelOption?.id ?? null,
+        selectedEffort: resolveEffortForModel(modelOption, null),
       });
       return addRootWindow(current, rootWindow);
     });
@@ -525,14 +574,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const hasChildWindows = windows.some((windowData) => windowData.parentId !== null);
 
   return {
-    availableModels,
     anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
     connectorPaths: canvas.connectorPaths,
     hasChildWindows,
     messagesByWindowId: appState.messagesByWindowId,
-    notice,
     onCanvasPointerDown: (event) => {
       selection.dismissSelection();
       canvas.onCanvasPointerDown(event);
@@ -542,6 +589,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onClosePromptConfirm: confirmClosePrompt,
     onComposerChange: handleComposerChange,
     onModelChange: handleModelChange,
+    onEffortChange: handleEffortChange,
     onGeometryChange: canvas.requestGeometryRefresh,
     onHeaderPointerDown: (event, windowId) => {
       selection.dismissSelection();

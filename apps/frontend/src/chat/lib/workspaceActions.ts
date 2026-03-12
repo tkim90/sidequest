@@ -2,6 +2,7 @@ import type {
   AppState,
   ClosePrompt,
   MessageRecord,
+  ReasoningEffort,
   WindowMap,
   WindowRecord,
 } from "../../types";
@@ -94,6 +95,23 @@ export function updateWindowModel(
   });
 }
 
+export function updateWindowEffort(
+  state: AppState,
+  windowId: string,
+  selectedEffort: ReasoningEffort | null,
+): AppState {
+  return updateExistingWindow(state, windowId, (windowData) => {
+    if (windowData.selectedEffort === selectedEffort) {
+      return windowData;
+    }
+
+    return {
+      ...windowData,
+      selectedEffort,
+    };
+  });
+}
+
 export function setWindowHistoryExpanded(
   state: AppState,
   windowId: string,
@@ -157,6 +175,33 @@ export function appendAssistantDelta(
       [windowId]: updateAssistantMessage(messages, assistantMessageId, (message) => ({
         ...message,
         content: `${message.content}${delta}`,
+      })),
+    },
+  }));
+}
+
+export function appendAssistantReasoningDelta(
+  state: AppState,
+  windowId: string,
+  assistantMessageId: string,
+  delta: string,
+  format: "raw" | "summary",
+): AppState {
+  return updateWindowMessages(state, windowId, (windowData, messages) => ({
+    ...state,
+    windows: state.windows,
+    messagesByWindowId: {
+      ...state.messagesByWindowId,
+      [windowId]: updateAssistantMessage(messages, assistantMessageId, (message) => ({
+        ...message,
+        reasoningRawContent:
+          format === "raw"
+            ? `${message.reasoningRawContent}${delta}`
+            : message.reasoningRawContent,
+        reasoningSummaryContent:
+          format === "summary"
+            ? `${message.reasoningSummaryContent}${delta}`
+            : message.reasoningSummaryContent,
       })),
     },
   }));

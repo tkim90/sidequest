@@ -1,3 +1,4 @@
+import { useNoticeStore } from "../../stores/noticeStore";
 import ChatCanvas from "./ChatCanvas";
 import CloseTreeModal from "./CloseTreeModal";
 import NoticeToast from "./NoticeToast";
@@ -7,6 +8,7 @@ import { useChatWorkspace } from "../hooks/useChatWorkspace";
 
 function ChatWorkspace() {
   const workspace = useChatWorkspace();
+  const notice = useNoticeStore((s) => s.notice);
 
   return (
     <main className="min-h-screen bg-background p-2 text-foreground sm:p-3">
@@ -16,7 +18,6 @@ function ChatWorkspace() {
           onCloseAllChildWindows={workspace.onCloseAllChildWindows}
         />
         <ChatCanvas
-          availableModels={workspace.availableModels}
           anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
           canvasRef={workspace.canvasRef}
           connectorPaths={workspace.connectorPaths}
@@ -26,6 +27,7 @@ function ChatWorkspace() {
           onGeometryChange={workspace.onGeometryChange}
           onHeaderPointerDown={workspace.onHeaderPointerDown}
           onModelChange={workspace.onModelChange}
+          onEffortChange={workspace.onEffortChange}
           onResizePointerDown={workspace.onResizePointerDown}
           onMessageMouseDown={workspace.onMessageMouseDown}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
@@ -59,7 +61,7 @@ function ChatWorkspace() {
         />
       ) : null}
 
-      <NoticeToast notice={workspace.notice} />
+      <NoticeToast notice={notice} />
     </main>
   );
 }
