@@ -1,6 +1,10 @@
 export const IFRAME_EMBED_MESSAGE_SOURCE = "sidequest-iframe-embed";
 export const IFRAME_EMBED_MIN_HEIGHT = 160;
 export const IFRAME_EMBED_DEFAULT_HEIGHT = 320;
+const SAFE_NAMESPACE_URIS = [
+  "http://www.w3.org/2000/svg",
+  "http://www.w3.org/1999/xlink",
+] as const;
 
 const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   {
@@ -14,10 +18,6 @@ const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern: /<link\b/i,
     reason: "External stylesheets are not allowed inside iframe embeds.",
-  },
-  {
-    pattern: /https?:\/\//i,
-    reason: "External network resources are not allowed inside iframe embeds.",
   },
   {
     pattern: /\b(fetch|XMLHttpRequest|WebSocket|EventSource)\b/i,
@@ -42,6 +42,13 @@ export interface IframeEmbedValidationResult {
   reason?: string;
 }
 
+function stripSafeNamespaceUris(html: string): string {
+  return SAFE_NAMESPACE_URIS.reduce(
+    (current, uri) => current.split(uri).join(""),
+    html,
+  );
+}
+
 export function validateIframeEmbedHtml(
   html: string,
 ): IframeEmbedValidationResult {
@@ -60,6 +67,13 @@ export function validateIframeEmbedHtml(
         reason: rule.reason,
       };
     }
+  }
+
+  if (/https?:\/\//i.test(stripSafeNamespaceUris(trimmed))) {
+    return {
+      ok: false,
+      reason: "External network resources are not allowed inside iframe embeds.",
+    };
   }
 
   return { ok: true };

@@ -19,6 +19,20 @@ describe("validateIframeEmbedHtml", () => {
     ).toEqual({ ok: true });
   });
 
+  it("allows inline SVG namespace literals without treating them as network loads", () => {
+    expect(
+      validateIframeEmbedHtml(
+        [
+          "<svg id='graph'></svg>",
+          "<script>",
+          "const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');",
+          "document.getElementById('graph').appendChild(circle);",
+          "</script>",
+        ].join(""),
+      ),
+    ).toEqual({ ok: true });
+  });
+
   it("rejects full HTML documents and parent DOM access", () => {
     expect(validateIframeEmbedHtml("<html><body>bad</body></html>")).toEqual({
       ok: false,
@@ -32,6 +46,15 @@ describe("validateIframeEmbedHtml", () => {
     ).toEqual({
       ok: false,
       reason: "Parent window access is not allowed inside iframe embeds.",
+    });
+  });
+
+  it("rejects real external asset URLs", () => {
+    expect(
+      validateIframeEmbedHtml("<image href='https://example.com/graph.svg' />"),
+    ).toEqual({
+      ok: false,
+      reason: "External network resources are not allowed inside iframe embeds.",
     });
   });
 });
