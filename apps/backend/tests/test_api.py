@@ -2,55 +2,41 @@ import json
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import ChatMessage, app, build_instructions, should_force_iframe
 
 
-class FakeEvent:
-    def __init__(
-        self,
-        event_type: str,
-        delta: str | None = None,
-        message: str | None = None,
-    ):
-        self.type = event_type
-        self.delta = delta
-        self.message = message
+class FakeBlock:
+    def __init__(self, block_type: str, text: str):
+        self.type = block_type
+        self.text = text
 
 
-class FakeStream:
-    def __init__(self, events):
-        self._events = iter(events)
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self._events)
-        except StopIteration as exc:
-            raise StopAsyncIteration from exc
+class FakeAgentMessage:
+    def __init__(self, content, subtype: str | None = None, result: str | None = None):
+        self.content = content
+        self.subtype = subtype
+        self.result = result
 
 
-class FakeResponsesAPI:
+class FakeQuery:
     def __init__(self):
         self.calls = []
-        self.events = [
-            FakeEvent("response.output_text.delta", "hello "),
-            FakeEvent("response.output_text.delta", "world"),
-            FakeEvent("response.completed"),
+        self.messages = [
+            FakeAgentMessage(
+                [
+                    FakeBlock("thinking", "step 1 "),
+                    FakeBlock("text", "hello "),
+                    FakeBlock("text", "world"),
+                ]
+            ),
         ]
 
-    async def create(self, **kwargs):
+    def __call__(self, **kwargs):
         self.calls.append(kwargs)
-        return FakeStream(self.events)
-
-
-class FakeClient:
-    def __init__(self):
-        self.responses = FakeResponsesAPI()
-
-    async def close(self):
-        return None
+        async def iterator():
+            for message in self.messages:
+                yield message
+        return iterator()
 
 
 def test_healthcheck():
@@ -62,18 +48,12 @@ def test_healthcheck():
 
 
 def test_chat_stream_shapes_ndjson(monkeypatch):
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.4")
-    fake_client = FakeClient()
-    fake_client.responses.events = [
-        FakeEvent("response.reasoning_summary_text.delta", "step 1 ", None),
-        FakeEvent("response.output_text.delta", "hello ", None),
-        FakeEvent("response.reasoning_text.delta", "secret ", None),
-        FakeEvent("response.output_text.delta", "world", None),
-        FakeEvent("response.completed"),
-    ]
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+    fake_query = FakeQuery()
 
     with TestClient(app) as client:
-        app.state.openai_client = fake_client
+        app.state.anthropic_query_fn = fake_query
 
         response = client.post(
             "/api/chat/stream",
@@ -88,7 +68,6 @@ def test_chat_stream_shapes_ndjson(monkeypatch):
                     "parent_window_title": "Chat 1",
                     "parent_message_role": "user",
                 },
-                "effort": "medium",
             },
         )
 
@@ -96,30 +75,33 @@ def test_chat_stream_shapes_ndjson(monkeypatch):
 
     assert response.status_code == 200
     assert lines == [
-        {"type": "reasoning_delta", "text": "step 1 ", "format": "summary"},
+        {"type": "reasoning_delta", "text": "step 1 ", "format": "raw"},
         {"type": "content_delta", "text": "hello "},
-        {"type": "reasoning_delta", "text": "secret ", "format": "raw"},
         {"type": "content_delta", "text": "world"},
         {"type": "done"},
     ]
-    assert fake_client.responses.calls[0]["input"] == [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi there"},
-        {"role": "user", "content": "Follow up"},
-    ]
-    assert fake_client.responses.calls[0]["reasoning"] == {
-        "effort": "medium",
-        "summary": "auto",
-    }
+    assert (
+        fake_query.calls[0]["prompt"]
+        == "Continue this conversation as the assistant. "
+        "Answer the final user message naturally and stay grounded in the transcript."
+        "\n\n<conversation>\n"
+        "USER: Hello\n"
+        "ASSISTANT: Hi there\n"
+        "USER: Follow up\n"
+        "</conversation>"
+    )
+    assert "Iframe Visualization" in fake_query.calls[0]["instructions"]
+    assert fake_query.calls[0]["model"] == "claude-sonnet-4-5"
 
 
 def test_chat_stream_uses_requested_model(monkeypatch):
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-4.1")
-    monkeypatch.setenv("OPENAI_MODEL_OPTIONS", "gpt-4.1,gpt-5.4")
-    fake_client = FakeClient()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+    monkeypatch.setenv("ANTHROPIC_MODEL_OPTIONS", "claude-sonnet-4-5,claude-opus-4-1")
+    fake_query = FakeQuery()
 
     with TestClient(app) as client:
-        app.state.openai_client = fake_client
+        app.state.anthropic_query_fn = fake_query
 
         response = client.post(
             "/api/chat/stream",
@@ -127,7 +109,7 @@ def test_chat_stream_uses_requested_model(monkeypatch):
                 "messages": [
                     {"role": "user", "content": "Use another model"},
                 ],
-                "model": "gpt-4.1",
+                "model": "claude-opus-4-1",
             },
         )
 
@@ -135,13 +117,15 @@ def test_chat_stream_uses_requested_model(monkeypatch):
 
     assert response.status_code == 200
     assert lines[-1] == {"type": "done"}
-    assert fake_client.responses.calls[0]["model"] == "gpt-4.1"
-    assert "reasoning" not in fake_client.responses.calls[0]
+    assert fake_query.calls[0]["model"] == "claude-opus-4-1"
 
 
 def test_chat_models_endpoint_returns_options(monkeypatch):
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-4.1")
-    monkeypatch.setenv("OPENAI_MODEL_OPTIONS", "gpt-4.1,gpt-5.4-2026-03-01")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+    monkeypatch.setenv(
+        "ANTHROPIC_MODEL_OPTIONS",
+        "claude-sonnet-4-5,claude-opus-4-1",
+    )
 
     with TestClient(app) as client:
         response = client.get("/api/chat/models")
@@ -150,26 +134,27 @@ def test_chat_models_endpoint_returns_options(monkeypatch):
     assert response.json() == {
         "models": [
             {
-                "id": "gpt-4.1",
+                "id": "claude-sonnet-4-5",
                 "efforts": [],
                 "default_effort": None,
             },
             {
-                "id": "gpt-5.4-2026-03-01",
-                "efforts": ["minimal", "low", "medium", "high", "xhigh"],
-                "default_effort": "medium",
+                "id": "claude-opus-4-1",
+                "efforts": [],
+                "default_effort": None,
             },
         ],
-        "default_model": "gpt-4.1",
+        "default_model": "claude-sonnet-4-5",
     }
 
 
 def test_chat_stream_rejects_unsupported_effort(monkeypatch):
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-4.1")
-    fake_client = FakeClient()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+    fake_query = FakeQuery()
 
     with TestClient(app) as client:
-        app.state.openai_client = fake_client
+        app.state.anthropic_query_fn = fake_query
 
         response = client.post(
             "/api/chat/stream",
@@ -187,7 +172,34 @@ def test_chat_stream_rejects_unsupported_effort(monkeypatch):
     assert lines == [
         {
             "type": "error",
-            "message": 'Model "gpt-4.1" does not support effort "high".',
+            "message": 'Model "claude-sonnet-4-5" does not support effort "high".',
         },
     ]
-    assert fake_client.responses.calls == []
+    assert fake_query.calls == []
+
+
+def test_build_instructions_includes_iframe_guidance():
+    instructions = build_instructions(None)
+
+    assert "Iframe Visualization" in instructions
+    assert "```iframe" in instructions
+
+
+def test_visualization_requests_force_iframe_instructions():
+    instructions = build_instructions(None, True)
+
+    assert "must respond with normal prose plus at least one ```iframe code fence" in instructions
+    assert "Do not emit any ```jsonrender fence" in instructions
+
+
+def test_should_force_iframe_detects_visualization_requests():
+    assert should_force_iframe(
+        [
+            ChatMessage(role="assistant", content="prior")
+        ]
+    ) is False
+    assert should_force_iframe(
+        [
+            ChatMessage(role="user", content="visualize a binary search tree")
+        ]
+    ) is True

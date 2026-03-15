@@ -1,16 +1,52 @@
 import json
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from inspect import signature
+from pathlib import Path
 from typing import Any, Literal, cast
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
 from app.catalog_prompt import CATALOG_PROMPT
-from app.model_capabilities import ReasoningEffort, get_model_capability
+
+ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh"]
+REPO_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILES = (REPO_ROOT / ".env", Path(__file__).resolve().parents[1] / ".env")
+logger = logging.getLogger(__name__)
+VISUALIZATION_HINTS = (
+    "visualize",
+    "visualization",
+    "interactive",
+    "diagram",
+    "simulation",
+    "explainer",
+    "render",
+    "animate",
+    "tree",
+    "graph",
+    "chart",
+    "build a ui",
+    "build an interactive",
+    "build a visual",
+)
+
+
+def load_env_files() -> list[Path]:
+    loaded_files: list[Path] = []
+
+    for env_file in ENV_FILES:
+        if not env_file.is_file():
+            continue
+
+        if load_dotenv(env_file, override=False):
+            loaded_files.append(env_file)
+
+    return loaded_files
 
 
 class ChatMessage(BaseModel):
@@ -35,12 +71,34 @@ def encode_line(payload: dict[str, object]) -> bytes:
     return f"{json.dumps(payload)}\n".encode("utf-8")
 
 
-def build_instructions(branch_focus: BranchFocus | None) -> str:
+def should_force_iframe(messages: list[ChatMessage]) -> bool:
+    latest_user_message = next(
+        (message.content for message in reversed(messages) if message.role == "user"),
+        "",
+    )
+    normalized = latest_user_message.lower()
+    return any(hint in normalized for hint in VISUALIZATION_HINTS)
+
+
+def build_instructions(
+    branch_focus: BranchFocus | None,
+    force_iframe: bool = False,
+) -> str:
     instructions = (
         "You are continuing an existing chat conversation. "
         "Respond naturally and keep the answer grounded in the transcript."
         f"\n\n{CATALOG_PROMPT}"
     )
+
+    if force_iframe:
+        instructions = (
+            f"{instructions}\n\n"
+            "This request is a visualization request. "
+            "You must respond with normal prose plus at least one ```iframe code fence. "
+            "Do not emit any ```jsonrender fence for this request. "
+            "If you need a custom visual, interactive demo, explainer, diagram, or simulation, "
+            "the only allowed interactive output format is ```iframe."
+        )
 
     if branch_focus is None:
         return instructions
@@ -55,14 +113,18 @@ def build_instructions(branch_focus: BranchFocus | None) -> str:
     )
 
 
-def build_input(messages: list[ChatMessage]) -> list[dict[str, str]]:
-    return [
-        {
-            "role": message.role,
-            "content": message.content,
-        }
-        for message in messages
-    ]
+def build_transcript_prompt(messages: list[ChatMessage]) -> str:
+    transcript = "\n".join(
+        f"{message.role.upper()}: {message.content}" for message in messages
+    )
+
+    return (
+        "Continue this conversation as the assistant. "
+        "Answer the final user message naturally and stay grounded in the transcript."
+        "\n\n<conversation>\n"
+        f"{transcript}\n"
+        "</conversation>"
+    )
 
 
 def parse_model_options(raw_value: str | None) -> list[str]:
@@ -81,8 +143,8 @@ def parse_model_options(raw_value: str | None) -> list[str]:
 
 
 def get_model_config() -> tuple[list[str], str | None]:
-    options = parse_model_options(os.getenv("OPENAI_MODEL_OPTIONS"))
-    default_model = (os.getenv("OPENAI_MODEL") or "").strip() or None
+    options = parse_model_options(os.getenv("ANTHROPIC_MODEL_OPTIONS"))
+    default_model = (os.getenv("ANTHROPIC_MODEL") or "").strip() or None
 
     if not options:
         return ([default_model] if default_model else []), default_model
@@ -94,11 +156,10 @@ def get_model_config() -> tuple[list[str], str | None]:
 
 
 def build_model_option(model_name: str) -> dict[str, object]:
-    capability = get_model_capability(model_name)
     return {
         "id": model_name,
-        "efforts": capability["efforts"],
-        "default_effort": capability["default_effort"],
+        "efforts": [],
+        "default_effort": None,
     }
 
 
@@ -117,56 +178,100 @@ def resolve_model_name(payload_model: str | None) -> tuple[str | None, str | Non
     if default_model:
         return default_model, None
 
-    return None, "No model configured. Set OPENAI_MODEL or OPENAI_MODEL_OPTIONS."
+    return None, "No model configured. Set ANTHROPIC_MODEL or ANTHROPIC_MODEL_OPTIONS."
 
 
 def resolve_effort(
     model: str,
     payload_effort: ReasoningEffort | None,
 ) -> tuple[ReasoningEffort | None, str | None]:
-    capability = get_model_capability(model)
-    efforts = capability["efforts"]
-    default_effort = capability["default_effort"]
-
     if payload_effort is not None:
-        if payload_effort not in efforts:
-            return (
-                None,
-                (
-                    f"Model {json.dumps(model)} does not support effort "
-                    f"{json.dumps(payload_effort)}."
-                ),
-            )
-        return payload_effort, None
-
-    if default_effort is not None:
-        return default_effort, None
+        return (
+            None,
+            (
+                f"Model {json.dumps(model)} does not support effort "
+                f"{json.dumps(payload_effort)}."
+            ),
+        )
 
     return None, None
 
 
-def get_client(app: FastAPI) -> AsyncOpenAI | None:
-    if getattr(app.state, "openai_client", None) is not None:
-        return app.state.openai_client
+def get_query_fn(app: FastAPI):
+    existing = getattr(app.state, "anthropic_query_fn", None)
+    if existing is not None:
+        return existing
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+    try:
+        from claude_agent_sdk import ClaudeAgentOptions, query
+    except ImportError as exc:
+        raise RuntimeError(
+            "claude-agent-sdk is not installed on the backend."
+        ) from exc
+
+    option_names = set(signature(ClaudeAgentOptions).parameters)
+
+    def run_query(*, prompt: str, instructions: str, model: str):
+        option_kwargs: dict[str, object] = {}
+
+        if "system_prompt" in option_names:
+            option_kwargs["system_prompt"] = instructions
+        if "max_turns" in option_names:
+            option_kwargs["max_turns"] = 1
+        if "cwd" in option_names:
+            option_kwargs["cwd"] = os.getcwd()
+        if "allowed_tools" in option_names:
+            option_kwargs["allowed_tools"] = []
+        if "env" in option_names:
+            option_kwargs["env"] = {"ANTHROPIC_MODEL": model}
+
+        options = ClaudeAgentOptions(**option_kwargs)
+        return query(prompt=prompt, options=options)
+
+    app.state.anthropic_query_fn = run_query
+    return run_query
+
+
+def iter_message_blocks(message: object) -> list[object]:
+    content = getattr(message, "content", None)
+    if isinstance(content, list):
+        return list(content)
+    return []
+
+
+def extract_reasoning_text(block: object) -> str | None:
+    for attribute in ("thinking", "text"):
+        value = getattr(block, attribute, None)
+        if isinstance(value, str) and value:
+            block_type = str(getattr(block, "type", "")).lower()
+            class_name = block.__class__.__name__.lower()
+            if "thinking" in block_type or "thinking" in class_name:
+                return value
+    return None
+
+
+def extract_content_text(block: object) -> str | None:
+    text = getattr(block, "text", None)
+    if not isinstance(text, str) or not text:
         return None
 
-    client = AsyncOpenAI(api_key=api_key)
-    app.state.openai_client = client
-    return client
+    block_type = str(getattr(block, "type", "")).lower()
+    class_name = block.__class__.__name__.lower()
+    if "thinking" in block_type or "thinking" in class_name:
+        return None
+
+    return text
 
 
 async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncIterator[bytes]:
-    client = get_client(app)
     model, model_error = resolve_model_name(payload.model)
+    force_iframe = should_force_iframe(payload.messages)
 
-    if client is None:
+    if not os.getenv("ANTHROPIC_API_KEY"):
         yield encode_line(
             {
                 "type": "error",
-                "message": "OPENAI_API_KEY is not set on the backend.",
+                "message": "ANTHROPIC_API_KEY is not set on the backend.",
             }
         )
         return
@@ -184,7 +289,7 @@ async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncItera
         yield encode_line(
             {
                 "type": "error",
-                "message": "No model configured. Set OPENAI_MODEL or OPENAI_MODEL_OPTIONS.",
+                "message": "No model configured. Set ANTHROPIC_MODEL or ANTHROPIC_MODEL_OPTIONS.",
             }
         )
         return
@@ -202,49 +307,41 @@ async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncItera
     done_sent = False
 
     try:
-        request_kwargs: dict[str, object] = {
-            "model": model,
-            "input": cast(Any, build_input(payload.messages)),
-            "instructions": build_instructions(payload.branch_focus),
-            "stream": True,
-        }
+        query_fn = get_query_fn(app)
+        stream = query_fn(
+            prompt=build_transcript_prompt(payload.messages),
+            instructions=build_instructions(payload.branch_focus, force_iframe),
+            model=model,
+        )
 
-        if effort is not None:
-            reasoning_config: dict[str, str] = {"effort": effort}
-            if effort != "none":
-                reasoning_config["summary"] = "auto"
-            request_kwargs["reasoning"] = reasoning_config
+        async for message in cast(Any, stream):
+            for block in iter_message_blocks(message):
+                reasoning_text = extract_reasoning_text(block)
+                if reasoning_text:
+                    yield encode_line(
+                        {
+                            "type": "reasoning_delta",
+                            "text": reasoning_text,
+                            "format": "raw",
+                        }
+                    )
 
-        stream = await client.responses.create(**request_kwargs)
+                content_text = extract_content_text(block)
+                if content_text:
+                    yield encode_line({"type": "content_delta", "text": content_text})
 
-        async for event in stream:
-            if event.type == "response.output_text.delta" and event.delta:
-                yield encode_line({"type": "content_delta", "text": event.delta})
-            elif event.type == "response.reasoning_text.delta" and event.delta:
-                yield encode_line(
-                    {
-                        "type": "reasoning_delta",
-                        "text": event.delta,
-                        "format": "raw",
-                    }
+            if getattr(message, "subtype", None) == "error":
+                error_text = getattr(message, "result", None) or getattr(
+                    message, "message", None
                 )
-            elif event.type == "response.reasoning_summary_text.delta" and event.delta:
-                yield encode_line(
-                    {
-                        "type": "reasoning_delta",
-                        "text": event.delta,
-                        "format": "summary",
-                    }
-                )
-            elif event.type == "response.completed":
-                yield encode_line({"type": "done"})
-                done_sent = True
-            elif event.type == "error":
-                message = getattr(getattr(event, "error", None), "message", None)
                 yield encode_line(
                     {
                         "type": "error",
-                        "message": message or "The model stream failed.",
+                        "message": (
+                            error_text
+                            if isinstance(error_text, str) and error_text
+                            else "The model stream failed."
+                        ),
                     }
                 )
                 return
@@ -258,12 +355,25 @@ async def stream_chat_response(app: FastAPI, payload: ChatRequest) -> AsyncItera
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.openai_client = None
-    yield
-    client = getattr(app.state, "openai_client", None)
-    if client is not None:
-        await client.close()
+    loaded_files = load_env_files()
+    if loaded_files:
+        logger.info(
+            "Loaded env files: %s",
+            ", ".join(str(path) for path in loaded_files),
+        )
+    else:
+        logger.warning("No .env file found for backend startup.")
 
+    logger.info(
+        "Anthropic env ready: key=%s model=%s",
+        "present" if os.getenv("ANTHROPIC_API_KEY") else "missing",
+        os.getenv("ANTHROPIC_MODEL") or "<unset>",
+    )
+    app.state.anthropic_query_fn = None
+    yield
+
+
+load_env_files()
 
 app = FastAPI(title="Sidequest API", lifespan=lifespan)
 

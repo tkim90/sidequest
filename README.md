@@ -28,9 +28,9 @@ uv sync
 Set environment variables before running:
 
 ```bash
-export OPENAI_API_KEY=your_key_here
-export OPENAI_MODEL=your_model_here
-export OPENAI_MODEL_OPTIONS=gpt-4.1-mini,gpt-4.1,gpt-4o-mini
+export ANTHROPIC_API_KEY=your_key_here
+export ANTHROPIC_MODEL=claude-sonnet-4-5
+export ANTHROPIC_MODEL_OPTIONS=claude-sonnet-4-5,claude-opus-4-1
 ```
 
 Run the API:
@@ -99,6 +99,7 @@ The image service listens on `http://127.0.0.1:3001`.
 
 ### JSON-Render Interactive Components
 - LLM-driven interactive React components rendered inline in chat via [json-render](https://json-render.dev)
+- Inline iframe visualizations generated from assistant `iframe` fences for custom HTML/SVG/JS demos
 - Cards, charts, tables, tabs, alerts, progress bars, and more
 - AlgorithmStepper: step-through algorithm walkthroughs
 - AlgorithmVisualizer: synchronized code + graph visualization with step highlighting

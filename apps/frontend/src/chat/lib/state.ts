@@ -4,6 +4,7 @@ import type {
   BranchFocus,
   ChatMessage,
   ChatRole,
+  MessageRenderPolicy,
   MessageRecord,
   MessageStatus,
   MessagesByWindowId,
@@ -110,6 +111,7 @@ export function createMessage(
   content: string,
   status: MessageStatus = "complete",
   model?: string,
+  renderPolicy: MessageRenderPolicy = "default",
 ): MessageRecord {
   return {
     id: crypto.randomUUID(),
@@ -117,6 +119,7 @@ export function createMessage(
     content,
     status,
     model,
+    renderPolicy,
     reasoningRawContent: "",
     reasoningSummaryContent: "",
   };

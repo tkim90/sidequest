@@ -5,8 +5,9 @@ description = "Minimal FastAPI backend for Sidequest"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "claude-agent-sdk>=0.0.20",
     "fastapi>=0.115.12",
-    "openai>=1.108.1",
+    "python-dotenv>=1.2.2",
     "uvicorn>=0.34.0",
 ]
 

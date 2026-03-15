@@ -65,6 +65,8 @@ const MarkdownContent = memo(function MarkdownContent({
         anchorGroups={anchorGroups}
         blocks={finalizedBlocks}
         isFocused={isFocused}
+        messageId={message.id}
+        renderPolicy={message.renderPolicy}
         registerAnchorRef={registerAnchorRef}
       />
       {activeBlock ? (
@@ -80,6 +82,8 @@ const MarkdownContent = memo(function MarkdownContent({
               anchorGroups,
               blockOffset: computeBlockOffsets(allBlocks)[allBlocks.length - 1],
               isFocused,
+              messageId: message.id,
+              renderPolicy: message.renderPolicy,
               registerAnchorRef,
             }}
           />

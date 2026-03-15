@@ -32,6 +32,7 @@ import {
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
+import { resolveRenderPolicyForPrompt } from "../lib/renderPolicy";
 import {
   createMessage,
   createWindowRecord,
@@ -313,11 +314,13 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       modelOption,
       windowData.selectedEffort,
     );
+    const renderPolicy = resolveRenderPolicyForPrompt(composer);
     const assistantMessage = createMessage(
       "assistant",
       "",
       "streaming",
       resolvedModel,
+      renderPolicy,
     );
     const requestMessages: ChatMessage[] = [
       ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
@@ -403,7 +406,20 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       modelOption,
       windowData.selectedEffort,
     );
-    const assistantMessage = createMessage("assistant", "", "streaming", resolvedModel);
+    const sourceUserMessage = messages
+      .slice(0, messageIndex)
+      .filter((message) => message.role === "user")
+      .at(-1);
+    const renderPolicy = sourceUserMessage
+      ? resolveRenderPolicyForPrompt(sourceUserMessage.content)
+      : "default";
+    const assistantMessage = createMessage(
+      "assistant",
+      "",
+      "streaming",
+      resolvedModel,
+      renderPolicy,
+    );
 
     const requestMessages: ChatMessage[] = messages
       .slice(0, messageIndex)

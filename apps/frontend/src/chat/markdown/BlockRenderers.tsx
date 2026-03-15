@@ -1,6 +1,9 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { AnchorGroup } from "../../types";
+import IframeMessageEmbed, {
+  IframeMessageEmbedSkeleton,
+} from "../components/IframeMessageEmbed";
 import ImageRenderer, { ImageRendererSkeleton } from "../jsonrender/ImageRenderer";
 import { mergeJsonRenderSpec } from "../jsonrender/mergeSpec";
 import { partialJsonParse, tryParseSpec } from "../jsonrender/partialJsonParse";
@@ -8,6 +11,7 @@ import registry from "../jsonrender/registry";
 import SpecRenderer, { SpecRendererSkeleton } from "../jsonrender/SpecRenderer";
 import type { JsonRenderSpec } from "../jsonrender/types";
 import CodeBlock from "./CodeBlock";
+import { validateIframeEmbedHtml } from "./iframeEmbed";
 import {
   computeBlockOffsets,
   getRenderedTextForInlineSource,
@@ -45,6 +49,8 @@ export interface BlockRenderContext {
   anchorGroups: AnchorGroup[];
   blockOffset: BlockOffset;
   isFocused: boolean;
+  messageId: string;
+  renderPolicy: "default" | "force_iframe";
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
 }
 
@@ -154,6 +160,40 @@ function StreamingImageRenderBlock({
   }
 
   return <ImageRenderer spec={stableSpec} partial rawJson={code} />;
+}
+
+function renderIframeError(code: string, reason: string) {
+  return (
+    <div className="my-3">
+      <div className="flex items-center gap-1.5 rounded-t-md border border-b-0 border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM7.25 4.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5ZM8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+        </svg>
+        Failed to render iframe embed - {reason}
+      </div>
+      <CodeBlock code={code} language="html" />
+    </div>
+  );
+}
+
+function renderJsonRenderDisabledError(code: string) {
+  return (
+    <div className="my-3">
+      <div className="flex items-center gap-1.5 rounded-t-md border border-b-0 border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM7.25 4.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5ZM8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+        </svg>
+        Visualization replies must use an iframe embed, not jsonrender
+      </div>
+      <CodeBlock code={code} language="json" />
+    </div>
+  );
+}
+
+export function shouldRenderJsonRenderBlock(
+  renderPolicy: "default" | "force_iframe",
+): boolean {
+  return renderPolicy !== "force_iframe";
 }
 
 function getBlockAnchorRanges(ctx: BlockRenderContext): AnchorRange[] {
@@ -325,6 +365,10 @@ export function RenderFinalizedBlock({
   }
 
   if (block.type === "code" && block.language === "jsonrender") {
+    if (!shouldRenderJsonRenderBlock(ctx.renderPolicy)) {
+      return renderJsonRenderDisabledError(block.code);
+    }
+
     const spec = tryParseSpec(block.code);
     if (spec) {
       return <SpecRenderer spec={spec} registry={registry} rawJson={block.code} />;
@@ -357,6 +401,23 @@ export function RenderFinalizedBlock({
         </div>
         <CodeBlock code={block.code} language="json" />
       </div>
+    );
+  }
+
+  if (block.type === "code" && block.language === "iframe") {
+    const validation = validateIframeEmbedHtml(block.code);
+    if (!validation.ok) {
+      return renderIframeError(
+        block.code,
+        validation.reason ?? "invalid iframe embed",
+      );
+    }
+
+    return (
+      <IframeMessageEmbed
+        embedId={`${ctx.messageId}:${block.id}`}
+        html={block.code}
+      />
     );
   }
 
@@ -518,6 +579,10 @@ export function RenderActiveBlock({
     return <StreamingImageRenderBlock code={block.code} streamKey={streamKey} />;
   }
 
+  if (block.type === "code" && block.language === "iframe") {
+    return <IframeMessageEmbedSkeleton />;
+  }
+
   if (block.type === "code") {
     return <CodeBlock code={block.code} language={block.language} />;
   }
@@ -649,12 +714,16 @@ export const FinalizedBlocksList = memo(function FinalizedBlocksList({
   anchorGroups,
   blocks,
   isFocused,
+  messageId,
+  renderPolicy,
   registerAnchorRef,
 }: {
   allBlocks: MarkdownBlock[];
   anchorGroups: AnchorGroup[];
   blocks: MarkdownBlock[];
   isFocused: boolean;
+  messageId: string;
+  renderPolicy: "default" | "force_iframe";
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
 }) {
   const blockOffsets = computeBlockOffsets(allBlocks);
@@ -675,6 +744,8 @@ export const FinalizedBlocksList = memo(function FinalizedBlocksList({
               anchorGroups,
               blockOffset,
               isFocused,
+              messageId,
+              renderPolicy,
               registerAnchorRef,
             }}
           />

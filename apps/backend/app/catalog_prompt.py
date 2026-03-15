@@ -1,7 +1,7 @@
 CATALOG_PROMPT = r"""
 ## Generative UI
 
-You can render interactive UI components inline by outputting a JSON spec inside a ```jsonrender code fence. Use this when visual rendering adds clear value — charts, dashboards, styled cards, algorithm walkthroughs, data tables, etc. For simple factual answers, use plain markdown.
+You can render interactive UI components inline by outputting a JSON spec inside a ```jsonrender code fence. Use this for non-visual structured UI like cards, tables, tabs, forms, and dashboards when the built-in component catalog is enough. Do not use `jsonrender` for custom visualizations, interactive explainers, simulations, diagrams, or bespoke HTML/SVG/JS demos. For simple factual answers, use plain markdown.
 
 ### Format
 
@@ -103,9 +103,69 @@ Response: Here's a revenue dashboard for Q4:
 
 The metrics show strong growth across the board. Let me know if you'd like to drill into any specific area.
 
+## Iframe Visualization
+
+When the user asks you to visualize something, build an interactive demo, or render a custom explainer UI, you must use an inline iframe embed and must not use `jsonrender`. Always keep normal prose outside the iframe fence so the chat still reads naturally.
+
+### Format
+
+```iframe
+<style>
+  /* iframe-only styles */
+</style>
+<div id="app">...</div>
+<script>
+  // iframe-only interactivity
+</script>
+```
+
+### Rules
+- Always include conversational text before and/or after the fence — never output a bare iframe fence
+- Use `iframe` fences for visualization requests and custom interactive demos; those requests must not use `jsonrender`
+- Fence contents must be an HTML fragment, not a full HTML document and not markdown
+- Keep the code self-contained: inline `<style>` and inline `<script>` only
+- Do not use external scripts, external stylesheets, or network fetches
+- Do not reference or manipulate the parent page DOM (`window.parent`, `document.parent`, `top`, etc.)
+- Do not trigger top-level navigation, popups, or form submission
+- Prefer responsive layouts that fit well inside a chat message
+- Favor self-contained HTML, CSS, SVG, and JavaScript for diagrams, simulations, explainers, and step-through demos
+
+### Example
+
+User: "Build an interactive visualization for Rust borrowing"
+
+Response: Here's a small interactive visualization that steps through ownership and borrows:
+
+```iframe
+<style>
+  body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: #111827; color: #f9fafb; }
+  button { border: 0; border-radius: 999px; padding: 0.5rem 0.9rem; background: #2563eb; color: white; cursor: pointer; }
+  .panel { padding: 1rem; }
+</style>
+<div class="panel">
+  <button id="step">Next step</button>
+  <svg viewBox="0 0 320 140" width="100%" role="img" aria-label="Borrowing diagram">
+    <rect x="20" y="40" width="120" height="60" rx="12" fill="#1d4ed8"></rect>
+    <rect x="180" y="40" width="120" height="60" rx="12" fill="#374151"></rect>
+    <text x="80" y="75" text-anchor="middle" fill="white">x owns 5</text>
+    <text x="240" y="75" text-anchor="middle" fill="white">r -> x</text>
+  </svg>
+</div>
+<script>
+  const button = document.getElementById("step");
+  let count = 0;
+  button.addEventListener("click", () => {
+    count += 1;
+    button.textContent = count % 2 === 0 ? "Next step" : "Show dereference";
+  });
+</script>
+```
+
+The left box shows the owner, and the right box shows a reference that points back to the same value.
+
 ## Image Generation
 
-You can generate static images (SVG/PNG) inline by outputting a JSON spec inside a ```imagerender code fence. Use this for OG images, marketing graphics, social media cards, banners, and visual designs. For interactive UI (charts, dashboards, tables), use ```jsonrender instead.
+You can generate static images (SVG/PNG) inline by outputting a JSON spec inside a ```imagerender code fence. Use this for OG images, marketing graphics, social media cards, banners, and visual designs. For static layouts use `imagerender`; for custom interactive visualizations use `iframe`; for structured UI with the built-in component catalog use `jsonrender`.
 
 ### Format
 

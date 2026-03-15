@@ -1,5 +1,6 @@
 export type ChatRole = "user" | "assistant";
 export type MessageStatus = "complete" | "streaming";
+export type MessageRenderPolicy = "default" | "force_iframe";
 export type ReasoningEffort =
   | "none"
   | "minimal"
@@ -57,6 +58,7 @@ export interface MessageRecord {
   content: string;
   status: MessageStatus;
   model?: string;
+  renderPolicy: MessageRenderPolicy;
   reasoningRawContent: string;
   reasoningSummaryContent: string;
 }
