@@ -4,6 +4,7 @@ import type {
   ChatModelOption,
   ReasoningEffort,
 } from "../../types";
+import { apiUrl } from "../../config/env";
 
 const DEFAULT_REASONING_EFFORTS: ReasoningEffort[] = [
   "none",
@@ -103,7 +104,7 @@ export async function streamChat({
   onContentDelta,
   onReasoningDelta,
 }: StreamChatOptions): Promise<void> {
-  const response = await fetch("/api/chat/stream", {
+  const response = await fetch(apiUrl("/chat/stream"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -191,7 +192,7 @@ export async function streamChat({
 export async function fetchChatModelConfig(
   signal?: AbortSignal,
 ): Promise<ChatModelConfig> {
-  const response = await fetch("/api/chat/models", {
+  const response = await fetch(apiUrl("/chat/models"), {
     method: "GET",
     signal,
   });

@@ -1,0 +1,3 @@
+WRN 2026-03-11T20:39:46.399 ?.27368    server_start:199: Failed to start server: operation not permitted: /var/folders/j5/gsrwycz97433jrj4z7bnphtr0000gn/T/nvim.taekim/ckWyr0/nvim-LazyVim.27368.0
+WRN 2026-03-11T20:39:46.399 ?.27369    server_start:199: Failed to start server: operation not permitted: /var/folders/j5/gsrwycz97433jrj4z7bnphtr0000gn/T/nvim.taekim/N9g0iw/nvim-LazyVim.27369.0
+WRN 2026-03-11T20:40:03.031 ?.27477    server_start:199: Failed to start server: operation not permitted: /var/folders/j5/gsrwycz97433jrj4z7bnphtr0000gn/T/nvim.taekim/i1nBJg/nvim-LazyVim.27477.0

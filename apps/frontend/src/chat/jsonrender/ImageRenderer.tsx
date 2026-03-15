@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { apiUrl } from "../../config/env";
 import type { JsonRenderSpec } from "./types";
 
 interface ImageRendererProps {
@@ -39,7 +40,7 @@ export default function ImageRenderer({ spec, partial, rawJson }: ImageRendererP
     const controller = new AbortController();
 
     const doRender = () => {
-      fetch("/api/image/render", {
+      fetch(apiUrl("/image/render"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec, format: "svg" }),
