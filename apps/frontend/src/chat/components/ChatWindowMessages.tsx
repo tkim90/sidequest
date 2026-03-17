@@ -53,15 +53,17 @@ const ChatMessageCard = memo(function ChatMessageCard({
 }: ChatMessageCardProps) {
   const messageClassName =
     message.role === "user"
-      ? "self-end border border-primary bg-primary text-primary-foreground"
-      : isFixedPane
-        ? "self-start border border-border bg-paper-sheet text-card-foreground"
-        : "self-start border border-border bg-card text-card-foreground";
+      ? "ml-auto self-end max-w-[92%] px-3 py-2"
+      : "self-start w-full";
+  const contentClassName =
+    message.role === "assistant"
+      ? "font-normal text-foreground"
+      : "text-right font-normal text-foreground/80";
 
   return (
     <section
       data-message-card
-      className={`group relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text rounded-lg px-4 py-4 ${messageClassName}`}
+      className={`group relative cursor-text select-text ${messageClassName}`}
     >
       {message.role === "assistant" ? (
         <AssistantReasoningPanel
@@ -73,6 +75,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
         windowId={windowId}
         message={message}
         anchorGroups={anchorGroups}
+        className={contentClassName}
         isFocused={isFocused}
         registerAnchorRef={registerAnchorRef}
         onMessageMouseDown={onMessageMouseDown}
@@ -83,7 +86,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
             <button
               className={[
                 "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
-                isFixedPane ? "bg-paper-raised" : "bg-secondary",
+                "bg-paper-raised/80",
               ].join(" ")}
               title="Retry"
               type="button"
@@ -108,7 +111,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
             <span
               className={[
                 "inline-flex h-6 items-center border border-border px-2 text-[11px] font-medium tracking-tight text-muted-foreground",
-                isFixedPane ? "bg-paper-raised" : "bg-secondary",
+                "bg-paper-raised/80",
               ].join(" ")}
             >
               {message.model}
@@ -180,7 +183,7 @@ function ChatWindowMessages({
     <div
       className={[
         "flex flex-col gap-4 overflow-auto",
-        isFixedPane ? "px-1 py-5" : "p-5",
+        isFixedPane ? "px-1 py-5" : "px-4 py-5",
       ].join(" ")}
       ref={scrollRef}
       onScroll={onScroll}

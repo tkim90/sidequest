@@ -1,7 +1,55 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "ET Book";
+  src:
+    url("/fonts/et-book/et-book-roman-line-figures.woff") format("woff"),
+    url("/fonts/et-book/et-book-roman-line-figures.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ET Book";
+  src:
+    url("/fonts/et-book/et-book-display-italic-old-style-figures.woff") format("woff"),
+    url("/fonts/et-book/et-book-display-italic-old-style-figures.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ET Book";
+  src:
+    url("/fonts/et-book/et-book-semi-bold-old-style-figures.woff") format("woff"),
+    url("/fonts/et-book/et-book-semi-bold-old-style-figures.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ET Book";
+  src:
+    url("/fonts/et-book/et-book-bold-line-figures.woff") format("woff"),
+    url("/fonts/et-book/et-book-bold-line-figures.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
+  --font-serif-app:
+    "ET Book",
+    Palatino,
+    "Palatino Linotype",
+    "Palatino LT STD",
+    "Book Antiqua",
+    Georgia,
+    serif;
   --background: #F7F1E8;
   --foreground: #564B3D;
   --card: #FCF8F1;
@@ -14,13 +62,13 @@
   --secondary-foreground: #5E5345;
   --muted: #EEE4D5;
   --muted-foreground: #8A7C68;
-  --accent: #F55C1B;
+  --accent: var(--secondary-foreground);
   --accent-foreground: #FFF8EF;
   --destructive: #dc2626;
   --destructive-foreground: #fef2f2;
   --border: #DCCFBC;
   --input: #DCCFBC;
-  --ring: #F55C1B;
+  --ring: var(--secondary-foreground);
   --success: #16a34a;
   --success-foreground: #f0fdf4;
   --warning: #d97706;
@@ -56,6 +104,7 @@
 }
 
 @theme inline {
+  --font-serif: var(--font-serif-app);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -128,6 +177,8 @@
     overflow: hidden;
     background: var(--background);
     color: var(--foreground);
+    font-family: var(--font-serif-app);
+    text-rendering: optimizeLegibility;
   }
 
   button,

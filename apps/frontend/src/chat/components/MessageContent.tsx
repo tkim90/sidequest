@@ -5,6 +5,7 @@ import MarkdownContent from "../markdown/MarkdownContent";
 import UserMessageContent from "./UserMessageContent";
 
 interface MessageContentProps {
+  className?: string;
   windowId: string;
   message: MessageRecord;
   anchorGroups: AnchorGroup[];
@@ -24,6 +25,7 @@ const MessageContent = memo(function MessageContent(props: MessageContentProps) 
         windowId={props.windowId}
         message={props.message}
         anchorGroups={props.anchorGroups}
+        className={props.className}
         isFocused={props.isFocused}
         registerAnchorRef={props.registerAnchorRef}
         onMessageMouseDown={props.onMessageMouseDown}
@@ -42,7 +44,8 @@ function areMessageContentPropsEqual(
     previous.windowId === next.windowId &&
     previous.message === next.message &&
     previous.anchorGroups === next.anchorGroups &&
-    previous.isFocused === next.isFocused
+    previous.isFocused === next.isFocused &&
+    previous.className === next.className
   );
 }
 

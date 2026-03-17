@@ -9,6 +9,7 @@ import {
 import type { AnchorGroup, MessageRecord } from "../../types";
 
 export interface UserMessageContentProps {
+  className?: string;
   windowId: string;
   message: MessageRecord;
   anchorGroups: AnchorGroup[];
@@ -251,6 +252,7 @@ function renderChunkContent({
 }
 
 function UserMessageContent({
+  className,
   windowId,
   message,
   anchorGroups,
@@ -295,7 +297,7 @@ function UserMessageContent({
 
   return (
     <div
-      className="cursor-text whitespace-pre-wrap break-words text-[20px] leading-7"
+      className={`cursor-text whitespace-pre-wrap break-words text-[20px] leading-7 ${className ?? ""}`.trim()}
       data-message-id={message.id}
       onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
