@@ -61,24 +61,8 @@ const ChatMessageCard = memo(function ChatMessageCard({
   return (
     <section
       data-message-card
-      className={`relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName} rounded-lg`}
+      className={`group relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text rounded-lg px-4 py-4 ${messageClassName}`}
     >
-      {message.role === "user" ? (
-        <></>
-      ) : (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {message.model ? (
-            <span
-              className={[
-                "inline-flex items-center border border-border px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-muted-foreground",
-                isFixedPane ? "bg-paper-raised" : "bg-secondary",
-              ].join(" ")}
-            >
-              {message.model}
-            </span>
-          ) : null}
-        </div>
-      )}
       {message.role === "assistant" ? (
         <AssistantReasoningPanel
           isFixedPane={isFixedPane}
@@ -93,30 +77,44 @@ const ChatMessageCard = memo(function ChatMessageCard({
         registerAnchorRef={registerAnchorRef}
         onMessageMouseDown={onMessageMouseDown}
       />
-      {message.role === "assistant" && message.status === "complete" ? (
-        <button
-          className={[
-            "absolute bottom-2 right-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
-            isFixedPane ? "bg-paper-raised" : "bg-secondary",
-          ].join(" ")}
-          title="Retry"
-          type="button"
-          onClick={() => onRetry(message.id)}
-        >
-          <svg
-            className="h-3.5 w-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 4v5h5M20 20v-5h-5M5.1 15A7 7 0 0 0 19 12M18.9 9A7 7 0 0 0 5 12"
-            />
-          </svg>
-        </button>
+      {message.role === "assistant" ? (
+        <div className="mt-3 flex items-center justify-end gap-2 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+          {message.status === "complete" ? (
+            <button
+              className={[
+                "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
+                isFixedPane ? "bg-paper-raised" : "bg-secondary",
+              ].join(" ")}
+              title="Retry"
+              type="button"
+              onClick={() => onRetry(message.id)}
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h5M20 20v-5h-5M5.1 15A7 7 0 0 0 19 12M18.9 9A7 7 0 0 0 5 12"
+                />
+              </svg>
+            </button>
+          ) : null}
+          {message.model ? (
+            <span
+              className={[
+                "inline-flex h-6 items-center border border-border px-2 text-[11px] font-medium tracking-tight text-muted-foreground",
+                isFixedPane ? "bg-paper-raised" : "bg-secondary",
+              ].join(" ")}
+            >
+              {message.model}
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );
