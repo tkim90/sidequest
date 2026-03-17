@@ -8,7 +8,7 @@
   --card-foreground: var(--foreground);
   --popover: #FFFBF4;
   --popover-foreground: var(--foreground);
-  --primary: #F55C1B;
+  --primary: #84462ccd;
   --primary-foreground: #FFF8EF;
   --secondary: #F2E9DB;
   --secondary-foreground: #5E5345;
@@ -43,6 +43,9 @@
   --paper-stroke: rgb(123 108 83 / 0.22);
   --paper-ink-soft: #897966;
   --paper-accent: #E2D1AF;
+  --scrollbar-track: var(--paper-raised);
+  --scrollbar-thumb: #CDBCA3;
+  --scrollbar-thumb-hover: #BAA689;
   --window-shadow: 10px 14px 24px 0 rgb(100 83 55 / 0.12);
   --modal-shadow: 10px 10px 0 0 rgb(24 24 27 / 0.12);
   --toast-shadow: 8px 8px 0 0 rgb(24 24 27 / 0.2);
@@ -88,11 +91,16 @@
   --color-paper-stroke: var(--paper-stroke);
   --color-paper-ink-soft: var(--paper-ink-soft);
   --color-paper-accent: var(--paper-accent);
+  --color-scrollbar-track: var(--scrollbar-track);
+  --color-scrollbar-thumb: var(--scrollbar-thumb);
+  --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
 }
 
 @layer base {
   * {
     box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   html {
@@ -117,5 +125,28 @@
   button,
   textarea {
     font: inherit;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 3px solid var(--scrollbar-track);
+    border-radius: 999px;
+    background: var(--scrollbar-thumb);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
   }
 }

@@ -61,12 +61,10 @@ const ChatMessageCard = memo(function ChatMessageCard({
   return (
     <section
       data-message-card
-      className={`relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName}`}
+      className={`relative ${message.role === "user" ? "w-[92%]" : "w-full"} cursor-text select-text px-4 py-4 ${messageClassName} rounded-lg`}
     >
       {message.role === "user" ? (
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-foreground/70">
-          You
-        </p>
+        <></>
       ) : (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Assistant</p>
