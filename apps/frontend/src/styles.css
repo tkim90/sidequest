@@ -158,3 +158,24 @@
     background: var(--scrollbar-track);
   }
 }
+
+@keyframes paper-scribble-loop {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 100;
+  }
+
+  10% {
+    opacity: 0.18;
+  }
+
+  62% {
+    opacity: 0.62;
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}

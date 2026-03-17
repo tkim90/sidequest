@@ -25,6 +25,65 @@ interface MarkdownContentProps {
   ) => void;
 }
 
+const SCRIBBLE_LINES = [
+  {
+    widthClassName: "w-[74%]",
+    duration: "1.8s",
+    delay: "0s",
+    d: "M4 12 C 18 8, 32 15, 48 11 S 80 13, 98 11 S 130 13, 148 10 S 180 12, 202 11 S 238 12, 264 10",
+  },
+  {
+    widthClassName: "w-full",
+    duration: "2s",
+    delay: "0.18s",
+    d: "M3 12 C 22 10, 40 14, 58 11 S 92 13, 116 12 S 152 10, 176 12 S 210 14, 236 11 S 274 12, 312 11",
+  },
+  {
+    widthClassName: "w-[82%]",
+    duration: "1.9s",
+    delay: "0.34s",
+    d: "M4 12 C 16 9, 30 14, 46 12 S 78 11, 98 12 S 130 14, 154 11 S 188 13, 214 10 S 246 12, 272 11",
+  },
+  {
+    widthClassName: "w-[40%]",
+    duration: "1.65s",
+    delay: "0.5s",
+    d: "M4 12 C 18 10, 34 14, 52 11 S 82 13, 104 12 S 132 10, 150 11",
+  },
+] as const;
+
+function StreamingScribbleSkeleton() {
+  return (
+    <div className="space-y-2 py-2" aria-hidden="true">
+      {SCRIBBLE_LINES.map((line, index) => (
+        <div key={`${line.delay}:${index}`} className={line.widthClassName}>
+          <svg
+            className="block h-4 w-full overflow-visible"
+            viewBox="0 0 320 24"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            <path
+              d={line.d}
+              pathLength={100}
+              stroke="var(--paper-ink-soft)"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeOpacity="0.75"
+              strokeWidth="2.4"
+              style={{
+                animation: `paper-scribble-loop ${line.duration} ease-out ${line.delay} infinite`,
+                strokeDasharray: 100,
+                strokeDashoffset: 100,
+              }}
+            />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const MarkdownContent = memo(function MarkdownContent({
   windowId,
   message,
@@ -86,12 +145,7 @@ const MarkdownContent = memo(function MarkdownContent({
         )
       ) : null}
       {showSkeleton ? (
-        <div className="animate-pulse space-y-3 py-1" aria-hidden="true">
-          <div className="h-4 w-3/4 rounded bg-muted" />
-          <div className="h-4 w-full rounded bg-muted" />
-          <div className="h-4 w-5/6 rounded bg-muted" />
-          <div className="h-4 w-2/5 rounded bg-muted" />
-        </div>
+        <StreamingScribbleSkeleton />
       ) : null}
       {showStreamingCursor ? (
         <span className="ml-0.5 inline-block animate-pulse font-semibold" aria-hidden="true">
