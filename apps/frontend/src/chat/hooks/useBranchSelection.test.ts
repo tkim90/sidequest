@@ -32,4 +32,26 @@ describe("createBranchWindow", () => {
       parentMessageRole: "assistant",
     });
   });
+
+  it("uses an explicit canvas x position when provided", () => {
+    const parentWindow = createWindowRecord({
+      title: "Chat 1",
+      x: 480,
+      y: 80,
+    });
+    const anchorMessage = createMessage("assistant", "Parent answer");
+
+    const childWindow = createBranchWindow({
+      childX: 56,
+      childIndex: 0,
+      parentWidth: parentWindow.width,
+      inheritedMessageCount: 2,
+      parentWindow,
+      selectedText: "answer",
+      windowLocalY: 160,
+      anchorMessage,
+    });
+
+    expect(childWindow.x).toBe(56);
+  });
 });

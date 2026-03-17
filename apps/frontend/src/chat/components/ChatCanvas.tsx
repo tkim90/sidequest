@@ -107,12 +107,11 @@ function ChatCanvas({
       <aside className="relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-r lg:border-b-0">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-80"
+          className="pointer-events-none absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(to bottom, transparent 0, transparent 35px, var(--paper-rule) 36px)",
-            backgroundPosition: "0 24px",
-            backgroundSize: "100% 36px",
+              "radial-gradient(circle at 20% 24%, var(--paper-grain-light) 0 0.7px, transparent 1px), radial-gradient(circle at 72% 38%, var(--paper-grain-dark) 0 0.75px, transparent 1.05px), radial-gradient(circle at 34% 76%, var(--paper-grain-dark) 0 0.65px, transparent 0.95px), radial-gradient(circle at 84% 68%, var(--paper-grain-light) 0 0.6px, transparent 0.9px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 18%, transparent 82%, var(--paper-grain-shadow))",
+            backgroundSize: "18px 18px, 22px 22px, 20px 20px, 16px 16px, 100% 100%",
           }}
         />
         <div

@@ -54,6 +54,7 @@ interface UseBranchSelectionResult {
 }
 
 interface CreateBranchWindowOptions {
+  childX?: number;
   childIndex: number;
   parentWidth: number;
   inheritedMessageCount: number;
@@ -64,6 +65,7 @@ interface CreateBranchWindowOptions {
 }
 
 export function createBranchWindow({
+  childX,
   childIndex,
   parentWidth,
   inheritedMessageCount,
@@ -74,7 +76,7 @@ export function createBranchWindow({
 }: CreateBranchWindowOptions): WindowRecord {
   return createWindowRecord({
     title: `${parentWindow.title}.${childIndex + 1}`,
-    x: parentWindow.x + parentWidth + WINDOW_GAP,
+    x: childX ?? parentWindow.x + parentWidth + WINDOW_GAP,
     y:
       parentWindow.y +
       clamp(windowLocalY - 120, 24, 260) +
@@ -342,8 +344,18 @@ export function useBranchSelection({
     const inheritedMessages = cloneMessagesForBranch(
       parentMessages.slice(0, anchorIndex + 1),
     );
+    const childX =
+      parentWindow.parentId === null
+        ? -snapshot.viewport.x + 56
+        : parentWindow.x +
+          (
+            windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
+            parentWindow.width
+          ) +
+          WINDOW_GAP;
 
     const childWindow = createBranchWindow({
+      childX,
       childIndex: parentWindow.childIds.length,
       parentWidth:
         windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??

@@ -43,6 +43,10 @@
   --paper-stroke: rgb(123 108 83 / 0.22);
   --paper-ink-soft: #897966;
   --paper-accent: #E2D1AF;
+  --paper-grain-light: rgb(255 255 255 / 0.34);
+  --paper-grain-dark: rgb(118 100 74 / 0.055);
+  --paper-grain-wash: rgb(255 255 255 / 0.18);
+  --paper-grain-shadow: rgb(118 100 74 / 0.03);
   --scrollbar-track: var(--paper-raised);
   --scrollbar-thumb: #CDBCA3;
   --scrollbar-thumb-hover: #BAA689;
@@ -91,6 +95,10 @@
   --color-paper-stroke: var(--paper-stroke);
   --color-paper-ink-soft: var(--paper-ink-soft);
   --color-paper-accent: var(--paper-accent);
+  --color-paper-grain-light: var(--paper-grain-light);
+  --color-paper-grain-dark: var(--paper-grain-dark);
+  --color-paper-grain-wash: var(--paper-grain-wash);
+  --color-paper-grain-shadow: var(--paper-grain-shadow);
   --color-scrollbar-track: var(--scrollbar-track);
   --color-scrollbar-thumb: var(--scrollbar-thumb);
   --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
