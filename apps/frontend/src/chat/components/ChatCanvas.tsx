@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 
 import type {
@@ -10,6 +11,7 @@ import type {
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
+import { PANE_SEPARATOR_WIDTH } from "../lib/constants";
 import {
   getViewportEffectiveScale,
   snapToDevicePixel,
@@ -27,6 +29,8 @@ interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   connectorPaths: ConnectorPath[];
+  isPaneResizing: boolean;
+  leftPaneWidthPx: number | null;
   mainWindow: WindowRecord | null;
   messagesByWindowId: MessagesByWindowId;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -37,6 +41,7 @@ interface ChatCanvasProps {
     windowId: string,
   ) => void;
   onModelChange: (windowId: string, model: string) => void;
+  onPaneResizePointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onEffortChange: (
     windowId: string,
     effort: WindowRecord["selectedEffort"],
@@ -62,6 +67,7 @@ interface ChatCanvasProps {
   ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
+  splitPaneRef: React.RefObject<HTMLDivElement | null>;
   viewport: Viewport;
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
@@ -71,6 +77,8 @@ function ChatCanvas({
   anchorGroupsByMessageKey,
   canvasRef,
   connectorPaths,
+  isPaneResizing,
+  leftPaneWidthPx,
   mainWindow,
   messagesByWindowId,
   onCanvasPointerDown,
@@ -78,6 +86,7 @@ function ChatCanvas({
   onGeometryChange,
   onHeaderPointerDown,
   onModelChange,
+  onPaneResizePointerDown,
   onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
@@ -89,6 +98,7 @@ function ChatCanvas({
   onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
+  splitPaneRef,
   viewport,
   windowScrollStates,
   windows,
@@ -97,14 +107,23 @@ function ChatCanvas({
   const snappedViewportX = snapToDevicePixel(viewport.x);
   const snappedViewportY = snapToDevicePixel(viewport.y);
   const gutterMarks = ["a", "b", "c", "d", "e", "f"];
+  const splitPaneStyle = {
+    "--chat-split-columns": leftPaneWidthPx
+      ? `${leftPaneWidthPx}px ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`
+      : `minmax(420px, 44%) ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`,
+  } as CSSProperties;
 
   return (
-    <div className="relative grid h-full min-h-0 grid-cols-1 overflow-hidden bg-background lg:grid-cols-[minmax(420px,44%)_1fr]">
+    <div
+      className="relative grid h-full min-h-0 grid-cols-1 overflow-hidden bg-background lg:[grid-template-columns:var(--chat-split-columns)]"
+      ref={splitPaneRef}
+      style={splitPaneStyle}
+    >
       <div className="pointer-events-none absolute inset-0 z-0">
         <ConnectionLayer paths={connectorPaths} />
       </div>
 
-      <aside className="relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-r lg:border-b-0">
+      <aside className="relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -159,6 +178,25 @@ function ChatCanvas({
           ) : null}
         </div>
       </aside>
+
+      <div
+        aria-hidden
+        className="relative z-20 hidden h-full touch-none cursor-col-resize lg:block"
+        onPointerDown={onPaneResizePointerDown}
+      >
+        <div
+          className={[
+            "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors duration-200",
+            isPaneResizing ? "bg-foreground/35" : "bg-border/90",
+          ].join(" ")}
+        />
+        <div
+          className={[
+            "absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 rounded-full transition-colors duration-200",
+            isPaneResizing ? "bg-paper-raised/80" : "hover:bg-paper-raised/55",
+          ].join(" ")}
+        />
+      </div>
 
       <div className="relative z-10 min-h-0 overflow-hidden border-t border-border bg-paper lg:border-t-0">
         <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20 hidden w-9 flex-col items-stretch border border-border/70 bg-paper-raised text-[10px] uppercase tracking-[0.18em] text-paper-ink-soft md:flex">

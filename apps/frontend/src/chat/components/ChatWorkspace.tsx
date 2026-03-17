@@ -31,6 +31,8 @@ function ChatWorkspace() {
             anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
             canvasRef={workspace.canvasRef}
             connectorPaths={workspace.connectorPaths}
+            isPaneResizing={workspace.isPaneResizing}
+            leftPaneWidthPx={workspace.leftPaneWidthPx}
             mainWindow={workspace.mainWindow}
             messagesByWindowId={workspace.messagesByWindowId}
             onCanvasPointerDown={workspace.onCanvasPointerDown}
@@ -40,6 +42,7 @@ function ChatWorkspace() {
             onHeaderPointerDown={workspace.onHeaderPointerDown}
             onMessageMouseDown={workspace.onMessageMouseDown}
             onModelChange={workspace.onModelChange}
+            onPaneResizePointerDown={workspace.onPaneResizePointerDown}
             onResizePointerDown={workspace.onResizePointerDown}
             onRetry={workspace.onRetry}
             onSend={workspace.onSend}
@@ -49,6 +52,7 @@ function ChatWorkspace() {
             onWindowScrollStateChange={workspace.onWindowScrollStateChange}
             registerAnchorRef={workspace.registerAnchorRef}
             registerWindowRef={workspace.registerWindowRef}
+            splitPaneRef={workspace.splitPaneRef}
             viewport={workspace.viewport}
             windowScrollStates={workspace.windowScrollStates}
             windows={workspace.windows}

@@ -26,6 +26,7 @@ import { streamChat } from "../api/streamChat";
 import { useNoticeStore } from "../../stores/noticeStore";
 import { useModelStore } from "../../stores/modelStore";
 import {
+  LEFT_PANE_WIDTH_STORAGE_KEY,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_WIDTH,
@@ -40,6 +41,7 @@ import {
   createInitialState,
   getDescendantIds,
 } from "../lib/state";
+import { clampLeftPaneWidth, resolveStoredLeftPaneWidth } from "../lib/paneLayout";
 import {
   addRootWindow,
   buildCloseAllChildrenPrompt,
@@ -65,6 +67,8 @@ export interface ChatWorkspaceViewModel {
   closePrompt: ClosePrompt | null;
   connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
   hasChildWindows: boolean;
+  isPaneResizing: boolean;
+  leftPaneWidthPx: number | null;
   messagesByWindowId: MessagesByWindowId;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onCloseAllChildWindows: () => void;
@@ -84,6 +88,7 @@ export interface ChatWorkspaceViewModel {
     typeof useBranchSelection
   >["onMessageMouseDown"];
   onOpenFreshRootWindow: () => void;
+  onPaneResizePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
   onSelectionBranch: (prompt?: string) => void;
   onSend: (windowId: string, promptOverride?: string) => Promise<void>;
@@ -102,6 +107,7 @@ export interface ChatWorkspaceViewModel {
     typeof useCanvasInteractions
   >["registerWindowRef"];
   selectionState: SelectionState | null;
+  splitPaneRef: RefObject<HTMLDivElement | null>;
   viewport: AppState["viewport"];
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
@@ -121,14 +127,35 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     createInitialState(getViewportCenteredRootX(WINDOW_WIDTH)),
   );
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
+  const [leftPaneWidthPx, setLeftPaneWidthPx] = useState<number | null>(null);
+  const [isPaneResizing, setIsPaneResizing] = useState(false);
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
   const pendingBranchSendRef = useRef<{ windowId: string; prompt: string } | null>(null);
+  const splitPaneRef = useRef<HTMLDivElement | null>(null);
+  const leftPaneWidthRef = useRef<number | null>(null);
+  const paneResizeRef = useRef<{
+    containerWidth: number;
+    startClientX: number;
+    startLeftPaneWidth: number;
+  } | null>(null);
 
   useEffect(() => {
     appStateRef.current = appState;
   }, [appState]);
+
+  useEffect(() => {
+    leftPaneWidthRef.current = leftPaneWidthPx;
+  }, [leftPaneWidthPx]);
+
+  const persistLeftPaneWidth = useCallback((width: number) => {
+    try {
+      window.localStorage.setItem(LEFT_PANE_WIDTH_STORAGE_KEY, String(width));
+    } catch {
+      // Ignore storage failures and keep the in-memory width.
+    }
+  }, []);
 
   useEffect(() => {
     const pending = pendingBranchSendRef.current;
@@ -220,6 +247,92 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   });
 
   const deltaBatcher = useDeltaBatcher(setAppState, canvas.requestGeometryRefresh);
+
+  const syncLeftPaneWidth = useCallback(() => {
+    const containerWidth = splitPaneRef.current?.clientWidth;
+    if (!containerWidth) {
+      return;
+    }
+
+    const nextWidth =
+      leftPaneWidthRef.current === null
+        ? resolveStoredLeftPaneWidth(
+            (() => {
+              try {
+                return window.localStorage.getItem(LEFT_PANE_WIDTH_STORAGE_KEY);
+              } catch {
+                return null;
+              }
+            })(),
+            containerWidth,
+          )
+        : clampLeftPaneWidth(leftPaneWidthRef.current, containerWidth);
+
+    setLeftPaneWidthPx((current) => (current === nextWidth ? current : nextWidth));
+    leftPaneWidthRef.current = nextWidth;
+    persistLeftPaneWidth(nextWidth);
+    canvas.requestGeometryRefresh();
+  }, [persistLeftPaneWidth, canvas.requestGeometryRefresh]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(syncLeftPaneWidth);
+
+    function handleWindowResize(): void {
+      syncLeftPaneWidth();
+    }
+
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, [syncLeftPaneWidth]);
+
+  useEffect(() => {
+    function handlePaneResizePointerMove(event: globalThis.PointerEvent): void {
+      const interaction = paneResizeRef.current;
+      if (!interaction) {
+        return;
+      }
+
+      const nextWidth = clampLeftPaneWidth(
+        interaction.startLeftPaneWidth + (event.clientX - interaction.startClientX),
+        interaction.containerWidth,
+      );
+
+      setLeftPaneWidthPx((current) => (current === nextWidth ? current : nextWidth));
+      leftPaneWidthRef.current = nextWidth;
+      canvas.requestGeometryRefresh();
+    }
+
+    function finishPaneResize(): void {
+      if (!paneResizeRef.current) {
+        return;
+      }
+
+      paneResizeRef.current = null;
+      setIsPaneResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+
+      if (leftPaneWidthRef.current !== null) {
+        persistLeftPaneWidth(leftPaneWidthRef.current);
+      }
+
+      canvas.requestGeometryRefresh();
+    }
+
+    window.addEventListener("pointermove", handlePaneResizePointerMove);
+    window.addEventListener("pointerup", finishPaneResize);
+    window.addEventListener("pointercancel", finishPaneResize);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePaneResizePointerMove);
+      window.removeEventListener("pointerup", finishPaneResize);
+      window.removeEventListener("pointercancel", finishPaneResize);
+    };
+  }, [persistLeftPaneWidth, canvas.requestGeometryRefresh]);
 
   function getCenteredRootX(windowWidth: number): number {
     const canvasWidth = canvas.canvasRef.current?.clientWidth;
@@ -538,6 +651,35 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.requestGeometryRefresh();
   }
 
+  function handlePaneResizePointerDown(
+    event: ReactPointerEvent<HTMLDivElement>,
+  ): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const containerWidth = splitPaneRef.current?.clientWidth;
+    if (!containerWidth) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    selection.dismissSelection();
+
+    const startLeftPaneWidth =
+      leftPaneWidthRef.current ?? resolveStoredLeftPaneWidth(null, containerWidth);
+
+    paneResizeRef.current = {
+      containerWidth,
+      startClientX: event.clientX,
+      startLeftPaneWidth,
+    };
+    setIsPaneResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }
+
   const anchorGroupsByMessageKey = useMemo((): AnchorGroupsByMessageKey => {
     const base = canvas.anchorGroupsByMessageKey;
     const sel = selection.selectionState;
@@ -582,6 +724,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     closePrompt,
     connectorPaths: canvas.connectorPaths,
     hasChildWindows,
+    isPaneResizing,
+    leftPaneWidthPx,
     messagesByWindowId: appState.messagesByWindowId,
     onCanvasPointerDown: (event) => {
       selection.dismissSelection();
@@ -604,6 +748,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     },
     onMessageMouseDown: selection.onMessageMouseDown,
     onOpenFreshRootWindow: openFreshRootWindow,
+    onPaneResizePointerDown: handlePaneResizePointerDown,
     onRetry: handleRetry,
     onSelectionBranch: (prompt?: string) => {
       const childWindowId = selection.onSelectionBranch();
@@ -620,6 +765,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     registerAnchorRef: canvas.registerAnchorRef,
     registerWindowRef: canvas.registerWindowRef,
     selectionState: selection.selectionState,
+    splitPaneRef,
     viewport: appState.viewport,
     windowScrollStates: windowScrollStatesRef.current,
     windows,
