@@ -208,6 +208,16 @@
   *::-webkit-scrollbar-corner {
     background: var(--scrollbar-track);
   }
+
+  .notebook-scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .notebook-scrollbar-hidden::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
 
 @keyframes paper-scribble-loop {

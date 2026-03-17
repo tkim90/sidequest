@@ -1,4 +1,11 @@
-import { memo, type RefObject } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 import type {
   AnchorGroupsByMessageKey,
@@ -12,6 +19,10 @@ const STARTER_QUESTIONS = [
   "Create a metrics dashboard about something random",
   "Create an OG image for social media using light colors",
 ] as const;
+
+const FIXED_PANE_SCROLLBAR_TOP_INSET = 20;
+const FIXED_PANE_SCROLLBAR_BOTTOM_INSET = 40;
+const FIXED_PANE_SCROLLBAR_MIN_THUMB_HEIGHT = 40;
 
 interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -153,12 +164,183 @@ function ChatWindowMessages({
   scrollRef,
   windowId,
 }: ChatWindowMessagesProps) {
+  const [scrollbarMetrics, setScrollbarMetrics] = useState({
+    clientHeight: 0,
+    scrollHeight: 0,
+    scrollTop: 0,
+  });
+  const dragOffsetRef = useRef(0);
   const clampedHistoryPreviewCount = Math.min(historyPreviewCount, messages.length);
   const historyMessages = messages.slice(0, clampedHistoryPreviewCount);
   const visibleMessages =
     clampedHistoryPreviewCount > 0
       ? messages.slice(clampedHistoryPreviewCount)
       : messages;
+
+  useEffect(() => {
+    if (!isFixedPane) {
+      return;
+    }
+
+    const activeNode = scrollRef.current;
+    if (!activeNode) {
+      return;
+    }
+
+    const node = activeNode;
+
+    function updateScrollbarMetrics() {
+      setScrollbarMetrics({
+        clientHeight: node.clientHeight,
+        scrollHeight: node.scrollHeight,
+        scrollTop: node.scrollTop,
+      });
+    }
+
+    updateScrollbarMetrics();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollbarMetrics();
+    });
+    resizeObserver.observe(node);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [
+    historyPreviewCount,
+    isFixedPane,
+    isHistoryExpanded,
+    messages,
+    scrollRef,
+  ]);
+
+  const scrollbarState = useMemo(() => {
+    if (!isFixedPane) {
+      return null;
+    }
+
+    const { clientHeight, scrollHeight, scrollTop } = scrollbarMetrics;
+    if (scrollHeight <= clientHeight || clientHeight <= 0) {
+      return null;
+    }
+
+    const trackHeight = Math.max(
+      0,
+      clientHeight - FIXED_PANE_SCROLLBAR_TOP_INSET - FIXED_PANE_SCROLLBAR_BOTTOM_INSET,
+    );
+    if (trackHeight <= 0) {
+      return null;
+    }
+
+    const thumbHeight = Math.max(
+      FIXED_PANE_SCROLLBAR_MIN_THUMB_HEIGHT,
+      Math.min(trackHeight, (clientHeight / scrollHeight) * trackHeight),
+    );
+    const maxThumbOffset = trackHeight - thumbHeight;
+    const maxScrollTop = scrollHeight - clientHeight;
+    const thumbOffset =
+      maxScrollTop > 0 ? (scrollTop / maxScrollTop) * maxThumbOffset : 0;
+
+    return {
+      maxScrollTop,
+      thumbHeight,
+      thumbOffset,
+      trackHeight,
+    };
+  }, [isFixedPane, scrollbarMetrics]);
+
+  function startScrollbarDrag(
+    event: React.PointerEvent<HTMLDivElement>,
+    mode: "thumb" | "track",
+  ) {
+    if (!scrollbarState) {
+      return;
+    }
+
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const state = scrollbarState;
+
+    const trackTop = node.getBoundingClientRect().top + FIXED_PANE_SCROLLBAR_TOP_INSET;
+    dragOffsetRef.current =
+      mode === "thumb"
+        ? event.clientY - trackTop - state.thumbOffset
+        : state.thumbHeight / 2;
+
+    const nextThumbOffset = Math.min(
+      Math.max(0, event.clientY - trackTop - dragOffsetRef.current),
+      state.trackHeight - state.thumbHeight,
+    );
+    const scrollRatio =
+      state.trackHeight > state.thumbHeight
+        ? nextThumbOffset / (state.trackHeight - state.thumbHeight)
+        : 0;
+    node.scrollTop = scrollRatio * state.maxScrollTop;
+    setScrollbarMetrics({
+      clientHeight: node.clientHeight,
+      scrollHeight: node.scrollHeight,
+      scrollTop: node.scrollTop,
+    });
+    onScroll();
+
+    function handlePointerMove(moveEvent: PointerEvent) {
+      const activeNode = scrollRef.current;
+      if (!activeNode) {
+        return;
+      }
+
+      const activeTrackTop =
+        activeNode.getBoundingClientRect().top + FIXED_PANE_SCROLLBAR_TOP_INSET;
+      const activeThumbOffset = Math.min(
+        Math.max(0, moveEvent.clientY - activeTrackTop - dragOffsetRef.current),
+        state.trackHeight - state.thumbHeight,
+      );
+      const activeRatio =
+        state.trackHeight > state.thumbHeight
+          ? activeThumbOffset / (state.trackHeight - state.thumbHeight)
+          : 0;
+
+      activeNode.scrollTop = activeRatio * state.maxScrollTop;
+      setScrollbarMetrics({
+        clientHeight: activeNode.clientHeight,
+        scrollHeight: activeNode.scrollHeight,
+        scrollTop: activeNode.scrollTop,
+      });
+      onScroll();
+    }
+
+    function handlePointerUp() {
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", handlePointerUp);
+    }
+
+    document.addEventListener("pointermove", handlePointerMove);
+    document.addEventListener("pointerup", handlePointerUp);
+  }
+
+  const customScrollbar = scrollbarState ? (
+    <div
+      className="absolute bottom-10 right-1 top-5 z-20 hidden w-4 overflow-hidden opacity-0 transition-opacity duration-300 ease-out lg:block group-hover/notebook:opacity-100 group-focus-within/notebook:opacity-100"
+      onPointerDown={(event) => startScrollbarDrag(event, "track")}
+    >
+      <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 rounded-full bg-paper-raised/70" />
+      <div
+        className="absolute left-1/2 w-1.5 -translate-x-1/2 cursor-ns-resize rounded-full bg-scrollbar-thumb shadow-[0_0_0_1px_rgb(205_188_163_/_0.18)] transition-colors duration-300"
+        style={{
+          height: scrollbarState.thumbHeight,
+          transform: `translateY(${scrollbarState.thumbOffset}px)`,
+        }}
+        onPointerDown={(event) => startScrollbarDrag(event, "thumb")}
+      />
+    </div>
+  ) : null;
 
   function renderMessage(message: MessageRecord) {
     const messageKey = `${windowId}:${message.id}`;
@@ -180,59 +362,77 @@ function ChatWindowMessages({
   }
 
   return (
-    <div
-      className={[
-        "flex flex-col gap-4 overflow-auto",
-        isFixedPane ? "px-1 py-5" : "px-4 py-5",
-      ].join(" ")}
-      ref={scrollRef}
-      onScroll={onScroll}
-    >
-      {messages.length === 0 ? (
-        <section className="my-auto flex flex-col items-center">
-          {STARTER_QUESTIONS.map((question, index) => (
-            <button
-              key={question}
-              className={[
-                "block cursor-pointer bg-transparent px-2 py-2 text-center font-serif text-[24px] leading-[1.35] text-paper-ink-soft transition-colors duration-500 ease-out hover:text-foreground",
-                index > 0 ? "mt-1.5" : "",
-                isFixedPane ? "max-w-[28ch]" : "max-w-[24ch]",
-              ].join(" ")}
-              type="button"
-              onClick={() => {
-                void onStarterQuestionClick(question);
-              }}
-            >
-              {question}
-            </button>
-          ))}
-        </section>
-      ) : null}
+    <div className="relative h-full min-h-0">
+      <div
+        className={[
+          "flex h-full flex-col gap-4 overflow-auto",
+          isFixedPane
+            ? "notebook-scrollbar-hidden px-1 py-5 pr-7"
+            : "px-4 py-5",
+        ].join(" ")}
+        ref={scrollRef}
+        onScroll={() => {
+          if (isFixedPane) {
+            const node = scrollRef.current;
+            if (node) {
+              setScrollbarMetrics({
+                clientHeight: node.clientHeight,
+                scrollHeight: node.scrollHeight,
+                scrollTop: node.scrollTop,
+              });
+            }
+          }
+          onScroll();
+        }}
+      >
+        {messages.length === 0 ? (
+          <section className="my-auto flex flex-col items-center">
+            {STARTER_QUESTIONS.map((question, index) => (
+              <button
+                key={question}
+                className={[
+                  "block cursor-pointer bg-transparent px-2 py-2 text-center font-serif text-[24px] leading-[1.35] text-paper-ink-soft transition-colors duration-500 ease-out hover:text-foreground",
+                  index > 0 ? "mt-1.5" : "",
+                  isFixedPane ? "max-w-[28ch]" : "max-w-[24ch]",
+                ].join(" ")}
+                type="button"
+                onClick={() => {
+                  void onStarterQuestionClick(question);
+                }}
+              >
+                {question}
+              </button>
+            ))}
+          </section>
+        ) : null}
 
-      {historyMessages.length > 0 ? (
-        <section
-          className={[
-            "border border-dashed border-border px-4 py-4 text-muted-foreground",
-            isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
-          ].join(" ")}
-        >
-          <button
-            aria-expanded={isHistoryExpanded}
-            className="cursor-pointer text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
-            type="button"
-            onClick={onToggleHistoryExpanded}
+        {historyMessages.length > 0 ? (
+          <section
+            className={[
+              "border border-dashed border-border px-4 py-4 text-muted-foreground",
+              isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
+            ].join(" ")}
           >
-            {isHistoryExpanded ? "Hide previous history" : "See previous history"}
-          </button>
-          {isHistoryExpanded && (
-            <div className="mt-4 flex flex-col gap-4">
-              {historyMessages.map(renderMessage)}
-            </div>
-          )}
-        </section>
-      ) : null}
+            <button
+              aria-expanded={isHistoryExpanded}
+              className="cursor-pointer text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
+              type="button"
+              onClick={onToggleHistoryExpanded}
+            >
+              {isHistoryExpanded ? "Hide previous history" : "See previous history"}
+            </button>
+            {isHistoryExpanded && (
+              <div className="mt-4 flex flex-col gap-4">
+                {historyMessages.map(renderMessage)}
+              </div>
+            )}
+          </section>
+        ) : null}
 
-      {visibleMessages.map(renderMessage)}
+        {visibleMessages.map(renderMessage)}
+      </div>
+
+      {customScrollbar}
     </div>
   );
 }

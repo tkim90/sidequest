@@ -123,7 +123,7 @@ function ChatCanvas({
         <ConnectionLayer paths={connectorPaths} />
       </div>
 
-      <aside className="relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
+      <aside className="notebook-pane group/notebook relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
