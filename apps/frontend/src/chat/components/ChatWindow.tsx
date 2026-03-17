@@ -115,10 +115,10 @@ const ChatWindow = memo(function ChatWindow({
   return (
     <article
       className={[
-        "grid grid-rows-[auto_1fr_auto] border border-border bg-card",
+        "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
-          ? "relative h-full w-full overflow-hidden shadow-none"
-          : "absolute origin-top-left cursor-grab shadow-[var(--window-shadow)] active:cursor-grabbing",
+          ? "relative h-full w-full overflow-hidden bg-transparent shadow-none"
+          : "absolute origin-top-left cursor-grab border border-border bg-card shadow-[var(--window-shadow)] active:cursor-grabbing",
       ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
@@ -133,14 +133,9 @@ const ChatWindow = memo(function ChatWindow({
         />
       )}
 
-      {isFixedPane ? null : (
-        <span className="absolute -top-7 rounded-sm border border-border bg-card px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-muted-foreground">
-          {windowData.parentId ? "Branch" : "Main thread"}
-        </span>
-      )}
-
       <ChatWindowHeader
         branchFocus={windowData.branchFocus}
+        isFixedPane={isFixedPane}
         onClose={() => onClose(windowData.id)}
         showCloseButton={!isFixedPane}
         title={windowData.title}
@@ -150,6 +145,7 @@ const ChatWindow = memo(function ChatWindow({
         anchorGroupsByMessageKey={anchorGroupsByMessageKey}
         historyPreviewCount={windowData.inheritedMessageCount}
         isFocused={isFocused}
+        isFixedPane={isFixedPane}
         isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
         onMessageMouseDown={onMessageMouseDown}
@@ -165,6 +161,7 @@ const ChatWindow = memo(function ChatWindow({
       <ChatWindowComposer
         composer={windowData.composer}
         isStreaming={windowData.isStreaming}
+        isFixedPane={isFixedPane}
         onComposerChange={(composer) => onComposerChange(windowData.id, composer)}
         onModelChange={(model) => onModelChange(windowData.id, model)}
         onEffortChange={(effort) => onEffortChange(windowData.id, effort)}

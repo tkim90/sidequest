@@ -14,10 +14,12 @@ function noopMouseDown(): void {
 }
 
 interface AssistantReasoningPanelProps {
+  isFixedPane?: boolean;
   message: MessageRecord;
 }
 
 const AssistantReasoningPanel = memo(function AssistantReasoningPanel({
+  isFixedPane = false,
   message,
 }: AssistantReasoningPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +40,12 @@ const AssistantReasoningPanel = memo(function AssistantReasoningPanel({
   }
 
   return (
-    <section className="mb-4 border border-border bg-secondary/65">
+    <section
+      className={[
+        "mb-4 border border-border",
+        isFixedPane ? "bg-paper-raised/80" : "bg-secondary/65",
+      ].join(" ")}
+    >
       <button
         aria-expanded={isOpen}
         className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"

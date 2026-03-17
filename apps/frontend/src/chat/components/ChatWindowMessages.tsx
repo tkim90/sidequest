@@ -17,6 +17,7 @@ interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   historyPreviewCount: number;
   isFocused: boolean;
+  isFixedPane?: boolean;
   isHistoryExpanded: boolean;
   messages: MessageRecord[];
   onMessageMouseDown: React.ComponentProps<typeof MessageContent>["onMessageMouseDown"];
@@ -32,6 +33,7 @@ interface ChatWindowMessagesProps {
 interface ChatMessageCardProps {
   anchorGroups: AnchorGroupsByMessageKey[string];
   isFocused: boolean;
+  isFixedPane: boolean;
   message: MessageRecord;
   onMessageMouseDown: ChatWindowMessagesProps["onMessageMouseDown"];
   onRetry: ChatWindowMessagesProps["onRetry"];
@@ -42,6 +44,7 @@ interface ChatMessageCardProps {
 const ChatMessageCard = memo(function ChatMessageCard({
   anchorGroups,
   isFocused,
+  isFixedPane,
   message,
   onMessageMouseDown,
   onRetry,
@@ -51,7 +54,9 @@ const ChatMessageCard = memo(function ChatMessageCard({
   const messageClassName =
     message.role === "user"
       ? "self-end border border-primary bg-primary text-primary-foreground"
-      : "self-start border border-border bg-card text-card-foreground";
+      : isFixedPane
+        ? "self-start border border-border bg-paper-sheet text-card-foreground"
+        : "self-start border border-border bg-card text-card-foreground";
 
   return (
     <section
@@ -66,14 +71,22 @@ const ChatMessageCard = memo(function ChatMessageCard({
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Assistant</p>
           {message.model ? (
-            <span className="inline-flex items-center border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-muted-foreground">
+            <span
+              className={[
+                "inline-flex items-center border border-border px-1.5 py-0.5 text-[11px] font-medium tracking-tight text-muted-foreground",
+                isFixedPane ? "bg-paper-raised" : "bg-secondary",
+              ].join(" ")}
+            >
               {message.model}
             </span>
           ) : null}
         </div>
       )}
       {message.role === "assistant" ? (
-        <AssistantReasoningPanel message={message} />
+        <AssistantReasoningPanel
+          isFixedPane={isFixedPane}
+          message={message}
+        />
       ) : null}
       <MessageContent
         windowId={windowId}
@@ -85,7 +98,10 @@ const ChatMessageCard = memo(function ChatMessageCard({
       />
       {message.role === "assistant" && message.status === "complete" ? (
         <button
-          className="absolute right-2 bottom-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border bg-secondary text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+          className={[
+            "absolute bottom-2 right-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
+            isFixedPane ? "bg-paper-raised" : "bg-secondary",
+          ].join(" ")}
           title="Retry"
           type="button"
           onClick={() => onRetry(message.id)}
@@ -118,6 +134,7 @@ function areChatMessageCardPropsEqual(
     previous.message === next.message &&
     previous.anchorGroups === next.anchorGroups &&
     previous.isFocused === next.isFocused &&
+    previous.isFixedPane === next.isFixedPane &&
     previous.onRetry === next.onRetry
   );
 }
@@ -126,6 +143,7 @@ function ChatWindowMessages({
   anchorGroupsByMessageKey,
   historyPreviewCount,
   isFocused,
+  isFixedPane = false,
   isHistoryExpanded,
   messages,
   onMessageMouseDown,
@@ -153,6 +171,7 @@ function ChatWindowMessages({
         key={message.id}
         anchorGroups={anchorGroups}
         isFocused={isFocused}
+        isFixedPane={isFixedPane}
         message={message}
         onMessageMouseDown={onMessageMouseDown}
         onRetry={onRetry}
@@ -164,12 +183,20 @@ function ChatWindowMessages({
 
   return (
     <div
-      className="flex flex-col gap-4 overflow-auto p-5"
+      className={[
+        "flex flex-col gap-4 overflow-auto",
+        isFixedPane ? "px-1 py-5" : "p-5",
+      ].join(" ")}
       ref={scrollRef}
       onScroll={onScroll}
     >
       {messages.length === 0 ? (
-        <section className="my-auto border border-dashed border-border bg-secondary/70">
+        <section
+          className={[
+            "my-auto border border-dashed border-border",
+            isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
+          ].join(" ")}
+        >
           {STARTER_QUESTIONS.map((question, index) => (
             <button
               key={question}
@@ -188,7 +215,12 @@ function ChatWindowMessages({
       ) : null}
 
       {historyMessages.length > 0 ? (
-        <section className="border border-dashed border-border bg-secondary/70 px-4 py-4 text-muted-foreground">
+        <section
+          className={[
+            "border border-dashed border-border px-4 py-4 text-muted-foreground",
+            isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
+          ].join(" ")}
+        >
           <button
             aria-expanded={isHistoryExpanded}
             className="cursor-pointer text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"

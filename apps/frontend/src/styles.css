@@ -2,24 +2,24 @@
 
 :root {
   color-scheme: light;
-  --background: #F4F4F4;
-  --foreground: #6C6C6C;
-  --card: #F4F4F4;
+  --background: #F7F1E8;
+  --foreground: #564B3D;
+  --card: #FCF8F1;
   --card-foreground: var(--foreground);
-  --popover: #ffffff;
+  --popover: #FFFBF4;
   --popover-foreground: var(--foreground);
   --primary: #F55C1B;
-  --primary-foreground: #F4F4F4;
-  --secondary: #efefef;
-  --secondary-foreground: #6C6C6C;
-  --muted: #ececec;
-  --muted-foreground: #8a8a8a;
+  --primary-foreground: #FFF8EF;
+  --secondary: #F2E9DB;
+  --secondary-foreground: #5E5345;
+  --muted: #EEE4D5;
+  --muted-foreground: #8A7C68;
   --accent: #F55C1B;
-  --accent-foreground: #F4F4F4;
+  --accent-foreground: #FFF8EF;
   --destructive: #dc2626;
   --destructive-foreground: #fef2f2;
-  --border: #d8d8d8;
-  --input: #d8d8d8;
+  --border: #DCCFBC;
+  --input: #DCCFBC;
   --ring: #F55C1B;
   --success: #16a34a;
   --success-foreground: #f0fdf4;
@@ -34,7 +34,16 @@
   --code-border: #3f3f46;
   --code-foreground: #f4f4f5;
   --code-muted: #a1a1aa;
-  --window-shadow: 10px 14px 24px 0 rgb(108 108 108 / 0.13);
+  --paper: var(--background);
+  --paper-sheet: #FBF7F0;
+  --paper-raised: #F3EADA;
+  --paper-gutter: #EFE4D2;
+  --paper-grid: rgb(150 132 104 / 0.12);
+  --paper-rule: rgb(158 141 114 / 0.16);
+  --paper-stroke: rgb(123 108 83 / 0.22);
+  --paper-ink-soft: #897966;
+  --paper-accent: #E2D1AF;
+  --window-shadow: 10px 14px 24px 0 rgb(100 83 55 / 0.12);
   --modal-shadow: 10px 10px 0 0 rgb(24 24 27 / 0.12);
   --toast-shadow: 8px 8px 0 0 rgb(24 24 27 / 0.2);
 }
@@ -72,6 +81,13 @@
   --color-code-border: var(--code-border);
   --color-code-foreground: var(--code-foreground);
   --color-code-muted: var(--code-muted);
+  --color-paper: var(--paper);
+  --color-paper-sheet: var(--paper-sheet);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-gutter: var(--paper-gutter);
+  --color-paper-stroke: var(--paper-stroke);
+  --color-paper-ink-soft: var(--paper-ink-soft);
+  --color-paper-accent: var(--paper-accent);
 }
 
 @layer base {

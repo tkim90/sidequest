@@ -8,6 +8,7 @@ import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
 interface ChatWindowComposerProps {
   composer: string;
   isStreaming: boolean;
+  isFixedPane?: boolean;
   onComposerChange: (composer: string) => void;
   onModelChange: (model: string) => void;
   onEffortChange: (effort: ReasoningEffort | null) => void;
@@ -25,6 +26,7 @@ function getEffortLabel(effort: ReasoningEffort): string {
 function ChatWindowComposer({
   composer,
   isStreaming,
+  isFixedPane = false,
   onComposerChange,
   onModelChange,
   onEffortChange,
@@ -90,8 +92,18 @@ function ChatWindowComposer({
   }, [openPicker]);
 
   return (
-    <footer className="border-t border-border bg-card p-4">
-      <div className="rounded-2xl border border-border bg-secondary transition-colors focus-within:border-ring">
+    <footer
+      className={[
+        "border-t border-border",
+        isFixedPane ? "bg-transparent px-0 pb-0 pt-4" : "bg-card p-4",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "rounded-2xl border border-border transition-colors focus-within:border-ring",
+          isFixedPane ? "bg-paper-raised" : "bg-secondary",
+        ].join(" ")}
+      >
         <textarea
           ref={textareaRef}
           aria-label={`Message ${title}`}
@@ -119,7 +131,7 @@ function ChatWindowComposer({
                 <button
                   type="button"
                   disabled={isStreaming}
-                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent"
                   onClick={() =>
                     setOpenPicker((current) =>
                       current === "model" ? null : "model",
@@ -171,7 +183,7 @@ function ChatWindowComposer({
                 <button
                   type="button"
                   disabled={isStreaming}
-                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent"
                   onClick={() =>
                     setOpenPicker((current) =>
                       current === "effort" ? null : "effort",

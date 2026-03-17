@@ -96,17 +96,40 @@ function ChatCanvas({
   const effectiveScale = getViewportEffectiveScale(viewport);
   const snappedViewportX = snapToDevicePixel(viewport.x);
   const snappedViewportY = snapToDevicePixel(viewport.y);
+  const gutterMarks = ["a", "b", "c", "d", "e", "f"];
 
   return (
-    <div className="relative grid h-full min-h-0 grid-cols-1 overflow-hidden bg-card lg:grid-cols-[minmax(420px,44%)_1fr]">
+    <div className="relative grid h-full min-h-0 grid-cols-1 overflow-hidden bg-background lg:grid-cols-[minmax(420px,44%)_1fr]">
       <div className="pointer-events-none absolute inset-0 z-0">
         <ConnectionLayer paths={connectorPaths} />
       </div>
 
-      <aside className="relative z-10 min-h-0 border-b border-border bg-[#f8f3ea] lg:border-r lg:border-b-0">
-        <div className="flex h-full min-h-0 flex-col">
+      <aside className="relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-r lg:border-b-0">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-80"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, transparent 0, transparent 35px, var(--paper-rule) 36px)",
+            backgroundPosition: "0 24px",
+            backgroundSize: "100% 36px",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-10 left-[17px] z-10 flex flex-col justify-between"
+        >
+          {gutterMarks.map((mark) => (
+            <span
+              key={mark}
+              className="block h-3.5 w-3.5 rounded-full border border-border bg-background"
+            />
+          ))}
+        </div>
+
+        <div className="relative flex h-full min-h-0 flex-col pl-8">
           {mainWindow ? (
-            <div className="min-h-0 flex-1 p-4">
+            <div className="min-h-0 flex-1 px-6 pb-6 pt-5">
               <ChatWindow
                 anchorGroupsByMessageKey={anchorGroupsByMessageKey}
                 isFixedPane
@@ -138,20 +161,15 @@ function ChatCanvas({
         </div>
       </aside>
 
-      <div className="relative z-10 min-h-0 overflow-hidden border-t border-border bg-[#F4F4F4] lg:border-t-0">
-        <div className="pointer-events-none absolute inset-x-5 top-4 z-20 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#8e8e8e]">
-          <p>Canvas · organize · shuffle</p>
-          <p>{windows.length} floating windows</p>
-        </div>
-
-        <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20 hidden w-9 flex-col items-stretch border border-border/70 bg-[#eee8df] text-[10px] uppercase tracking-[0.18em] text-[#9d845a] md:flex">
-          <span className="flex-1 border-b border-border/50 bg-[#f1d9b4] p-2 text-center [writing-mode:vertical-rl]">
+      <div className="relative z-10 min-h-0 overflow-hidden border-t border-border bg-paper lg:border-t-0">
+        <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20 hidden w-9 flex-col items-stretch border border-border/70 bg-paper-raised text-[10px] uppercase tracking-[0.18em] text-paper-ink-soft md:flex">
+          <span className="flex-1 border-b border-border/50 bg-paper-accent p-2 text-center [writing-mode:vertical-rl]">
             typographic
           </span>
-          <span className="flex-1 border-b border-border/50 p-2 text-center text-[#b2b2b2] [writing-mode:vertical-rl]">
+          <span className="flex-1 border-b border-border/50 bg-paper-sheet p-2 text-center [writing-mode:vertical-rl]">
             textured
           </span>
-          <span className="flex-1 p-2 text-center text-[#91a88b] [writing-mode:vertical-rl]">
+          <span className="flex-1 bg-paper p-2 text-center [writing-mode:vertical-rl]">
             monoline
           </span>
         </div>
@@ -166,7 +184,7 @@ function ChatCanvas({
             className="pointer-events-none absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(to right, rgba(108,108,108,0.09) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,108,108,0.09) 1px, transparent 1px)",
+                "linear-gradient(to right, var(--paper-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px)",
               backgroundSize: "40px 40px",
             }}
           />
