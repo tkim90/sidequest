@@ -67,7 +67,6 @@ const ChatMessageCard = memo(function ChatMessageCard({
         <></>
       ) : (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Assistant</p>
           {message.model ? (
             <span
               className={[
@@ -189,18 +188,15 @@ function ChatWindowMessages({
       onScroll={onScroll}
     >
       {messages.length === 0 ? (
-        <section
-          className={[
-            "my-auto border border-dashed border-border",
-            isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
-          ].join(" ")}
-        >
+        <section className="my-auto flex flex-col items-center">
           {STARTER_QUESTIONS.map((question, index) => (
             <button
               key={question}
-              className={`block w-full cursor-pointer px-5 py-4 text-left text-[17px] leading-7 text-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground ${
-                index > 0 ? "border-t border-border/70" : ""
-              }`}
+              className={[
+                "block cursor-pointer bg-transparent px-2 py-2 text-center font-serif text-[24px] leading-[1.35] text-paper-ink-soft transition-colors duration-500 ease-out hover:text-foreground",
+                index > 0 ? "mt-1.5" : "",
+                isFixedPane ? "max-w-[28ch]" : "max-w-[24ch]",
+              ].join(" ")}
               type="button"
               onClick={() => {
                 void onStarterQuestionClick(question);
