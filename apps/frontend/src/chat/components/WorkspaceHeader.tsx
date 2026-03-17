@@ -1,8 +1,10 @@
+import { motion } from "motion/react";
+
 import {
+  eyebrowClassName,
   primaryButtonClassName,
   secondaryButtonClassName,
 } from "./ui";
-import { motion } from "motion/react";
 
 interface WorkspaceHeaderProps {
   hasChildWindows: boolean;
@@ -17,34 +19,18 @@ function WorkspaceHeader({
 }: WorkspaceHeaderProps) {
   return (
     <motion.div
-      animate={{ opacity: 1, x: 0 }}
-      className="flex h-full flex-col gap-7 px-7 py-8"
-      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid gap-6 border-b border-border bg-[#f7f1e8] px-5 py-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)_auto] lg:items-end lg:px-7"
+      initial={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
-      <div className="space-y-4">
-        <p className="text-xs tracking-wide text-[#9a9a9a]">
-          sidequest / branching conversation notebook
-        </p>
-        <h1 className="font-serif text-5xl leading-tight tracking-tight text-foreground">
-          The weight of words
+      <div className="space-y-3">
+        <h1 className="max-w-4xl font-serif text-3xl tracking-tight text-foreground sm:text-4xl">
+          Sidequest
         </h1>
-        <p className="max-w-xl text-lg leading-relaxed text-foreground/90">
-          A calm workspace for branching ideas. Select any sentence to fork a
-          child window, then arrange thought fragments on the canvas as if they
-          were notes pinned on a paper desk.
-        </p>
       </div>
 
-      <div className="space-y-4 border-y border-border py-6">
-        <p className="font-serif text-xl text-foreground">How it works</p>
-        <p className="max-w-xl text-base leading-relaxed text-foreground/90">
-          Each window carries context from its parent. Fork freely, compare
-          alternatives, and gather your strongest output before publishing.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 lg:justify-end">
         <button
           className={primaryButtonClassName}
           type="button"
@@ -54,21 +40,12 @@ function WorkspaceHeader({
         </button>
         <button
           className={secondaryButtonClassName}
-          type="button"
           disabled={!hasChildWindows}
+          type="button"
           onClick={onCloseAllChildWindows}
         >
           Close forked windows
         </button>
-      </div>
-
-      <div className="relative mt-2 rounded-sm border border-border/80 bg-transparent p-8 text-center">
-        <p className="font-serif text-3xl italic text-foreground/75">
-          select text to fork
-        </p>
-        <p className="mt-2 text-sm tracking-wide text-[#9a9a9a]">
-          a new floating window appears on the right canvas
-        </p>
       </div>
     </motion.div>
   );

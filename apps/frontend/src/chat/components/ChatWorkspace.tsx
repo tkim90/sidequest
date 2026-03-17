@@ -14,17 +14,16 @@ function ChatWorkspace() {
 
   return (
     <main className="min-h-screen bg-background p-4 text-foreground sm:p-6">
-      <section className="relative grid h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)] lg:grid-cols-[42%_58%]">
-        <div className="border-b border-border lg:border-r lg:border-b-0">
-          <WorkspaceHeader
-            hasChildWindows={workspace.hasChildWindows}
-            onCloseAllChildWindows={workspace.onCloseAllChildWindows}
-            onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
-          />
-        </div>
+      <section className="relative grid h-[calc(100vh-2rem)] grid-rows-[auto_1fr] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)]">
+        <WorkspaceHeader
+          hasChildWindows={workspace.hasChildWindows}
+          onCloseAllChildWindows={workspace.onCloseAllChildWindows}
+          onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
+        />
 
         <motion.div
           animate={{ opacity: 1, y: 0 }}
+          className="min-h-0"
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
         >
@@ -32,15 +31,16 @@ function ChatWorkspace() {
             anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
             canvasRef={workspace.canvasRef}
             connectorPaths={workspace.connectorPaths}
+            mainWindow={workspace.mainWindow}
             messagesByWindowId={workspace.messagesByWindowId}
             onCanvasPointerDown={workspace.onCanvasPointerDown}
             onComposerChange={workspace.onComposerChange}
+            onEffortChange={workspace.onEffortChange}
             onGeometryChange={workspace.onGeometryChange}
             onHeaderPointerDown={workspace.onHeaderPointerDown}
-            onModelChange={workspace.onModelChange}
-            onEffortChange={workspace.onEffortChange}
-            onResizePointerDown={workspace.onResizePointerDown}
             onMessageMouseDown={workspace.onMessageMouseDown}
+            onModelChange={workspace.onModelChange}
+            onResizePointerDown={workspace.onResizePointerDown}
             onRetry={workspace.onRetry}
             onSend={workspace.onSend}
             onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}

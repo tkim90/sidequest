@@ -4,12 +4,14 @@ import { secondaryButtonClassName } from "./ui";
 interface ChatWindowHeaderProps {
   branchFocus: BranchFocus | null;
   onClose: () => void;
+  showCloseButton?: boolean;
   title: string;
 }
 
 function ChatWindowHeader({
   branchFocus,
   onClose,
+  showCloseButton = true,
   title,
 }: ChatWindowHeaderProps) {
   return (
@@ -24,14 +26,16 @@ function ChatWindowHeader({
           </p>
         ) : null}
       </div>
-      <button
-        className={`${secondaryButtonClassName} shrink-0 self-start`}
-        type="button"
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={onClose}
-      >
-        X
-      </button>
+      {showCloseButton ? (
+        <button
+          className={`${secondaryButtonClassName} shrink-0 self-start`}
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onClose}
+        >
+          X
+        </button>
+      ) : null}
     </header>
   );
 }

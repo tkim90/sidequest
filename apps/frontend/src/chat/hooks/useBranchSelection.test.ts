@@ -16,6 +16,7 @@ describe("createBranchWindow", () => {
 
     const childWindow = createBranchWindow({
       childIndex: 0,
+      parentWidth: parentWindow.width,
       inheritedMessageCount: 2,
       parentWindow,
       selectedText: "answer",

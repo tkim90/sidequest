@@ -105,6 +105,7 @@ export interface ChatWorkspaceViewModel {
   viewport: AppState["viewport"];
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
+  mainWindow: WindowRecord | null;
 }
 
 function getViewportCenteredRootX(windowWidth: number): number {
@@ -568,10 +569,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     };
   }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
 
-  const windows = appState.zOrder
+  const orderedWindows = appState.zOrder
     .map((windowId) => appState.windows[windowId])
     .filter((windowData): windowData is WindowRecord => Boolean(windowData));
-  const hasChildWindows = windows.some((windowData) => windowData.parentId !== null);
+  const mainWindow = orderedWindows.find((windowData) => windowData.parentId === null) ?? null;
+  const windows = orderedWindows.filter((windowData) => windowData.id !== mainWindow?.id);
+  const hasChildWindows = windows.length > 0;
 
   return {
     anchorGroupsByMessageKey,
@@ -620,5 +623,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     viewport: appState.viewport,
     windowScrollStates: windowScrollStatesRef.current,
     windows,
+    mainWindow,
   };
 }

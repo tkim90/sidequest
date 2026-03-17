@@ -46,6 +46,7 @@ interface ChatWindowProps {
   windowData: WindowRecord;
   messages: MessageRecord[];
   zIndex: number;
+  isFixedPane?: boolean;
 }
 
 const ChatWindow = memo(function ChatWindow({
@@ -70,6 +71,7 @@ const ChatWindow = memo(function ChatWindow({
   windowData,
   messages,
   zIndex,
+  isFixedPane = false,
 }: ChatWindowProps) {
   const { scrollRef, textareaRef, onMessagesScroll } = useChatWindowLayout({
     composer: windowData.composer,
@@ -87,8 +89,20 @@ const ChatWindow = memo(function ChatWindow({
 
   const snappedWindowX = snapToDevicePixel(windowData.x);
   const snappedWindowY = snapToDevicePixel(windowData.y);
+  const dynamicStyle = isFixedPane
+    ? undefined
+    : {
+        transform: `translate(${snappedWindowX}px, ${snappedWindowY}px)`,
+        width: windowData.width,
+        height: windowData.height,
+        zIndex,
+      };
 
   function handleWindowPointerDown(event: ReactPointerEvent<HTMLElement>): void {
+    if (isFixedPane) {
+      return;
+    }
+
     onWindowFocus(windowData.id);
     const target = event.target as HTMLElement;
     if (target.closest("textarea, input, button, select, [data-message-card]")) {
@@ -100,30 +114,35 @@ const ChatWindow = memo(function ChatWindow({
 
   return (
     <article
-      className="absolute origin-top-left grid cursor-grab grid-rows-[auto_1fr_auto] border border-border bg-card shadow-[var(--window-shadow)] active:cursor-grabbing"
+      className={[
+        "grid grid-rows-[auto_1fr_auto] border border-border bg-card",
+        isFixedPane
+          ? "relative h-full w-full overflow-hidden shadow-none"
+          : "absolute origin-top-left cursor-grab shadow-[var(--window-shadow)] active:cursor-grabbing",
+      ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
-      style={{
-        transform: `translate(${snappedWindowX}px, ${snappedWindowY}px)`,
-        width: windowData.width,
-        height: windowData.height,
-        zIndex,
-      }}
+      style={dynamicStyle}
       onPointerDown={handleWindowPointerDown}
     >
-      <ChatWindowResizeHandles
-        onResizePointerDown={(event, edges) =>
-          onResizePointerDown(event, windowData.id, edges)
-        }
-      />
+      {isFixedPane ? null : (
+        <ChatWindowResizeHandles
+          onResizePointerDown={(event, edges) =>
+            onResizePointerDown(event, windowData.id, edges)
+          }
+        />
+      )}
 
-      <span className="absolute -top-7 rounded-sm border border-border bg-card px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-muted-foreground">
-        {windowData.parentId ? "Branch" : "Main thread"}
-      </span>
+      {isFixedPane ? null : (
+        <span className="absolute -top-7 rounded-sm border border-border bg-card px-2 py-0.5 text-[18px] font-semibold uppercase tracking-[0.10em] text-muted-foreground">
+          {windowData.parentId ? "Branch" : "Main thread"}
+        </span>
+      )}
 
       <ChatWindowHeader
         branchFocus={windowData.branchFocus}
         onClose={() => onClose(windowData.id)}
+        showCloseButton={!isFixedPane}
         title={windowData.title}
       />
 
@@ -169,7 +188,8 @@ function areChatWindowPropsEqual(
     previous.isFocused === next.isFocused &&
     previous.zIndex === next.zIndex &&
     previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
-    previous.savedScrollState === next.savedScrollState
+    previous.savedScrollState === next.savedScrollState &&
+    previous.isFixedPane === next.isFixedPane
   );
 }
 
