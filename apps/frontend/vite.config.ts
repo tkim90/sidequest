@@ -4,6 +4,11 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "motion/react": "/src/motion/react.tsx",
+    },
+  },
   server: {
     proxy: {
       "/api/image": {

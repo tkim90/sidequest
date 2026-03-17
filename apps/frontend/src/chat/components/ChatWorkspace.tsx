@@ -1,48 +1,59 @@
+import { motion } from "motion/react";
+
 import { useNoticeStore } from "../../stores/noticeStore";
+import { useChatWorkspace } from "../hooks/useChatWorkspace";
 import ChatCanvas from "./ChatCanvas";
 import CloseTreeModal from "./CloseTreeModal";
 import NoticeToast from "./NoticeToast";
 import SelectionPopover from "./SelectionPopover";
 import WorkspaceHeader from "./WorkspaceHeader";
-import { useChatWorkspace } from "../hooks/useChatWorkspace";
 
 function ChatWorkspace() {
   const workspace = useChatWorkspace();
   const notice = useNoticeStore((s) => s.notice);
 
   return (
-    <main className="min-h-screen bg-background p-2 text-foreground sm:p-3">
-      <section className="relative grid h-[calc(100vh-1rem)] grid-rows-[auto_1fr] overflow-hidden border border-border bg-card sm:h-[calc(100vh-1.5rem)]">
-        <WorkspaceHeader
-          hasChildWindows={workspace.hasChildWindows}
-          onCloseAllChildWindows={workspace.onCloseAllChildWindows}
-          onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
-        />
-        <ChatCanvas
-          anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
-          canvasRef={workspace.canvasRef}
-          connectorPaths={workspace.connectorPaths}
-          messagesByWindowId={workspace.messagesByWindowId}
-          onCanvasPointerDown={workspace.onCanvasPointerDown}
-          onComposerChange={workspace.onComposerChange}
-          onGeometryChange={workspace.onGeometryChange}
-          onHeaderPointerDown={workspace.onHeaderPointerDown}
-          onModelChange={workspace.onModelChange}
-          onEffortChange={workspace.onEffortChange}
-          onResizePointerDown={workspace.onResizePointerDown}
-          onMessageMouseDown={workspace.onMessageMouseDown}
-          onRetry={workspace.onRetry}
-          onSend={workspace.onSend}
-          onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
-          onWindowClose={workspace.onWindowClose}
-          onWindowFocus={workspace.onWindowFocus}
-          onWindowScrollStateChange={workspace.onWindowScrollStateChange}
-          registerAnchorRef={workspace.registerAnchorRef}
-          registerWindowRef={workspace.registerWindowRef}
-          viewport={workspace.viewport}
-          windowScrollStates={workspace.windowScrollStates}
-          windows={workspace.windows}
-        />
+    <main className="min-h-screen bg-background p-4 text-foreground sm:p-6">
+      <section className="relative grid h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)] lg:grid-cols-[42%_58%]">
+        <div className="border-b border-border lg:border-r lg:border-b-0">
+          <WorkspaceHeader
+            hasChildWindows={workspace.hasChildWindows}
+            onCloseAllChildWindows={workspace.onCloseAllChildWindows}
+            onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
+          />
+        </div>
+
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+        >
+          <ChatCanvas
+            anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
+            canvasRef={workspace.canvasRef}
+            connectorPaths={workspace.connectorPaths}
+            messagesByWindowId={workspace.messagesByWindowId}
+            onCanvasPointerDown={workspace.onCanvasPointerDown}
+            onComposerChange={workspace.onComposerChange}
+            onGeometryChange={workspace.onGeometryChange}
+            onHeaderPointerDown={workspace.onHeaderPointerDown}
+            onModelChange={workspace.onModelChange}
+            onEffortChange={workspace.onEffortChange}
+            onResizePointerDown={workspace.onResizePointerDown}
+            onMessageMouseDown={workspace.onMessageMouseDown}
+            onRetry={workspace.onRetry}
+            onSend={workspace.onSend}
+            onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
+            onWindowClose={workspace.onWindowClose}
+            onWindowFocus={workspace.onWindowFocus}
+            onWindowScrollStateChange={workspace.onWindowScrollStateChange}
+            registerAnchorRef={workspace.registerAnchorRef}
+            registerWindowRef={workspace.registerWindowRef}
+            viewport={workspace.viewport}
+            windowScrollStates={workspace.windowScrollStates}
+            windows={workspace.windows}
+          />
+        </motion.div>
       </section>
 
       {workspace.selectionState ? (
