@@ -146,7 +146,7 @@ function ChatWindowComposer({
                   type="button"
                   disabled={isStreaming}
                   className={[
-                    "flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
+                    "cursor-pointer flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
                     isFixedPane
                       ? "gap-1.5 px-2 py-1 text-xs"
                       : "gap-2 px-3 py-2 text-[18px]",
@@ -179,9 +179,9 @@ function ChatWindowComposer({
                       <button
                         key={model.id}
                         type="button"
-                        className={`w-full px-3 py-2 text-left ${isFixedPane ? "text-xs" : "text-[18px]"} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                        className={`cursor-pointer w-full px-3 py-2 text-left ${isFixedPane ? "text-xs" : "text-[18px]"} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
                           model.id === resolvedSelectedModel
-                            ? "bg-accent font-medium text-accent-foreground"
+                            ? "bg-accent font-medium text-primary-foreground"
                             : ""
                         }`}
                         onClick={() => {
