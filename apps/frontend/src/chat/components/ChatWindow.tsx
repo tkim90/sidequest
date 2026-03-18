@@ -117,7 +117,7 @@ const ChatWindow = memo(function ChatWindow({
       className={[
         "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
-          ? "relative h-full w-full overflow-hidden bg-transparent shadow-none"
+          ? "relative h-full w-full min-w-0 overflow-hidden bg-transparent shadow-none"
           : "absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] active:cursor-grabbing",
       ].join(" ")}
       data-chat-window

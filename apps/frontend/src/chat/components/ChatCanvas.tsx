@@ -123,7 +123,7 @@ function ChatCanvas({
         <ConnectionLayer paths={connectorPaths} />
       </div>
 
-      <aside className="notebook-pane group/notebook relative z-10 min-h-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
+      <aside className="notebook-pane group/notebook relative z-10 min-h-0 min-w-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -145,9 +145,9 @@ function ChatCanvas({
           ))}
         </div>
 
-        <div className="relative flex h-full min-h-0 flex-col pl-8">
+        <div className="relative flex h-full min-h-0 min-w-0 flex-col pl-8">
           {mainWindow ? (
-            <div className="min-h-0 flex-1 py-16">
+            <div className="min-h-0 min-w-0 flex-1 py-16">
               <ChatWindow
                 anchorGroupsByMessageKey={anchorGroupsByMessageKey}
                 isFixedPane

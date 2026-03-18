@@ -128,7 +128,7 @@ const ChatMessageCard = memo(function ChatMessageCard({
   return (
     <section
       data-message-card
-      className={`group relative cursor-text select-text ${messageClassName}`}
+      className={`group relative cursor-text select-text ${isFixedPane ? "w-full min-w-0" : ""} ${messageClassName}`.trim()}
     >
       {roleConfig.renderHeader({ isFixedPane, message })}
       <MessageContent
@@ -154,7 +154,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
     messageClassName: "px-4 py-2",
     getContentClassName: (isFixedPane: boolean) =>
       isFixedPane
-        ? "text-right font-normal text-foreground/80"
+        ? "w-full min-w-0 text-right font-normal text-foreground/80"
         : "text-right font-normal text-foreground/80 text-[24px] leading-[1.42]",
     renderHeader: () => null,
     renderFooter: () => null,
@@ -163,7 +163,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
     messageClassName: "self-start w-full",
     getContentClassName: (isFixedPane: boolean) =>
       isFixedPane
-        ? "font-normal text-foreground"
+        ? "w-full min-w-0 font-normal text-foreground"
         : "font-normal text-foreground text-[24px]",
     renderHeader: ({
       isFixedPane,
@@ -449,10 +449,10 @@ function ChatWindowMessages({
   }
 
   return (
-    <div className="relative z-10 h-full min-h-0">
+    <div className="relative z-10 h-full min-h-0 min-w-0">
       <div
         className={[
-          "flex h-full flex-col gap-4 overflow-auto",
+          "flex h-full min-w-0 flex-col gap-4 overflow-auto",
           isFixedPane
             ? "notebook-scrollbar-hidden px-16 py-5"
             : "notebook-scrollbar-hidden px-16 py-5",
@@ -533,7 +533,7 @@ function ChatWindowMessages({
         {historyMessages.length > 0 ? (
           <section
             className={[
-              "border border-dashed border-border px-4 py-4 text-muted-foreground",
+              "min-w-0 border border-dashed border-border px-4 py-4 text-muted-foreground",
               isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
             ].join(" ")}
           >
@@ -546,7 +546,7 @@ function ChatWindowMessages({
               {isHistoryExpanded ? "Hide previous history" : "See previous history"}
             </button>
             {isHistoryExpanded && (
-              <div className="mt-4 flex flex-col gap-4">
+              <div className="mt-4 flex min-w-0 flex-col gap-4">
                 {historyMessages.map(renderMessage)}
               </div>
             )}
