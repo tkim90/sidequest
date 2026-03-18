@@ -12,9 +12,10 @@ function ChatWorkspace() {
   const notice = useNoticeStore((s) => s.notice);
 
   return (
-    <main className="min-h-screen bg-background p-4 text-foreground sm:p-6">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card pt-5 shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)] sm:pt-6">
+    <main className="flex h-dvh min-h-dvh flex-col overflow-hidden bg-background p-4 text-foreground sm:p-6">
+      <section className="relative flex-1 min-h-0 overflow-hidden rounded-2xl border border-border bg-card pt-5 shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:pt-6">
         <motion.div
+          className="h-full min-h-0 w-full"
           animate={{ opacity: 1, y: 0 }}
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
