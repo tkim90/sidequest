@@ -12,8 +12,7 @@ function ChatWorkspace() {
   const notice = useNoticeStore((s) => s.notice);
 
   return (
-    <main className="flex h-dvh min-h-dvh flex-col overflow-hidden bg-background p-4 text-foreground sm:p-6">
-      <section className="relative flex-1 min-h-0 overflow-hidden rounded-2xl border border-border bg-card pt-5 shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:pt-6">
+    <main className="flex h-dvh min-h-dvh flex-col overflow-hidden bg-background text-foreground">
         <motion.div
           className="h-full min-h-0 w-full"
           animate={{ opacity: 1, y: 0 }}
@@ -35,6 +34,7 @@ function ChatWorkspace() {
             onHeaderPointerDown={workspace.onHeaderPointerDown}
             onMessageMouseDown={workspace.onMessageMouseDown}
             onModelChange={workspace.onModelChange}
+            onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
             onPaneResizePointerDown={workspace.onPaneResizePointerDown}
             onResizePointerDown={workspace.onResizePointerDown}
             onRetry={workspace.onRetry}
@@ -51,7 +51,6 @@ function ChatWorkspace() {
             windows={workspace.windows}
           />
         </motion.div>
-      </section>
 
       {workspace.selectionState ? (
         <SelectionPopover

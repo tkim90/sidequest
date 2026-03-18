@@ -41,6 +41,7 @@ interface ChatCanvasProps {
     windowId: string,
   ) => void;
   onModelChange: (windowId: string, model: string) => void;
+  onOpenFreshRootWindow: () => void;
   onPaneResizePointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onEffortChange: (
     windowId: string,
@@ -86,6 +87,7 @@ function ChatCanvas({
   onGeometryChange,
   onHeaderPointerDown,
   onModelChange,
+  onOpenFreshRootWindow,
   onPaneResizePointerDown,
   onEffortChange,
   onResizePointerDown,
@@ -147,7 +149,7 @@ function ChatCanvas({
 
         <div className="relative flex h-full min-h-0 min-w-0 flex-col pl-8">
           {mainWindow ? (
-            <div className="min-h-0 min-w-0 flex-1 py-16">
+            <div className="min-h-0 min-w-0 flex-1 py-4">
               <ChatWindow
                 anchorGroupsByMessageKey={anchorGroupsByMessageKey}
                 isFixedPane
@@ -199,6 +201,21 @@ function ChatCanvas({
       </div>
 
       <div className="relative z-10 min-h-0 overflow-hidden border-t border-border bg-paper lg:border-t-0">
+        <div className="absolute left-1/2 top-4 z-30 -translate-x-1/2">
+          <button
+            aria-label="Add new note"
+            className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+            type="button"
+            onClick={onOpenFreshRootWindow}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+          >
+            <img alt="" className="h-9 w-auto select-none" draggable={false} src="/new-note.png" />
+          </button>
+        </div>
+
         <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20 hidden w-9 flex-col items-stretch border border-border/70 bg-paper-raised text-[10px] uppercase tracking-[0.18em] text-paper-ink-soft md:flex">
           <span className="flex-1 border-b border-border/50 bg-paper-accent p-2 text-center [writing-mode:vertical-rl]">
             typographic
