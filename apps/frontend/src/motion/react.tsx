@@ -3,7 +3,9 @@ import {
   type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
+  useEffect,
   useMemo,
+  useState,
 } from "react";
 
 type MotionStyle = {
@@ -41,19 +43,32 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
   { animate, initial, style, transition, ...props },
   ref,
 ) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setHasMounted(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
   const composedStyle = useMemo<CSSProperties>(() => {
     const easing = transition?.ease === "easeOut" ? "cubic-bezier(0.16, 1, 0.3, 1)" : "ease";
+    const targetStyle = hasMounted ? (animate ?? initial) : (initial ?? animate);
 
     return {
-      opacity: animate?.opacity ?? initial?.opacity,
-      transform: toTransform(animate ?? initial),
+      opacity: targetStyle?.opacity,
+      transform: toTransform(targetStyle),
       transitionDuration: `${transition?.duration ?? 0.25}s`,
       transitionDelay: `${transition?.delay ?? 0}s`,
       transitionTimingFunction: easing,
       transitionProperty: "opacity, transform",
       ...style,
     };
-  }, [animate, initial, style, transition]);
+  }, [animate, hasMounted, initial, style, transition]);
 
   return <div ref={ref} style={composedStyle} {...props} />;
 });

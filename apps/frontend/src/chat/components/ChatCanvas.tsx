@@ -1,4 +1,9 @@
-import type { CSSProperties } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { motion } from "motion/react";
 
 import type {
@@ -24,6 +29,16 @@ const DEFAULT_SCROLL_STATE: WindowScrollState = {
   scrollTop: null,
   shouldAutoScroll: true,
 };
+const FLOATING_WINDOW_EXIT_DURATION_MS = 220;
+
+interface FloatingWindowPresenceEntry {
+  enterKind: "branch" | "newNote";
+  isExiting: boolean;
+  messages: MessageRecord[];
+  savedScrollState: WindowScrollState;
+  windowData: WindowRecord;
+  zIndex: number;
+}
 
 interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -114,6 +129,92 @@ function ChatCanvas({
       ? `${leftPaneWidthPx}px ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`
       : `minmax(420px, 44%) ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`,
   } as CSSProperties;
+  const exitTimeoutsRef = useRef<Record<string, number>>({});
+  const [floatingWindowEntries, setFloatingWindowEntries] = useState<
+    FloatingWindowPresenceEntry[]
+  >(() =>
+    windows.map((windowData, index) => ({
+      enterKind: windowData.parentId === null ? "newNote" : "branch",
+      isExiting: false,
+      messages: messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES,
+      savedScrollState:
+        windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE,
+      windowData,
+      zIndex: index + 1,
+    })),
+  );
+
+  useEffect(() => {
+    setFloatingWindowEntries((current) => {
+      const currentById = new Map(
+        current.map((entry) => [entry.windowData.id, entry] as const),
+      );
+      const nextIds = new Set(windows.map((windowData) => windowData.id));
+      const nextEntries: FloatingWindowPresenceEntry[] = windows.map((windowData, index) => {
+        const existing = currentById.get(windowData.id);
+
+        return {
+          enterKind:
+            existing?.enterKind ??
+            (windowData.parentId === null ? "newNote" : "branch"),
+          isExiting: false,
+          messages: messagesByWindowId[windowData.id] ?? existing?.messages ?? EMPTY_MESSAGES,
+          savedScrollState:
+            windowScrollStates[windowData.id] ??
+            existing?.savedScrollState ??
+            DEFAULT_SCROLL_STATE,
+          windowData,
+          zIndex: index + 1,
+        };
+      });
+
+      current.forEach((entry) => {
+        if (!nextIds.has(entry.windowData.id)) {
+          nextEntries.push({
+            ...entry,
+            isExiting: true,
+          });
+        }
+      });
+
+      return nextEntries;
+    });
+  }, [windows, messagesByWindowId, windowScrollStates]);
+
+  useEffect(() => {
+    floatingWindowEntries.forEach((entry) => {
+      const windowId = entry.windowData.id;
+
+      if (entry.isExiting) {
+        if (exitTimeoutsRef.current[windowId]) {
+          return;
+        }
+
+        exitTimeoutsRef.current[windowId] = window.setTimeout(() => {
+          setFloatingWindowEntries((current) =>
+            current.filter((candidate) => candidate.windowData.id !== windowId),
+          );
+          delete exitTimeoutsRef.current[windowId];
+        }, FLOATING_WINDOW_EXIT_DURATION_MS);
+        return;
+      }
+
+      const activeTimeout = exitTimeoutsRef.current[windowId];
+      if (activeTimeout) {
+        window.clearTimeout(activeTimeout);
+        delete exitTimeoutsRef.current[windowId];
+      }
+    });
+  }, [floatingWindowEntries]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(exitTimeoutsRef.current).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      exitTimeoutsRef.current = {};
+    };
+  }, []);
 
   return (
     <div
@@ -255,17 +356,28 @@ function ChatCanvas({
                 zoom: effectiveScale,
               }}
             >
-              {windows.map((windowData, index) => (
+              {floatingWindowEntries.map((entry, index) => (
                 <motion.div
-                  key={windowData.id}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  initial={{ opacity: 0, scale: 0.96, y: 10 }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
+                  key={entry.windowData.id}
+                  animate={
+                    entry.isExiting
+                      ? { opacity: 0, x: 24, y: 16, scale: 0.985 }
+                      : { opacity: 1, scale: 1, x: 0, y: 0 }
+                  }
+                  initial={
+                    entry.enterKind === "newNote"
+                      ? { opacity: 0, y: -28 }
+                      : { opacity: 0, scale: 0.96, y: 10 }
+                  }
+                  transition={{
+                    duration: FLOATING_WINDOW_EXIT_DURATION_MS / 1000,
+                    ease: "easeOut",
+                  }}
                 >
                   <ChatWindow
                     anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-                    isFocused={index === windows.length - 1}
-                    messages={messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES}
+                    isFocused={!entry.isExiting && index === windows.length - 1}
+                    messages={entry.messages}
                     onClose={onWindowClose}
                     onComposerChange={onComposerChange}
                     onEffortChange={onEffortChange}
@@ -281,11 +393,9 @@ function ChatCanvas({
                     onWindowScrollStateChange={onWindowScrollStateChange}
                     registerAnchorRef={registerAnchorRef}
                     registerWindowRef={registerWindowRef}
-                    savedScrollState={
-                      windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE
-                    }
-                    windowData={windowData}
-                    zIndex={index + 1}
+                    savedScrollState={entry.savedScrollState}
+                    windowData={entry.windowData}
+                    zIndex={entry.zIndex}
                   />
                 </motion.div>
               ))}
