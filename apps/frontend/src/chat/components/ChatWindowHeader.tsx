@@ -15,50 +15,36 @@ function ChatWindowHeader({
   showCloseButton = true,
   title,
 }: ChatWindowHeaderProps) {
+  const titleClassName = isFixedPane
+    ? "font-serif text-3xl tracking-tight text-foreground sm:text-4xl"
+    : "font-serif text-[42px] leading-tight tracking-tight text-foreground";
+
+  const focusClassName = isFixedPane
+    ? "mt-3 max-w-xl text-base leading-6 text-muted-foreground italic"
+    : "mt-2 max-w-xl text-[24px] leading-[1.35] text-muted-foreground italic";
+
+  const closeButtonClassName = isFixedPane
+    ? "cursor-pointer inline-flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-sm border border-border bg-paper-sheet text-sm font-medium text-foreground transition-colors hover:bg-card"
+    : "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-[20px] font-medium text-foreground transition-colors hover:bg-paper-raised/60";
+
   return (
-    <header
-      className={[
-        "relative z-10 flex justify-between gap-3",
-        "bg-transparent px-4 pb-3 pt-4",
-      ].join(" ")}
-    >
+    <header className="relative z-10 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4">
       <div className="min-w-0">
-        <h2
-          className={[
-            "tracking-tight text-foreground",
-            isFixedPane
-              ? "font-serif text-3xl sm:text-4xl"
-              : "font-serif text-[42px] leading-tight",
-          ].join(" ")}
-        >
-          {title}
-        </h2>
+        <h2 className={titleClassName}>{title}</h2>
         {branchFocus ? (
-          <p
-            className={[
-              "max-w-xl text-muted-foreground",
-              isFixedPane
-                ? "mt-3 text-base leading-6 italic"
-                : "mt-2 text-[24px] leading-[1.35] italic",
-            ].join(" ")}
-          >
+          <p className={focusClassName}>
             Focus: "{branchFocus.selectedText}"
           </p>
         ) : null}
       </div>
       {showCloseButton ? (
         <button
-          className={[
-            "inline-flex h-8 w-8 shrink-0 items-center justify-center self-start text-sm font-medium text-foreground transition-colors",
-            isFixedPane
-              ? "rounded-sm border border-border bg-paper-sheet hover:bg-card"
-              : "h-10 w-10 rounded-full bg-transparent text-[20px] hover:bg-paper-raised/60",
-          ].join(" ")}
+          className={closeButtonClassName}
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onClose}
         >
-          X
+          <span style={{ fontFamily: "system-ui, sans-serif" }}>X</span>
         </button>
       ) : null}
     </header>
