@@ -29,10 +29,12 @@ import {
   LEFT_PANE_WIDTH_STORAGE_KEY,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
+  WINDOW_HEIGHT,
   WINDOW_WIDTH,
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
+import { getNextPanePlacement } from "../lib/panePlacement";
 import {
   createMessage,
   createWindowRecord,
@@ -241,6 +243,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
   const selection = useBranchSelection({
     appStateRef,
+    canvasRef: canvas.canvasRef,
     requestGeometryRefresh: canvas.requestGeometryRefresh,
     setAppState,
     windowRefs: canvas.windowRefs,
@@ -622,12 +625,33 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   function openFreshRootWindow(): void {
     const { defaultModel, models, modelsById } = useModelStore.getState();
     setAppState((current) => {
+      const canvasWidth = canvas.canvasRef.current?.clientWidth;
+      const canvasHeight = canvas.canvasRef.current?.clientHeight;
       const title = getNextRootChatTitle(current.windows);
       const modelOption = resolveModelOption(modelsById, null, defaultModel, models);
+      const orderedWindows = current.zOrder
+        .map((windowId) => current.windows[windowId])
+        .filter((windowData): windowData is WindowRecord => Boolean(windowData));
+      const mainWindow =
+        orderedWindows.find((windowData) => windowData.parentId === null) ?? null;
+      const rightPaneWindows = orderedWindows.filter(
+        (windowData) => windowData.id !== mainWindow?.id,
+      );
+      const nextPosition =
+        canvasWidth && canvasHeight
+          ? getNextPanePlacement({
+              canvasHeight,
+              canvasWidth,
+              existingWindows: rightPaneWindows,
+              paneHeight: WINDOW_HEIGHT,
+              paneWidth: WINDOW_WIDTH,
+              viewport: current.viewport,
+            })
+          : null;
       const rootWindow = createWindowRecord({
         title,
-        x: getCenteredRootX(WINDOW_WIDTH),
-        y: ROOT_WINDOW_Y,
+        x: nextPosition?.x ?? getCenteredRootX(WINDOW_WIDTH),
+        y: nextPosition?.y ?? ROOT_WINDOW_Y,
         selectedModel: modelOption?.id ?? null,
         selectedEffort: resolveEffortForModel(modelOption, null),
       });

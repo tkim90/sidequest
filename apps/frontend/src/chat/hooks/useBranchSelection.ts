@@ -14,12 +14,15 @@ import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
 import {
   CHILD_VERTICAL_STAGGER,
+  WINDOW_HEIGHT,
   WINDOW_GAP,
+  WINDOW_WIDTH,
 } from "../lib/constants";
 import {
   clamp,
   getSelectionRect,
 } from "../lib/geometry";
+import { getNextPanePlacement } from "../lib/panePlacement";
 import {
   cloneMessagesForBranch,
   createAnchorRecord,
@@ -30,6 +33,7 @@ import { parseAllBlocks } from "../markdown/parser";
 
 interface UseBranchSelectionOptions {
   appStateRef: RefObject<AppState>;
+  canvasRef: RefObject<HTMLDivElement | null>;
   requestGeometryRefresh: () => void;
   setAppState: Dispatch<SetStateAction<AppState>>;
   windowRefs: RefObject<Record<string, HTMLElement>>;
@@ -55,6 +59,7 @@ interface UseBranchSelectionResult {
 
 interface CreateBranchWindowOptions {
   childX?: number;
+  childY?: number;
   childIndex: number;
   parentWidth: number;
   inheritedMessageCount: number;
@@ -66,6 +71,7 @@ interface CreateBranchWindowOptions {
 
 export function createBranchWindow({
   childX,
+  childY,
   childIndex,
   parentWidth,
   inheritedMessageCount,
@@ -78,9 +84,10 @@ export function createBranchWindow({
     title: `${parentWindow.title}.${childIndex + 1}`,
     x: childX ?? parentWindow.x + parentWidth + WINDOW_GAP,
     y:
+      childY ??
       parentWindow.y +
-      clamp(windowLocalY - 120, 24, 260) +
-      childIndex * CHILD_VERTICAL_STAGGER,
+        clamp(windowLocalY - 120, 24, 260) +
+        childIndex * CHILD_VERTICAL_STAGGER,
     parentId: parentWindow.id,
     selectedModel: parentWindow.selectedModel,
     selectedEffort: parentWindow.selectedEffort,
@@ -96,6 +103,7 @@ export function createBranchWindow({
 
 export function useBranchSelection({
   appStateRef,
+  canvasRef,
   requestGeometryRefresh,
   setAppState,
   windowRefs,
@@ -344,18 +352,31 @@ export function useBranchSelection({
     const inheritedMessages = cloneMessagesForBranch(
       parentMessages.slice(0, anchorIndex + 1),
     );
-    const childX =
-      parentWindow.parentId === null
-        ? -snapshot.viewport.x + 56
-        : parentWindow.x +
-          (
-            windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
-            parentWindow.width
-          ) +
-          WINDOW_GAP;
+    const orderedWindows = snapshot.zOrder
+      .map((windowId) => snapshot.windows[windowId])
+      .filter((windowData): windowData is WindowRecord => Boolean(windowData));
+    const mainWindow =
+      orderedWindows.find((windowData) => windowData.parentId === null) ?? null;
+    const rightPaneWindows = orderedWindows.filter(
+      (windowData) => windowData.id !== mainWindow?.id,
+    );
+    const canvasWidth = canvasRef.current?.clientWidth;
+    const canvasHeight = canvasRef.current?.clientHeight;
+    const nextPosition =
+      canvasWidth && canvasHeight
+        ? getNextPanePlacement({
+            canvasHeight,
+            canvasWidth,
+            existingWindows: rightPaneWindows,
+            paneHeight: WINDOW_HEIGHT,
+            paneWidth: WINDOW_WIDTH,
+            viewport: snapshot.viewport,
+          })
+        : null;
 
     const childWindow = createBranchWindow({
-      childX,
+      childX: nextPosition?.x,
+      childY: nextPosition?.y,
       childIndex: parentWindow.childIds.length,
       parentWidth:
         windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
