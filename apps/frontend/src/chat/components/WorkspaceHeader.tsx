@@ -24,12 +24,6 @@ function WorkspaceHeader({
       initial={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
-      <div className="space-y-4">
-        <h1 className="max-w-4xl font-serif text-4xl tracking-tight text-foreground sm:text-5xl">
-          Notebook
-        </h1>
-      </div>
-
       <div className="flex flex-wrap gap-3 lg:justify-end">
         <button
           className={primaryButtonClassName}

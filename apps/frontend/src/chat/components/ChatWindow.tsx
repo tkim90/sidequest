@@ -118,13 +118,27 @@ const ChatWindow = memo(function ChatWindow({
         "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
           ? "relative h-full w-full overflow-hidden bg-transparent shadow-none"
-          : "absolute origin-top-left cursor-grab border border-border bg-card shadow-[var(--window-shadow)] active:cursor-grabbing",
+          : "absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] active:cursor-grabbing",
       ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
       style={dynamicStyle}
       onPointerDown={handleWindowPointerDown}
     >
+      {isFixedPane ? null : (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 18% 22%, var(--paper-grain-light) 0 0.75px, transparent 1px), radial-gradient(circle at 74% 34%, var(--paper-grain-dark) 0 0.7px, transparent 0.98px), radial-gradient(circle at 38% 78%, var(--paper-grain-dark) 0 0.65px, transparent 0.94px), radial-gradient(circle at 86% 70%, var(--paper-grain-light) 0 0.6px, transparent 0.9px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 16%, transparent 84%, var(--paper-grain-shadow))",
+              backgroundSize: "18px 18px, 20px 20px, 16px 16px, 14px 14px, 100% 100%",
+            }}
+          />
+        </>
+      )}
+
       {isFixedPane ? null : (
         <ChatWindowResizeHandles
           onResizePointerDown={(event, edges) =>

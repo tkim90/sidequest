@@ -94,14 +94,18 @@ function ChatWindowComposer({
   return (
     <footer
       className={[
-        "border-t border-border",
-        isFixedPane ? "bg-transparent px-0 pb-0 pt-4" : "bg-card p-4",
+        "relative z-10",
+        isFixedPane
+          ? "border-t border-border bg-transparent px-0 pb-0 pt-4"
+          : "border-t border-paper-stroke/12 bg-transparent px-4 pb-4 pt-3",
       ].join(" ")}
     >
       <div
         className={[
-          "rounded-2xl border border-border transition-colors focus-within:border-ring",
-          isFixedPane ? "bg-paper-raised" : "bg-secondary",
+          "rounded-2xl transition-colors",
+          isFixedPane
+            ? "border border-border bg-paper-raised focus-within:border-ring"
+            : "border border-transparent bg-transparent focus-within:bg-paper-sheet/28",
         ].join(" ")}
       >
         <textarea
@@ -109,7 +113,10 @@ function ChatWindowComposer({
           aria-label={`Message ${title}`}
           autoFocus
           rows={1}
-          className="min-h-[40px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent px-4 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+          className={[
+            "min-h-[40px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground",
+            isFixedPane ? "px-4 py-3" : "px-0 py-2",
+          ].join(" ")}
           placeholder="Ask a follow-up..."
           value={composer}
           onChange={(event) => onComposerChange(event.target.value)}
@@ -120,7 +127,12 @@ function ChatWindowComposer({
             }
           }}
         />
-        <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <div
+          className={[
+            "flex items-center justify-between gap-3",
+            isFixedPane ? "px-3 py-2" : "px-0 py-2",
+          ].join(" ")}
+        >
           <div
             ref={controlsRef}
             className="flex flex-wrap items-center gap-2"

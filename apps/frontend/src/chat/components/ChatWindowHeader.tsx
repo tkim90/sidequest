@@ -18,17 +18,19 @@ function ChatWindowHeader({
   return (
     <header
       className={[
-        "flex justify-between gap-3 border-b border-border",
+        "relative z-10 flex justify-between gap-3",
         isFixedPane
           ? "bg-transparent px-1 pb-6 pt-1"
-          : "bg-secondary px-4 py-2.5",
+          : "bg-transparent px-4 pb-2 pt-3",
       ].join(" ")}
     >
       <div className="min-w-0">
         <h2
           className={[
             "tracking-tight text-foreground",
-            isFixedPane ? "font-serif text-3xl sm:text-4xl" : "text-[19px] font-semibold leading-tight",
+            isFixedPane
+              ? "font-serif text-3xl sm:text-4xl"
+              : "font-serif text-[22px] leading-tight",
           ].join(" ")}
         >
           {title}
@@ -37,7 +39,9 @@ function ChatWindowHeader({
           <p
             className={[
               "max-w-xl text-muted-foreground",
-              isFixedPane ? "mt-3 text-base leading-6 italic" : "mt-1 text-[13px] leading-5",
+              isFixedPane
+                ? "mt-3 text-base leading-6 italic"
+                : "mt-1 text-[13px] leading-5 italic",
             ].join(" ")}
           >
             Focus: "{branchFocus.selectedText}"
@@ -46,7 +50,12 @@ function ChatWindowHeader({
       </div>
       {showCloseButton ? (
         <button
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-sm border border-border bg-paper-sheet text-sm font-medium text-foreground transition-colors hover:bg-card"
+          className={[
+            "inline-flex h-8 w-8 shrink-0 items-center justify-center self-start text-sm font-medium text-foreground transition-colors",
+            isFixedPane
+              ? "rounded-sm border border-border bg-paper-sheet hover:bg-card"
+              : "rounded-full bg-transparent hover:bg-paper-raised/60",
+          ].join(" ")}
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onClose}
