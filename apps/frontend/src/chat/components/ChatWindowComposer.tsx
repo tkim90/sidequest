@@ -97,7 +97,7 @@ function ChatWindowComposer({
         "relative z-10",
         isFixedPane
           ? "border-t border-border bg-transparent px-0 pb-0 pt-4"
-          : "border-t border-paper-stroke/12 bg-transparent px-4 pb-4 pt-3",
+          : "border-t border-paper-stroke/12 bg-transparent px-4 pb-4 pt-4",
       ].join(" ")}
     >
       <div
@@ -114,8 +114,10 @@ function ChatWindowComposer({
           autoFocus
           rows={1}
           className={[
-            "min-h-[40px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground",
-            isFixedPane ? "px-4 py-3" : "px-0 py-2",
+            "max-h-[200px] w-full resize-none overflow-y-auto bg-text-foreground outline-none placeholder:text-muted-foreground",
+            isFixedPane
+              ? "min-h-[40px] px-4 py-3 text-sm leading-6"
+              : "min-h-[72px] py-2 text-[22px] placeholder:text-[22px]",
           ].join(" ")}
           placeholder="Ask a follow-up..."
           value={composer}
@@ -143,7 +145,12 @@ function ChatWindowComposer({
                 <button
                   type="button"
                   disabled={isStreaming}
-                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+                  className={[
+                    "flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
+                    isFixedPane
+                      ? "gap-1.5 px-2 py-1 text-xs"
+                      : "gap-2 px-3 py-2 text-[18px]",
+                  ].join(" ")}
                   onClick={() =>
                     setOpenPicker((current) =>
                       current === "model" ? null : "model",
@@ -157,7 +164,7 @@ function ChatWindowComposer({
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className={`h-3.5 w-3.5 transition-transform ${openPicker === "model" ? "rotate-180" : ""}`}
+                    className={`${isFixedPane ? "h-3.5 w-3.5" : "h-5 w-5"} transition-transform ${openPicker === "model" ? "rotate-180" : ""}`}
                   >
                     <path
                       fillRule="evenodd"
@@ -172,7 +179,7 @@ function ChatWindowComposer({
                       <button
                         key={model.id}
                         type="button"
-                        className={`w-full px-3 py-2 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                        className={`w-full px-3 py-2 text-left ${isFixedPane ? "text-xs" : "text-[18px]"} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
                           model.id === resolvedSelectedModel
                             ? "bg-accent font-medium text-accent-foreground"
                             : ""
@@ -195,7 +202,12 @@ function ChatWindowComposer({
                 <button
                   type="button"
                   disabled={isStreaming}
-                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+                  className={[
+                    "flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
+                    isFixedPane
+                      ? "gap-1.5 px-2 py-1 text-xs"
+                      : "gap-2 px-3 py-2 text-[18px]",
+                  ].join(" ")}
                   onClick={() =>
                     setOpenPicker((current) =>
                       current === "effort" ? null : "effort",
@@ -209,7 +221,7 @@ function ChatWindowComposer({
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
-                    className={`h-3.5 w-3.5 transition-transform ${openPicker === "effort" ? "rotate-180" : ""}`}
+                    className={`${isFixedPane ? "h-3.5 w-3.5" : "h-5 w-5"} transition-transform ${openPicker === "effort" ? "rotate-180" : ""}`}
                   >
                     <path
                       fillRule="evenodd"
@@ -224,7 +236,7 @@ function ChatWindowComposer({
                       <button
                         key={effort}
                         type="button"
-                        className={`w-full px-3 py-2 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                        className={`w-full px-3 py-2 text-left ${isFixedPane ? "text-xs" : "text-[18px]"} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
                           effort === resolvedSelectedEffort
                             ? "bg-accent font-medium text-accent-foreground"
                             : ""
@@ -245,7 +257,10 @@ function ChatWindowComposer({
 
           {composer.trim().length > 0 && !isStreaming ? (
             <button
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
+              className={[
+                "flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80",
+                isFixedPane ? "h-8 w-8" : "h-12 w-12",
+              ].join(" ")}
               type="button"
               onClick={() => {
                 void onSend();
@@ -259,7 +274,7 @@ function ChatWindowComposer({
                 strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className={isFixedPane ? "h-4 w-4" : "h-5 w-5"}
               >
                 <line x1="12" y1="19" x2="12" y2="5" />
                 <polyline points="5 12 12 5 19 12" />

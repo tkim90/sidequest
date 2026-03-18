@@ -6,7 +6,6 @@ import ChatCanvas from "./ChatCanvas";
 import CloseTreeModal from "./CloseTreeModal";
 import NoticeToast from "./NoticeToast";
 import SelectionPopover from "./SelectionPopover";
-import WorkspaceHeader from "./WorkspaceHeader";
 
 function ChatWorkspace() {
   const workspace = useChatWorkspace();
@@ -14,16 +13,9 @@ function ChatWorkspace() {
 
   return (
     <main className="min-h-screen bg-background p-4 text-foreground sm:p-6">
-      <section className="relative grid h-[calc(100vh-2rem)] grid-rows-[auto_1fr] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)]">
-        <WorkspaceHeader
-          hasChildWindows={workspace.hasChildWindows}
-          onCloseAllChildWindows={workspace.onCloseAllChildWindows}
-          onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
-        />
-
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card pt-5 shadow-[0_20px_50px_rgba(0,0,0,0.08)] sm:h-[calc(100vh-3rem)] sm:pt-6">
         <motion.div
           animate={{ opacity: 1, y: 0 }}
-          className="min-h-0"
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
         >

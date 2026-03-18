@@ -19,9 +19,7 @@ function ChatWindowHeader({
     <header
       className={[
         "relative z-10 flex justify-between gap-3",
-        isFixedPane
-          ? "bg-transparent px-1 pb-6 pt-1"
-          : "bg-transparent px-4 pb-2 pt-3",
+        "bg-transparent px-4 pb-3 pt-4",
       ].join(" ")}
     >
       <div className="min-w-0">
@@ -30,7 +28,7 @@ function ChatWindowHeader({
             "tracking-tight text-foreground",
             isFixedPane
               ? "font-serif text-3xl sm:text-4xl"
-              : "font-serif text-[22px] leading-tight",
+              : "font-serif text-[42px] leading-tight",
           ].join(" ")}
         >
           {title}
@@ -41,7 +39,7 @@ function ChatWindowHeader({
               "max-w-xl text-muted-foreground",
               isFixedPane
                 ? "mt-3 text-base leading-6 italic"
-                : "mt-1 text-[13px] leading-5 italic",
+                : "mt-2 text-[24px] leading-[1.35] italic",
             ].join(" ")}
           >
             Focus: "{branchFocus.selectedText}"
@@ -54,7 +52,7 @@ function ChatWindowHeader({
             "inline-flex h-8 w-8 shrink-0 items-center justify-center self-start text-sm font-medium text-foreground transition-colors",
             isFixedPane
               ? "rounded-sm border border-border bg-paper-sheet hover:bg-card"
-              : "rounded-full bg-transparent hover:bg-paper-raised/60",
+              : "h-10 w-10 rounded-full bg-transparent text-[20px] hover:bg-paper-raised/60",
           ].join(" ")}
           type="button"
           onPointerDown={(event) => event.stopPropagation()}

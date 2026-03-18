@@ -120,26 +120,17 @@ const ChatMessageCard = memo(function ChatMessageCard({
   registerAnchorRef,
   windowId,
 }: ChatMessageCardProps) {
-  const messageClassName =
-    message.role === "user"
-      ? "ml-auto self-end max-w-[92%] px-3 py-2"
-      : "self-start w-full";
-  const contentClassName =
-    message.role === "assistant"
-      ? "font-normal text-foreground"
-      : "text-right font-normal text-foreground/80";
+  const roleKey = message.role === "assistant" ? "assistant" : "user";
+  const roleConfig = CHAT_MESSAGE_ROLE_CONFIG[roleKey];
+  const messageClassName = roleConfig.messageClassName;
+  const contentClassName = roleConfig.getContentClassName(isFixedPane);
 
   return (
     <section
       data-message-card
       className={`group relative cursor-text select-text ${messageClassName}`}
     >
-      {message.role === "assistant" ? (
-        <AssistantReasoningPanel
-          isFixedPane={isFixedPane}
-          message={message}
-        />
-      ) : null}
+      {roleConfig.renderHeader({ isFixedPane, message })}
       <MessageContent
         windowId={windowId}
         message={message}
@@ -149,48 +140,89 @@ const ChatMessageCard = memo(function ChatMessageCard({
         registerAnchorRef={registerAnchorRef}
         onMessageMouseDown={onMessageMouseDown}
       />
-      {message.role === "assistant" ? (
-        <div className="mt-3 flex items-center justify-end gap-2 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
-          {message.status === "complete" ? (
-            <button
-              className={[
-                "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
-                "bg-paper-raised/80",
-              ].join(" ")}
-              title="Retry"
-              type="button"
-              onClick={() => onRetry(message.id)}
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 4v5h5M20 20v-5h-5M5.1 15A7 7 0 0 0 19 12M18.9 9A7 7 0 0 0 5 12"
-                />
-              </svg>
-            </button>
-          ) : null}
-          {message.model ? (
-            <span
-              className={[
-                "inline-flex h-6 items-center border border-border px-2 text-[11px] font-medium tracking-tight text-muted-foreground",
-                "bg-paper-raised/80",
-              ].join(" ")}
-            >
-              {message.model}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+      {roleConfig.renderFooter({
+        isFixedPane,
+        message,
+        onRetry,
+      })}
     </section>
   );
 }, areChatMessageCardPropsEqual);
+
+const CHAT_MESSAGE_ROLE_CONFIG = {
+  user: {
+    messageClassName: "px-4 py-2",
+    getContentClassName: (isFixedPane: boolean) =>
+      isFixedPane
+        ? "text-right font-normal text-foreground/80"
+        : "text-right font-normal text-foreground/80 text-[24px] leading-[1.42]",
+    renderHeader: () => null,
+    renderFooter: () => null,
+  },
+  assistant: {
+    messageClassName: "self-start w-full",
+    getContentClassName: (isFixedPane: boolean) =>
+      isFixedPane
+        ? "font-normal text-foreground"
+        : "font-normal text-foreground text-[24px]",
+    renderHeader: ({
+      isFixedPane,
+      message,
+    }: Pick<ChatMessageCardProps, "isFixedPane" | "message">) => (
+      <AssistantReasoningPanel
+        isFixedPane={isFixedPane}
+        message={message}
+      />
+    ),
+    renderFooter: ({
+      isFixedPane,
+      message,
+      onRetry,
+    }: Pick<ChatMessageCardProps, "isFixedPane" | "message" | "onRetry">) => (
+      <div className="mt-3 flex items-center justify-end gap-2 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+        {message.status === "complete" ? (
+          <button
+            className={[
+              isFixedPane
+                ? "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+                : "flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
+              "bg-paper-raised/80",
+            ].join(" ")}
+            title="Retry"
+            type="button"
+            onClick={() => onRetry(message.id)}
+          >
+            <svg
+              className={isFixedPane ? "h-3.5 w-3.5" : "h-5 w-5"}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h5M20 20v-5h-5M5.1 15A7 7 0 0 0 19 12M18.9 9A7 7 0 0 0 5 12"
+              />
+            </svg>
+          </button>
+        ) : null}
+        {message.model ? (
+          <span
+            className={[
+              isFixedPane
+                ? "inline-flex h-6 items-center border border-border px-2 text-[11px] font-medium tracking-tight text-muted-foreground"
+                : "inline-flex h-10 items-center border border-border px-3 text-[18px] font-medium tracking-tight text-muted-foreground",
+              "bg-paper-raised/80",
+            ].join(" ")}
+          >
+            {message.model}
+          </span>
+        ) : null}
+      </div>
+    ),
+  },
+} as const;
 
 function areChatMessageCardPropsEqual(
   previous: ChatMessageCardProps,
@@ -237,10 +269,6 @@ function ChatWindowMessages({
       : messages;
 
   useEffect(() => {
-    if (!isFixedPane) {
-      return;
-    }
-
     const activeNode = scrollRef.current;
     if (!activeNode) {
       return;
@@ -268,17 +296,12 @@ function ChatWindowMessages({
     };
   }, [
     historyPreviewCount,
-    isFixedPane,
     isHistoryExpanded,
     messages,
     scrollRef,
   ]);
 
   const scrollbarState = useMemo(() => {
-    if (!isFixedPane) {
-      return null;
-    }
-
     const { clientHeight, scrollHeight, scrollTop } = scrollbarMetrics;
     if (scrollHeight <= clientHeight || clientHeight <= 0) {
       return null;
@@ -386,7 +409,12 @@ function ChatWindowMessages({
 
   const customScrollbar = scrollbarState ? (
     <div
-      className="absolute bottom-10 right-1 top-5 z-20 hidden w-4 overflow-hidden opacity-0 transition-opacity duration-300 ease-out lg:block group-hover/notebook:opacity-100 group-focus-within/notebook:opacity-100"
+      className={[
+        "absolute bottom-10 right-1 top-5 z-20 hidden w-4 overflow-hidden transition-opacity duration-300 ease-out lg:block",
+        isFixedPane
+          ? "opacity-0 group-hover/notebook:opacity-100 group-focus-within/notebook:opacity-100"
+          : "opacity-100",
+      ].join(" ")}
       onPointerDown={(event) => startScrollbarDrag(event, "track")}
     >
       <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 rounded-full bg-paper-raised/70" />
@@ -426,20 +454,18 @@ function ChatWindowMessages({
         className={[
           "flex h-full flex-col gap-4 overflow-auto",
           isFixedPane
-            ? "notebook-scrollbar-hidden px-1 py-5 pr-7"
-            : "px-4 py-5",
+            ? "notebook-scrollbar-hidden px-16 py-5"
+            : "notebook-scrollbar-hidden px-16 py-5",
         ].join(" ")}
         ref={scrollRef}
         onScroll={() => {
-          if (isFixedPane) {
-            const node = scrollRef.current;
-            if (node) {
-              setScrollbarMetrics({
-                clientHeight: node.clientHeight,
-                scrollHeight: node.scrollHeight,
-                scrollTop: node.scrollTop,
-              });
-            }
+          const node = scrollRef.current;
+          if (node) {
+            setScrollbarMetrics({
+              clientHeight: node.clientHeight,
+              scrollHeight: node.scrollHeight,
+              scrollTop: node.scrollTop,
+            });
           }
           onScroll();
         }}

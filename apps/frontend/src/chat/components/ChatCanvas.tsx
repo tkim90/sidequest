@@ -147,7 +147,7 @@ function ChatCanvas({
 
         <div className="relative flex h-full min-h-0 flex-col pl-8">
           {mainWindow ? (
-            <div className="min-h-0 flex-1 px-6 pb-6 pt-5">
+            <div className="min-h-0 flex-1 py-16">
               <ChatWindow
                 anchorGroupsByMessageKey={anchorGroupsByMessageKey}
                 isFixedPane
