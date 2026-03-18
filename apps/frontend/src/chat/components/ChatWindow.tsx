@@ -73,12 +73,14 @@ const ChatWindow = memo(function ChatWindow({
   zIndex,
   isFixedPane = false,
 }: ChatWindowProps) {
+  const isChildPane = windowData.parentId !== null;
   const { scrollRef, textareaRef, onMessagesScroll } = useChatWindowLayout({
     composer: windowData.composer,
     height: windowData.height,
     inheritedMessageCount: windowData.inheritedMessageCount,
     isFocused,
     isHistoryExpanded: windowData.isHistoryExpanded,
+    isChildPane,
     messages,
     onGeometryChange,
     onWindowScrollStateChange,
@@ -174,6 +176,7 @@ const ChatWindow = memo(function ChatWindow({
 
       <ChatWindowComposer
         composer={windowData.composer}
+        isChildPane={isChildPane}
         isStreaming={windowData.isStreaming}
         isFixedPane={isFixedPane}
         onComposerChange={(composer) => onComposerChange(windowData.id, composer)}

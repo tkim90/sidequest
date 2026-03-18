@@ -10,6 +10,7 @@ interface UseChatWindowLayoutOptions {
   inheritedMessageCount: number;
   isFocused: boolean;
   isHistoryExpanded: boolean;
+  isChildPane?: boolean;
   messages: MessageRecord[];
   onGeometryChange: () => void;
   onWindowScrollStateChange: (
@@ -27,6 +28,7 @@ export function useChatWindowLayout({
   inheritedMessageCount,
   isFocused,
   isHistoryExpanded,
+  isChildPane = false,
   messages,
   onGeometryChange,
   onWindowScrollStateChange,
@@ -146,9 +148,10 @@ export function useChatWindowLayout({
       return;
     }
 
+    const maxHeight = isChildPane ? 120 : 200;
     textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-  }, [composer]);
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+  }, [composer, isChildPane]);
 
   function handleMessagesScroll(): void {
     const node = scrollRef.current;
