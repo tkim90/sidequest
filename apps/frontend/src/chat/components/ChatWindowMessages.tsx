@@ -411,7 +411,7 @@ function ChatWindowMessages({
         {historyMessages.length > 0 ? (
           <section
             className={[
-              "min-w-0 border border-dashed border-border px-4 py-4 text-muted-foreground",
+              "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground",
               isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
             ].join(" ")}
           >
