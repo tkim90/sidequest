@@ -93,7 +93,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
     getContentClassName: (isFixedPane: boolean) =>
       isFixedPane
         ? "w-full min-w-0 text-right font-normal text-foreground/80"
-        : "text-right font-normal text-foreground/80 text-[24px] leading-[1.42]",
+        : "text-right font-normal text-foreground/80 text-[16px] leading-[1.42]",
     renderHeader: () => null,
     renderFooter: () => null,
   },
@@ -102,7 +102,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
     getContentClassName: (isFixedPane: boolean) =>
       isFixedPane
         ? "w-full min-w-0 font-normal text-foreground"
-        : "font-normal text-foreground text-[24px]",
+        : "font-normal text-foreground text-[16px]",
     renderHeader: ({
       isFixedPane,
       message,
@@ -117,13 +117,11 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
       message,
       onRetry,
     }: Pick<ChatMessageCardProps, "isFixedPane" | "message" | "onRetry">) => (
-      <div className="mt-3 flex items-center justify-end gap-2 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
         {message.status === "complete" ? (
           <button
             className={[
-              isFixedPane
-                ? "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
-                : "flex h-10 w-10 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
+              "flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:border-ring hover:text-foreground",
               "bg-paper-raised/80",
             ].join(" ")}
             title="Retry"
@@ -131,7 +129,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
             onClick={() => onRetry(message.id)}
           >
             <svg
-              className={isFixedPane ? "h-3.5 w-3.5" : "h-5 w-5"}
+              className={isFixedPane ? "h-3 w-3" : "h-3 w-3"}
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -148,9 +146,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
         {message.model ? (
           <span
             className={[
-              isFixedPane
-                ? "inline-flex h-6 items-center border border-border px-2 text-[11px] font-medium tracking-tight text-muted-foreground"
-                : "inline-flex h-10 items-center border border-border px-3 text-[18px] font-medium tracking-tight text-muted-foreground",
+              "inline-flex h-6 items-center border border-border px-3 text-[14px] font-medium tracking-tight text-muted-foreground rounded font-sans",
               "bg-paper-raised/80",
             ].join(" ")}
           >
