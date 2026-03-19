@@ -19,6 +19,19 @@ interface UseViewportWheelOptions {
   setAppState: Dispatch<SetStateAction<AppState>>;
 }
 
+export function getNextViewportZoomScale(
+  currentScale: number,
+  deltaY: number,
+): number {
+  const zoomFactor = deltaY < 0 ? 1.08 : 0.92;
+
+  return clamp(
+    currentScale * zoomFactor,
+    MIN_VIEWPORT_ZOOM,
+    MAX_VIEWPORT_ZOOM,
+  );
+}
+
 export function useViewportWheel({
   appStateRef,
   canvasRef,
@@ -45,12 +58,7 @@ export function useViewportWheel({
         const currentScale = getViewportEffectiveScale(currentViewport);
         const contentX = (pointerX - currentViewport.x) / currentScale;
         const contentY = (pointerY - currentViewport.y) / currentScale;
-        const zoomFactor = event.deltaY < 0 ? 1.08 : 0.92;
-        const nextScale = clamp(
-          currentScale * zoomFactor,
-          MIN_VIEWPORT_ZOOM,
-          MAX_VIEWPORT_ZOOM,
-        );
+        const nextScale = getNextViewportZoomScale(currentScale, event.deltaY);
 
         setAppState((current) => ({
           ...current,

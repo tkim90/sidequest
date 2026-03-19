@@ -23,6 +23,7 @@ import {
 } from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
+import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
 
 const EMPTY_MESSAGES: MessageRecord[] = [];
 const DEFAULT_SCROLL_STATE: WindowScrollState = {
@@ -322,15 +323,7 @@ function ChatCanvas({
           ref={canvasRef}
           onPointerDown={onCanvasPointerDown}
         >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, var(--paper-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
+          <WorkspaceGridCanvas hostRef={canvasRef} viewport={viewport} />
 
           <div
             className="absolute inset-0 origin-top-left"

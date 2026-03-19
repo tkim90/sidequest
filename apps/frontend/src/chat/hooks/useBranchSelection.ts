@@ -13,10 +13,10 @@ import type { AppState, MessageRecord, SelectionState, WindowRecord } from "../.
 import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
 import {
+  CHILD_WINDOW_HEIGHT,
+  CHILD_WINDOW_WIDTH,
   CHILD_VERTICAL_STAGGER,
-  WINDOW_HEIGHT,
   WINDOW_GAP,
-  WINDOW_WIDTH,
 } from "../lib/constants";
 import {
   clamp,
@@ -88,6 +88,8 @@ export function createBranchWindow({
       parentWindow.y +
         clamp(windowLocalY - 120, 24, 260) +
         childIndex * CHILD_VERTICAL_STAGGER,
+    width: CHILD_WINDOW_WIDTH,
+    height: CHILD_WINDOW_HEIGHT,
     parentId: parentWindow.id,
     selectedModel: parentWindow.selectedModel,
     selectedEffort: parentWindow.selectedEffort,
@@ -368,8 +370,8 @@ export function useBranchSelection({
             canvasHeight,
             canvasWidth,
             existingWindows: rightPaneWindows,
-            paneHeight: WINDOW_HEIGHT,
-            paneWidth: WINDOW_WIDTH,
+            paneHeight: CHILD_WINDOW_HEIGHT,
+            paneWidth: CHILD_WINDOW_WIDTH,
             viewport: snapshot.viewport,
           })
         : null;

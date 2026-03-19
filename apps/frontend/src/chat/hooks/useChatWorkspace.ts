@@ -26,7 +26,11 @@ import { streamChat } from "../api/streamChat";
 import { useNoticeStore } from "../../stores/noticeStore";
 import { useModelStore } from "../../stores/modelStore";
 import {
+  FLOATING_ROOT_WINDOW_HEIGHT,
+  FLOATING_ROOT_WINDOW_WIDTH,
   LEFT_PANE_WIDTH_STORAGE_KEY,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
   ROOT_WINDOW_X,
   ROOT_WINDOW_Y,
   WINDOW_HEIGHT,
@@ -34,7 +38,10 @@ import {
 } from "../lib/constants";
 import { getErrorMessage, isAbortError } from "../lib/errors";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
-import { getNextPanePlacement } from "../lib/panePlacement";
+import {
+  getNextOverlappingPanePlacement,
+  resolveFloatingPaneSize,
+} from "../lib/panePlacement";
 import {
   createMessage,
   createWindowRecord,
@@ -637,21 +644,40 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       const rightPaneWindows = orderedWindows.filter(
         (windowData) => windowData.id !== mainWindow?.id,
       );
-      const nextPosition =
+      const floatingRootWindows = rightPaneWindows.filter(
+        (windowData) => windowData.parentId === null,
+      );
+      const fittedPaneSize =
         canvasWidth && canvasHeight
-          ? getNextPanePlacement({
+          ? resolveFloatingPaneSize({
               canvasHeight,
               canvasWidth,
-              existingWindows: rightPaneWindows,
-              paneHeight: WINDOW_HEIGHT,
-              paneWidth: WINDOW_WIDTH,
+              defaultHeight: FLOATING_ROOT_WINDOW_HEIGHT,
+              defaultWidth: FLOATING_ROOT_WINDOW_WIDTH,
+              minHeight: MIN_WINDOW_HEIGHT,
+              minWidth: MIN_WINDOW_WIDTH,
+              viewport: current.viewport,
+            })
+          : null;
+      const nextPosition =
+        canvasWidth && canvasHeight && fittedPaneSize
+          ? getNextOverlappingPanePlacement({
+              canvasHeight,
+              canvasWidth,
+              existingWindows: floatingRootWindows,
+              paneHeight: fittedPaneSize.height,
+              paneWidth: fittedPaneSize.width,
               viewport: current.viewport,
             })
           : null;
       const rootWindow = createWindowRecord({
         title,
-        x: nextPosition?.x ?? getCenteredRootX(WINDOW_WIDTH),
+        x:
+          nextPosition?.x ??
+          getCenteredRootX(fittedPaneSize?.width ?? FLOATING_ROOT_WINDOW_WIDTH),
         y: nextPosition?.y ?? ROOT_WINDOW_Y,
+        width: fittedPaneSize?.width ?? FLOATING_ROOT_WINDOW_WIDTH,
+        height: fittedPaneSize?.height ?? FLOATING_ROOT_WINDOW_HEIGHT,
         selectedModel: modelOption?.id ?? null,
         selectedEffort: resolveEffortForModel(modelOption, null),
       });

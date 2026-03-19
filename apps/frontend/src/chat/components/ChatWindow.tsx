@@ -94,7 +94,7 @@ const ChatWindow = memo(function ChatWindow({
   const dynamicStyle = isFixedPane
     ? undefined
     : {
-        transform: `translate(${snappedWindowX}px, ${snappedWindowY}px)`,
+        transform: `translate3d(${snappedWindowX}px, ${snappedWindowY}px, 0)`,
         width: windowData.width,
         height: windowData.height,
         zIndex,
@@ -120,7 +120,7 @@ const ChatWindow = memo(function ChatWindow({
         "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
           ? "relative h-full w-full min-w-0 overflow-hidden bg-transparent shadow-none"
-          : "absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] active:cursor-grabbing",
+          : "absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] will-change-transform active:cursor-grabbing",
       ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
