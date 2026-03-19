@@ -1,4 +1,111 @@
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
+
 import type { BranchFocus } from "../../types";
+
+const TITLE_CHARACTER_ANIMATION_DURATION_MS = 2200;
+const TITLE_CHARACTER_ANIMATION_STAGGER_MS = 100;
+const TITLE_CHARACTER_ANIMATION_EASING = "cubic-bezier(0.16, 1, 0.1, 1)";
+
+interface AnimatedTitleUnit {
+  character: string;
+  isSpace: boolean;
+  key: string;
+  visibleIndex: number | null;
+}
+
+interface AnimatedTitleTextProps {
+  className: string;
+  title: string;
+}
+
+export function getAnimatedTitleUnits(title: string): AnimatedTitleUnit[] {
+  let visibleIndex = 0;
+
+  return Array.from(title).map((character, index) => {
+    if (character === " ") {
+      return {
+        character,
+        isSpace: true,
+        key: `space-${index}`,
+        visibleIndex: null,
+      };
+    }
+
+    const unit = {
+      character,
+      isSpace: false,
+      key: `char-${index}-${character}`,
+      visibleIndex,
+    };
+    visibleIndex += 1;
+    return unit;
+  });
+}
+
+function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
+  const [isSettled, setIsSettled] = useState(false);
+  const units = useMemo(() => getAnimatedTitleUnits(title), [title]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setIsSettled(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  return (
+    <h2
+      aria-label={title}
+      className={className}
+      data-animated-title="true"
+    >
+      {units.map((unit) => {
+        if (unit.isSpace) {
+          return (
+            <span
+              key={unit.key}
+              aria-hidden="true"
+              style={{ display: "inline-block", whiteSpace: "pre" }}
+            >
+              {" "}
+            </span>
+          );
+        }
+
+        const style: CSSProperties = {
+          display: "inline-block",
+          filter: isSettled ? "blur(0px)" : "blur(8px)",
+          opacity: isSettled ? 1 : 0,
+          transform: isSettled ? "translateY(0)" : "translateY(0.18em)",
+          transitionDelay: `${(unit.visibleIndex ?? 0) * TITLE_CHARACTER_ANIMATION_STAGGER_MS}ms`,
+          transitionDuration: `${TITLE_CHARACTER_ANIMATION_DURATION_MS}ms`,
+          transitionProperty: "opacity, transform, filter",
+          transitionTimingFunction: TITLE_CHARACTER_ANIMATION_EASING,
+          willChange: "opacity, transform, filter",
+        };
+
+        return (
+          <span
+            key={unit.key}
+            aria-hidden="true"
+            data-animated-title-char="true"
+            style={style}
+          >
+            {unit.character}
+          </span>
+        );
+      })}
+    </h2>
+  );
+}
 
 interface ChatWindowHeaderProps {
   branchFocus: BranchFocus | null;
@@ -30,7 +137,15 @@ function ChatWindowHeader({
   return (
     <header className="relative z-10 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4">
       <div className="min-w-0">
-        <h2 className={titleClassName}>{title}</h2>
+        {isFixedPane ? (
+          <AnimatedTitleText
+            key={title}
+            className={titleClassName}
+            title={title}
+          />
+        ) : (
+          <h2 className={titleClassName}>{title}</h2>
+        )}
         {branchFocus ? (
           <p className={focusClassName}>
             Focus: "{branchFocus.selectedText}"

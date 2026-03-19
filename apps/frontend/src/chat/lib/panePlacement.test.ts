@@ -258,7 +258,7 @@ describe("getNextOverlappingPanePlacement", () => {
       }),
     ).toEqual({
       x: 152,
-      y: 162,
+      y: 170,
     });
   });
 

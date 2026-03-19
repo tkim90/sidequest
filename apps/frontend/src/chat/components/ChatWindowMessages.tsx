@@ -386,7 +386,7 @@ function ChatWindowMessages({
       <div
         className={[
           "flex h-full min-w-0 flex-col gap-4 overflow-auto",
-          "notebook-scrollbar-hidden px-4 sm:px-12 py-5"
+          "notebook-scrollbar-hidden px-4 sm:px-8"
         ].join(" ")}
         ref={scrollRef}
         onScroll={() => {
