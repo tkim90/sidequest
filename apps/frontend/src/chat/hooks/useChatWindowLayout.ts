@@ -4,12 +4,22 @@ import type { MessageRecord, WindowScrollState } from "../../types";
 
 const AUTO_SCROLL_THRESHOLD = 32;
 
+interface ResolveScrollTopAfterContentChangeOptions {
+  clientHeight: number;
+  isStreaming: boolean;
+  savedScrollTop: number | null;
+  scrollHeight: number;
+  shouldAutoScroll: boolean;
+  streamScrollLock: number | null;
+}
+
 interface UseChatWindowLayoutOptions {
   composer: string;
   height: number;
   inheritedMessageCount: number;
   isFocused: boolean;
   isHistoryExpanded: boolean;
+  isStreaming: boolean;
   isChildPane?: boolean;
   messages: MessageRecord[];
   onGeometryChange: () => void;
@@ -22,12 +32,51 @@ interface UseChatWindowLayoutOptions {
   width: number;
 }
 
+function clampScrollTop(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number,
+): number {
+  const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+  return Math.min(Math.max(scrollTop, 0), maxScrollTop);
+}
+
+export function resolveScrollTopAfterContentChange({
+  clientHeight,
+  isStreaming,
+  savedScrollTop,
+  scrollHeight,
+  shouldAutoScroll,
+  streamScrollLock,
+}: ResolveScrollTopAfterContentChangeOptions): number | null {
+  const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+
+  if (isStreaming) {
+    if (streamScrollLock !== null) {
+      return clampScrollTop(streamScrollLock, scrollHeight, clientHeight);
+    }
+
+    return maxScrollTop;
+  }
+
+  if (shouldAutoScroll) {
+    return maxScrollTop;
+  }
+
+  if (savedScrollTop !== null) {
+    return clampScrollTop(savedScrollTop, scrollHeight, clientHeight);
+  }
+
+  return null;
+}
+
 export function useChatWindowLayout({
   composer,
   height,
   inheritedMessageCount,
   isFocused,
   isHistoryExpanded,
+  isStreaming,
   isChildPane = false,
   messages,
   onGeometryChange,
@@ -41,6 +90,8 @@ export function useChatWindowLayout({
   const savedScrollStateRef = useRef(savedScrollState);
   const shouldAutoScrollRef = useRef(savedScrollState.shouldAutoScroll);
   const geometrySignatureRef = useRef<string>("");
+  const programmaticScrollTargetRef = useRef<number | null>(null);
+  const streamScrollLockRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   savedScrollStateRef.current = savedScrollState;
 
@@ -60,14 +111,24 @@ export function useChatWindowLayout({
     onWindowScrollStateChange(windowId, nextState);
   }
 
+  function applyScrollTop(node: HTMLDivElement, scrollTop: number): void {
+    programmaticScrollTargetRef.current = scrollTop;
+    node.scrollTop = scrollTop;
+  }
+
   function restoreScrollState(node: HTMLDivElement): void {
     const nextState = savedScrollStateRef.current;
+    const nextScrollTop = resolveScrollTopAfterContentChange({
+      clientHeight: node.clientHeight,
+      isStreaming,
+      savedScrollTop: nextState.scrollTop,
+      scrollHeight: node.scrollHeight,
+      shouldAutoScroll: nextState.shouldAutoScroll,
+      streamScrollLock: streamScrollLockRef.current,
+    });
 
-    if (nextState.shouldAutoScroll) {
-      node.scrollTop = node.scrollHeight;
-    } else if (nextState.scrollTop !== null) {
-      const maxScrollTop = Math.max(0, node.scrollHeight - node.clientHeight);
-      node.scrollTop = Math.min(nextState.scrollTop, maxScrollTop);
+    if (nextScrollTop !== null) {
+      applyScrollTop(node, nextScrollTop);
     }
 
     persistScrollState(node);
@@ -116,7 +177,13 @@ export function useChatWindowLayout({
 
     restoreScrollState(node);
     notifyGeometryIfChanged(node);
-  }, [isFocused]);
+  }, [isFocused, isStreaming]);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      streamScrollLockRef.current = null;
+    }
+  }, [isStreaming]);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -124,13 +191,22 @@ export function useChatWindowLayout({
       return;
     }
 
-    if (shouldAutoScrollRef.current) {
-      node.scrollTop = node.scrollHeight;
+    const nextScrollTop = resolveScrollTopAfterContentChange({
+      clientHeight: node.clientHeight,
+      isStreaming,
+      savedScrollTop: savedScrollStateRef.current.scrollTop,
+      scrollHeight: node.scrollHeight,
+      shouldAutoScroll: shouldAutoScrollRef.current,
+      streamScrollLock: streamScrollLockRef.current,
+    });
+
+    if (nextScrollTop !== null) {
+      applyScrollTop(node, nextScrollTop);
     }
 
     persistScrollState(node);
     notifyGeometryIfChanged(node);
-  }, [messages, height, onGeometryChange, width]);
+  }, [height, isStreaming, messages, onGeometryChange, width]);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -157,6 +233,18 @@ export function useChatWindowLayout({
     const node = scrollRef.current;
     if (!node) {
       return;
+    }
+
+    if (
+      programmaticScrollTargetRef.current !== null &&
+      Math.abs(node.scrollTop - programmaticScrollTargetRef.current) <= 1
+    ) {
+      programmaticScrollTargetRef.current = null;
+      return;
+    }
+
+    if (isStreaming) {
+      streamScrollLockRef.current = node.scrollTop;
     }
 
     persistScrollState(node);

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CHILD_WINDOW_HEIGHT,
-  CHILD_WINDOW_WIDTH,
+  FLOATING_ROOT_WINDOW_HEIGHT,
+  FLOATING_ROOT_WINDOW_WIDTH,
 } from "../lib/constants";
 import { createMessage, createWindowRecord } from "../lib/state";
 import { createBranchWindow } from "./useBranchSelection";
@@ -35,8 +35,8 @@ describe("createBranchWindow", () => {
       parentWindowTitle: "Chat 1",
       parentMessageRole: "assistant",
     });
-    expect(childWindow.width).toBe(CHILD_WINDOW_WIDTH);
-    expect(childWindow.height).toBe(CHILD_WINDOW_HEIGHT);
+    expect(childWindow.width).toBe(FLOATING_ROOT_WINDOW_WIDTH);
+    expect(childWindow.height).toBe(FLOATING_ROOT_WINDOW_HEIGHT);
   });
 
   it("uses an explicit canvas x position when provided", () => {

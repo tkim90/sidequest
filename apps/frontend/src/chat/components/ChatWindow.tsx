@@ -80,6 +80,7 @@ const ChatWindow = memo(function ChatWindow({
     inheritedMessageCount: windowData.inheritedMessageCount,
     isFocused,
     isHistoryExpanded: windowData.isHistoryExpanded,
+    isStreaming: windowData.isStreaming,
     isChildPane: isCompactPane,
     messages,
     onGeometryChange,

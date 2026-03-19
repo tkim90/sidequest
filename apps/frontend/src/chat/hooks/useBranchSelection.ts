@@ -13,16 +13,21 @@ import type { AppState, MessageRecord, SelectionState, WindowRecord } from "../.
 import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
 import {
-  CHILD_WINDOW_HEIGHT,
-  CHILD_WINDOW_WIDTH,
   CHILD_VERTICAL_STAGGER,
+  FLOATING_ROOT_WINDOW_HEIGHT,
+  FLOATING_ROOT_WINDOW_WIDTH,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
   WINDOW_GAP,
 } from "../lib/constants";
 import {
   clamp,
   getSelectionRect,
 } from "../lib/geometry";
-import { getNextPanePlacement } from "../lib/panePlacement";
+import {
+  getNextOverlappingPanePlacement,
+  resolveFloatingPaneSize,
+} from "../lib/panePlacement";
 import {
   cloneMessagesForBranch,
   createAnchorRecord,
@@ -60,7 +65,9 @@ interface UseBranchSelectionResult {
 interface CreateBranchWindowOptions {
   childX?: number;
   childY?: number;
+  childHeight?: number;
   childIndex: number;
+  childWidth?: number;
   parentWidth: number;
   inheritedMessageCount: number;
   parentWindow: WindowRecord;
@@ -72,7 +79,9 @@ interface CreateBranchWindowOptions {
 export function createBranchWindow({
   childX,
   childY,
+  childHeight = FLOATING_ROOT_WINDOW_HEIGHT,
   childIndex,
+  childWidth = FLOATING_ROOT_WINDOW_WIDTH,
   parentWidth,
   inheritedMessageCount,
   parentWindow,
@@ -88,8 +97,8 @@ export function createBranchWindow({
       parentWindow.y +
         clamp(windowLocalY - 120, 24, 260) +
         childIndex * CHILD_VERTICAL_STAGGER,
-    width: CHILD_WINDOW_WIDTH,
-    height: CHILD_WINDOW_HEIGHT,
+    width: childWidth,
+    height: childHeight,
     parentId: parentWindow.id,
     selectedModel: parentWindow.selectedModel,
     selectedEffort: parentWindow.selectedEffort,
@@ -364,14 +373,26 @@ export function useBranchSelection({
     );
     const canvasWidth = canvasRef.current?.clientWidth;
     const canvasHeight = canvasRef.current?.clientHeight;
-    const nextPosition =
+    const fittedPaneSize =
       canvasWidth && canvasHeight
-        ? getNextPanePlacement({
+        ? resolveFloatingPaneSize({
+            canvasHeight,
+            canvasWidth,
+            defaultHeight: FLOATING_ROOT_WINDOW_HEIGHT,
+            defaultWidth: FLOATING_ROOT_WINDOW_WIDTH,
+            minHeight: MIN_WINDOW_HEIGHT,
+            minWidth: MIN_WINDOW_WIDTH,
+            viewport: snapshot.viewport,
+          })
+        : null;
+    const nextPosition =
+      canvasWidth && canvasHeight && fittedPaneSize
+        ? getNextOverlappingPanePlacement({
             canvasHeight,
             canvasWidth,
             existingWindows: rightPaneWindows,
-            paneHeight: CHILD_WINDOW_HEIGHT,
-            paneWidth: CHILD_WINDOW_WIDTH,
+            paneHeight: fittedPaneSize.height,
+            paneWidth: fittedPaneSize.width,
             viewport: snapshot.viewport,
           })
         : null;
@@ -379,7 +400,9 @@ export function useBranchSelection({
     const childWindow = createBranchWindow({
       childX: nextPosition?.x,
       childY: nextPosition?.y,
+      childHeight: fittedPaneSize?.height,
       childIndex: parentWindow.childIds.length,
+      childWidth: fittedPaneSize?.width,
       parentWidth:
         windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
         parentWindow.width,
