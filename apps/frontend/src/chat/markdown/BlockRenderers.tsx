@@ -392,7 +392,7 @@ export function RenderFinalizedBlock({
   if (block.type === "unordered_list") {
     return (
       <div className="my-3">
-        <ul className="list-disc space-y-1 pl-6">
+        <ul className="list-disc space-y-1">
           {renderListItems(
             block.items,
             anchors,
@@ -408,7 +408,7 @@ export function RenderFinalizedBlock({
   if (block.type === "ordered_list") {
     return (
       <div className="my-3">
-        <ol className="list-decimal space-y-1 pl-6">
+        <ol className="list-decimal space-y-1">
           {renderOrderedListItems(
             block.items,
             anchors,
@@ -525,7 +525,7 @@ export function RenderActiveBlock({
   if (block.type === "blockquote") {
     return (
       <div className="my-3">
-        <blockquote className="whitespace-pre-wrap border-l-4 border-border pl-4 italic leading-7 text-muted-foreground">
+        <blockquote className="whitespace-pre-wrap border-l-4 border-border italic leading-7 text-muted-foreground">
           {renderActiveBlockText(block, streamKey)}
         </blockquote>
       </div>
@@ -535,7 +535,7 @@ export function RenderActiveBlock({
   if (block.type === "unordered_list") {
     return (
       <div className="my-3">
-        <ul className="list-disc space-y-1 pl-6">
+        <ul className="list-disc space-y-1">
           {block.items.map((item, index) => (
             <li key={index} className="leading-7">
               {index === block.items.length - 1 ? (
@@ -556,7 +556,7 @@ export function RenderActiveBlock({
   if (block.type === "ordered_list") {
     return (
       <div className="my-3">
-        <ol className="list-decimal space-y-1 pl-6">
+        <ol className="list-decimal space-y-1">
           {block.items.map((item, index) => (
             <li key={index} value={item.index} className="leading-7">
               {index === block.items.length - 1 ? (
