@@ -22,16 +22,17 @@ import type {
   ResizeEdges,
 } from "./canvasTypes";
 
-const POINTER_SAMPLE_WINDOW_MS = 120;
-const MAX_POINTER_SAMPLES = 8;
-const MIN_SAMPLE_SEPARATION_MS = 16;
-const MAX_RELEASE_SPEED = 2200;
-const MIN_START_SPEED = 90;
-const STOP_SPEED = 20;
-const MAX_FRAME_DT_S = 0.032;
-const FRICTION_PER_SECOND = 8;
-const BOUNDARY_RESTITUTION = 0.34;
-const MIN_BOUNCE_SPEED = 60;
+// drag + drop slide animation controls
+const POINTER_SAMPLE_WINDOW_MS = 120; // how much recent drag history is used for release velocity
+const MAX_POINTER_SAMPLES = 8; // caps how many recent pointer samples are retained
+const MAX_RELEASE_SPEED = 2200; // limits extreme flicks so the glide never launches too fast
+const MIN_GLIDE_DRAG_DISTANCE = 6; // requires a small but deliberate drag before forcing a glide
+const MIN_GLIDE_LAUNCH_SPEED = 48; // gives slow releases a small guaranteed glide
+const STOP_SPEED = 20; // ends the glide once motion slows below this speed
+const MAX_FRAME_DT_S = 0.032; // caps per-frame simulation time to avoid large animation jumps
+const FRICTION_PER_SECOND = 3; // how far it glides once triggered
+const BOUNDARY_RESTITUTION = 0.34; // how much speed is preserved when it hits a boundary
+const MIN_BOUNCE_SPEED = 60; // prevents tiny wall taps from bouncing forever
 
 interface Bounds {
   maxX: number;
@@ -104,10 +105,6 @@ function getWindowBounds(
   };
 }
 
-export function shouldStartMomentum(speed: number): boolean {
-  return speed >= MIN_START_SPEED;
-}
-
 export function computeReleaseVelocity(
   samples: PointerSample[],
   scale: number,
@@ -121,18 +118,14 @@ export function computeReleaseVelocity(
     return { vx: 0, vy: 0 };
   }
 
-  const validSamples = samples
-    .slice()
-    .reverse()
-    .filter((sample) => latest.timeMs - sample.timeMs >= MIN_SAMPLE_SEPARATION_MS);
-  const oldest = validSamples[validSamples.length - 1];
+  const oldest = samples[0];
 
   if (!oldest) {
     return { vx: 0, vy: 0 };
   }
 
   const dtMs = latest.timeMs - oldest.timeMs;
-  if (dtMs < MIN_SAMPLE_SEPARATION_MS) {
+  if (dtMs <= 0) {
     return { vx: 0, vy: 0 };
   }
 
@@ -148,6 +141,28 @@ export function computeReleaseVelocity(
   return {
     vx: rawVx * ratio,
     vy: rawVy * ratio,
+  };
+}
+
+export function ensureMinimumGlideVelocity(
+  velocity: ReleaseVelocity,
+  dragDx: number,
+  dragDy: number,
+): ReleaseVelocity {
+  const dragDistance = Math.hypot(dragDx, dragDy);
+  if (dragDistance < MIN_GLIDE_DRAG_DISTANCE) {
+    return velocity;
+  }
+
+  const speed = Math.hypot(velocity.vx, velocity.vy);
+  if (speed >= MIN_GLIDE_LAUNCH_SPEED) {
+    return velocity;
+  }
+
+  const ratio = MIN_GLIDE_LAUNCH_SPEED / dragDistance;
+  return {
+    vx: dragDx * ratio,
+    vy: dragDy * ratio,
   };
 }
 
@@ -435,21 +450,27 @@ export function usePointerInteractions({
       scheduleInteractionFrame();
     }
 
-    function handlePointerUp(): void {
+    function handlePointerUp(event: globalThis.PointerEvent): void {
       const interaction = interactionRef.current;
       if (interaction) {
         flushPendingInteraction();
 
         if (interaction.type === "drag") {
-          const velocity = computeReleaseVelocity(
-            pointerSamplesRef.current,
-            interaction.scale,
+          pointerSamplesRef.current = appendPointerSample(pointerSamplesRef.current, {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            timeMs: performance.now(),
+          });
+          const dragDx =
+            (event.clientX - interaction.startClientX) / interaction.scale;
+          const dragDy =
+            (event.clientY - interaction.startClientY) / interaction.scale;
+          const velocity = ensureMinimumGlideVelocity(
+            computeReleaseVelocity(pointerSamplesRef.current, interaction.scale),
+            dragDx,
+            dragDy,
           );
-          const speed = Math.hypot(velocity.vx, velocity.vy);
-
-          if (shouldStartMomentum(speed)) {
-            startInertia(interaction.windowId, velocity);
-          }
+          startInertia(interaction.windowId, velocity);
         }
 
         interactionRef.current = null;
@@ -459,8 +480,8 @@ export function usePointerInteractions({
       }
     }
 
-    function handlePointerCancel(): void {
-      handlePointerUp();
+    function handlePointerCancel(event: globalThis.PointerEvent): void {
+      handlePointerUp(event);
     }
 
     window.addEventListener("pointermove", handlePointerMove);
