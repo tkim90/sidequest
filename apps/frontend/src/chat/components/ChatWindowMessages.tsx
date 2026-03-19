@@ -385,7 +385,7 @@ function ChatWindowMessages({
     <div className="relative z-10 h-full min-h-0 min-w-0">
       <div
         className={[
-          "flex h-full min-w-0 flex-col gap-4 overflow-auto",
+          "flex h-full min-w-0 flex-col gap-2 overflow-auto",
           "notebook-scrollbar-hidden px-4 sm:px-8"
         ].join(" ")}
         ref={scrollRef}
