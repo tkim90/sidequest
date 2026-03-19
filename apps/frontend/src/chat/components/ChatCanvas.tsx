@@ -317,18 +317,6 @@ function ChatCanvas({
           </button>
         </div>
 
-        <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20 hidden w-9 flex-col items-stretch border border-border/70 bg-paper-raised text-[10px] uppercase tracking-[0.18em] text-paper-ink-soft md:flex">
-          <span className="flex-1 border-b border-border/50 bg-paper-accent p-2 text-center [writing-mode:vertical-rl]">
-            typographic
-          </span>
-          <span className="flex-1 border-b border-border/50 bg-paper-sheet p-2 text-center [writing-mode:vertical-rl]">
-            textured
-          </span>
-          <span className="flex-1 bg-paper p-2 text-center [writing-mode:vertical-rl]">
-            monoline
-          </span>
-        </div>
-
         <div
           className="relative h-full overflow-hidden"
           ref={canvasRef}
