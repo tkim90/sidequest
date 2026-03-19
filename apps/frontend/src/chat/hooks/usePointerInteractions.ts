@@ -13,17 +13,20 @@ import {
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
 } from "../lib/constants";
+import { clamp } from "../lib/geometry";
 import { getViewportEffectiveScale } from "./canvasUtils";
 import type { CanvasInteraction, ResizeEdges } from "./canvasTypes";
 
 interface UsePointerInteractionsOptions {
   appStateRef: RefObject<AppState>;
+  canvasRef: RefObject<HTMLDivElement | null>;
   requestGeometryRefresh: () => void;
   setAppState: Dispatch<SetStateAction<AppState>>;
 }
 
 export function usePointerInteractions({
   appStateRef,
+  canvasRef,
   requestGeometryRefresh,
   setAppState,
 }: UsePointerInteractionsOptions) {
@@ -33,21 +36,6 @@ export function usePointerInteractions({
     function handlePointerMove(event: globalThis.PointerEvent): void {
       const interaction = interactionRef.current;
       if (!interaction) {
-        return;
-      }
-
-      if (interaction.type === "pan") {
-        const dx = event.clientX - interaction.startClientX;
-        const dy = event.clientY - interaction.startClientY;
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            x: interaction.startViewportX + dx,
-            y: interaction.startViewportY + dy,
-          },
-        }));
         return;
       }
 
@@ -61,14 +49,27 @@ export function usePointerInteractions({
         }
 
         if (interaction.type === "drag") {
+          const canvasNode = canvasRef.current;
+          const effectiveScale = getViewportEffectiveScale(current.viewport) || 1;
+          const boundsLeft = -current.viewport.x / effectiveScale;
+          const boundsTop = -current.viewport.y / effectiveScale;
+          const boundsRight = canvasNode
+            ? (-current.viewport.x + canvasNode.clientWidth) / effectiveScale
+            : Number.POSITIVE_INFINITY;
+          const boundsBottom = canvasNode
+            ? (-current.viewport.y + canvasNode.clientHeight) / effectiveScale
+            : Number.POSITIVE_INFINITY;
+          const maxX = Math.max(boundsLeft, boundsRight - windowData.width);
+          const maxY = Math.max(boundsTop, boundsBottom - windowData.height);
+
           return {
             ...current,
             windows: {
               ...current.windows,
               [interaction.windowId]: {
                 ...windowData,
-                x: interaction.startX + dx,
-                y: interaction.startY + dy,
+                x: clamp(interaction.startX + dx, boundsLeft, maxX),
+                y: clamp(interaction.startY + dy, boundsTop, maxY),
               },
             },
           };
@@ -150,14 +151,6 @@ export function usePointerInteractions({
     if (target?.closest("[data-chat-window]")) {
       return;
     }
-
-    interactionRef.current = {
-      type: "pan",
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startViewportX: appStateRef.current.viewport.x,
-      startViewportY: appStateRef.current.viewport.y,
-    };
   }
 
   function onHeaderPointerDown(

@@ -67,15 +67,6 @@ export function useViewportWheel({
 
       if (!target?.closest("[data-chat-window]")) {
         event.preventDefault();
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            x: current.viewport.x - event.deltaX,
-            y: current.viewport.y - event.deltaY,
-          },
-        }));
       }
     }
 

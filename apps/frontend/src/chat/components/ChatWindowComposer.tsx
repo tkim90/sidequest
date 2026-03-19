@@ -95,9 +95,9 @@ function ChatWindowComposer({
 
   const usesCompactControls = isChildPane || isFixedPane;
   const textareaClassName = [
-    "resize-none overflow-y-auto bg-text-foreground outline-none placeholder:text-muted-foreground",
+    "resize-none overflow-y-auto bg-transparent outline-none placeholder:text-muted-foreground",
     isChildPane
-      ? "min-h-[32px] max-h-[120px] min-w-0 flex-1 px-3 py-1.5 text-sm leading-5"
+      ? "min-h-9 max-h-[92px] min-w-0 flex-1 px-3 py-2 text-sm leading-5"
       : isFixedPane
         ? "w-full min-h-[40px] max-h-[200px] px-4 py-3 text-sm leading-6"
         : "w-full min-h-[72px] max-h-[200px] py-2 text-[22px] placeholder:text-[22px]",
@@ -114,7 +114,10 @@ function ChatWindowComposer({
   const controls = (
     <div
       ref={controlsRef}
-      className="flex shrink-0 flex-wrap items-center gap-2"
+      className={[
+        "flex shrink-0 items-center gap-2",
+        isChildPane ? "flex-nowrap" : "flex-wrap",
+      ].join(" ")}
       onPointerDown={(event) => event.stopPropagation()}
     >
       {models.length > 0 ? (
@@ -129,7 +132,9 @@ function ChatWindowComposer({
               )
             }
           >
-            <span className="max-w-[200px] truncate">{resolvedSelectedModel}</span>
+            <span className={isChildPane ? "max-w-[120px] truncate" : "max-w-[200px] truncate"}>
+              {resolvedSelectedModel}
+            </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -181,7 +186,7 @@ function ChatWindowComposer({
               )
             }
           >
-            <span className="max-w-[160px] truncate">
+            <span className={isChildPane ? "max-w-[96px] truncate" : "max-w-[160px] truncate"}>
               {getEffortLabel(resolvedSelectedEffort)}
             </span>
             <svg
@@ -228,7 +233,7 @@ function ChatWindowComposer({
     <button
       className={[
         "flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80",
-        usesCompactControls ? "h-8 w-8" : "h-12 w-12",
+        isChildPane ? "h-9 w-9" : usesCompactControls ? "h-8 w-8" : "h-12 w-12",
       ].join(" ")}
       type="button"
       onClick={() => {
@@ -269,7 +274,7 @@ function ChatWindowComposer({
         ].join(" ")}
       >
         {isChildPane ? (
-          <div className="flex min-w-0 items-end gap-2 px-2 py-2">
+          <div className="flex min-w-0 items-end gap-2 px-4 py-3">
             <textarea
               ref={textareaRef}
               aria-label={`Message ${title}`}

@@ -148,7 +148,7 @@ export function useChatWindowLayout({
       return;
     }
 
-    const maxHeight = isChildPane ? 120 : 200;
+    const maxHeight = isChildPane ? 92 : 200;
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
   }, [composer, isChildPane]);

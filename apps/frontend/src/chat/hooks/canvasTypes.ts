@@ -7,13 +7,6 @@ export interface ResizeEdges {
 
 export type CanvasInteraction =
   | {
-      type: "pan";
-      startClientX: number;
-      startClientY: number;
-      startViewportX: number;
-      startViewportY: number;
-    }
-  | {
       type: "drag";
       windowId: string;
       startClientX: number;

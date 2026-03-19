@@ -330,7 +330,7 @@ function ChatCanvas({
         </div>
 
         <div
-          className="relative h-full cursor-grab overflow-hidden active:cursor-grabbing"
+          className="relative h-full overflow-hidden"
           ref={canvasRef}
           onPointerDown={onCanvasPointerDown}
         >

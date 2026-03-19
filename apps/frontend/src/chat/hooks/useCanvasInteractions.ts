@@ -106,6 +106,7 @@ export function useCanvasInteractions({
 
   const pointerInteractions = usePointerInteractions({
     appStateRef,
+    canvasRef,
     requestGeometryRefresh,
     setAppState,
   });
