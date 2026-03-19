@@ -16,9 +16,9 @@ import AssistantReasoningPanel from "./AssistantReasoningPanel";
 import MessageContent from "./MessageContent";
 
 const STARTER_QUESTIONS = [
-  "Code and visualize Dijkstra's algorithm in python",
-  "Create a metrics dashboard about something random",
-  "Create an OG image for social media using light colors",
+  "Write a poem about history and science.",
+  "What was Dijkstra known for?",
+  "Give me a random Jean Sartre quote.",
 ] as const;
 
 const FIXED_PANE_SCROLLBAR_TOP_INSET = 20;
@@ -453,9 +453,7 @@ function ChatWindowMessages({
       <div
         className={[
           "flex h-full min-w-0 flex-col gap-4 overflow-auto",
-          isFixedPane
-            ? "notebook-scrollbar-hidden px-16 py-5"
-            : "notebook-scrollbar-hidden px-16 py-5",
+          "notebook-scrollbar-hidden px-4 sm:px-12 py-5"
         ].join(" ")}
         ref={scrollRef}
         onScroll={() => {

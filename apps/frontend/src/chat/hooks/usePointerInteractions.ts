@@ -130,7 +130,16 @@ export function usePointerInteractions({
   const bringWindowToFront = useCallback(
     (windowId: string) => {
       setAppState((current) => {
-        if (!current.windows[windowId]) {
+        const targetWindow = current.windows[windowId];
+        if (!targetWindow) {
+          return current;
+        }
+
+        const pinnedMainWindowId = current.zOrder.find((candidateId) => {
+          const candidateWindow = current.windows[candidateId];
+          return candidateWindow?.parentId === null;
+        });
+        if (pinnedMainWindowId === windowId) {
           return current;
         }
 
