@@ -2,6 +2,7 @@ import { memo, useMemo, useState } from "react";
 
 import type { AnchorGroup, MessageRecord } from "../../types";
 import MarkdownContent from "../markdown/MarkdownContent";
+import CollapsibleDisclosure from "./CollapsibleDisclosure";
 
 const EMPTY_ANCHORS: AnchorGroup[] = [];
 
@@ -40,36 +41,18 @@ const AssistantReasoningPanel = memo(function AssistantReasoningPanel({
   }
 
   return (
-    <section
+    <CollapsibleDisclosure
+      buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
+      buttonLabel="Reasoning"
       className={[
         "mb-4 border border-border",
         isFixedPane ? "bg-paper-raised/80" : "bg-secondary/65",
       ].join(" ")}
+      contentClassName="border-t border-border px-4 py-4"
+      isExpanded={isOpen}
+      labelClassName="text-[12px] font-semibold uppercase tracking-[0.22em] text-muted-foreground"
+      onToggle={() => setIsOpen((current) => !current)}
     >
-      <button
-        aria-expanded={isOpen}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-      >
-        <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Reasoning
-        </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
-      {isOpen ? (
-        <div className="border-t border-border px-4 py-4">
           <MarkdownContent
             windowId=""
             message={reasoningMessage}
@@ -81,9 +64,7 @@ const AssistantReasoningPanel = memo(function AssistantReasoningPanel({
             renderStatus={message.status}
             onMessageMouseDown={noopMouseDown}
           />
-        </div>
-      ) : null}
-    </section>
+    </CollapsibleDisclosure>
   );
 });
 

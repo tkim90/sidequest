@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getHistoryContentShellStyle } from "./ChatWindowMessages";
+import { getDisclosureContentShellStyle } from "./CollapsibleDisclosure";
 
-describe("getHistoryContentShellStyle", () => {
+describe("getDisclosureContentShellStyle", () => {
   it("returns an expanded shell style with height and opacity", () => {
-    expect(getHistoryContentShellStyle(true, 240)).toMatchObject({
+    expect(getDisclosureContentShellStyle(true, 240)).toMatchObject({
       height: 240,
       marginTop: 16,
       opacity: 1,
@@ -16,7 +16,7 @@ describe("getHistoryContentShellStyle", () => {
   });
 
   it("returns a collapsed shell style that hides content but keeps it mounted", () => {
-    expect(getHistoryContentShellStyle(false, 240)).toMatchObject({
+    expect(getDisclosureContentShellStyle(false, 240)).toMatchObject({
       height: 0,
       marginTop: 0,
       opacity: 0,

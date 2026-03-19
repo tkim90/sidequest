@@ -31,6 +31,16 @@ const DEFAULT_SCROLL_STATE: WindowScrollState = {
   shouldAutoScroll: true,
 };
 const FLOATING_WINDOW_EXIT_DURATION_MS = 220;
+const NOTEBOOK_GUTTER_WIDTH_PX = 68;
+const NOTEBOOK_BINDER_MARKS = [
+  "circle",
+  "capsule",
+  "capsule",
+  "circle",
+  "capsule",
+  "capsule",
+  "circle",
+] as const;
 
 interface FloatingWindowPresenceEntry {
   enterKind: "branch" | "newNote";
@@ -124,7 +134,6 @@ function ChatCanvas({
   const effectiveScale = getViewportEffectiveScale(viewport);
   const snappedViewportX = snapToDevicePixel(viewport.x);
   const snappedViewportY = snapToDevicePixel(viewport.y);
-  const gutterMarks = ["a", "b", "c", "d", "e", "f"];
   const splitPaneStyle = {
     "--chat-split-columns": leftPaneWidthPx
       ? `${leftPaneWidthPx}px ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`
@@ -237,19 +246,8 @@ function ChatCanvas({
             backgroundSize: "18px 18px, 22px 22px, 20px 20px, 16px 16px, 100% 100%",
           }}
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-10 left-[17px] z-10 flex flex-col justify-between"
-        >
-          {gutterMarks.map((mark) => (
-            <span
-              key={mark}
-              className="block h-3.5 w-3.5 rounded-full border border-border bg-background"
-            />
-          ))}
-        </div>
 
-        <div className="relative flex h-full min-h-0 min-w-0 flex-col pl-8">
+        <div className="relative flex h-full min-h-0 min-w-0 flex-col px-4">
           {mainWindow ? (
             <div className="min-h-0 min-w-0 flex-1 py-4">
               <ChatWindow
@@ -302,11 +300,36 @@ function ChatCanvas({
         />
       </div>
 
-      <div className="relative z-10 min-h-0 overflow-hidden border-t border-border bg-paper lg:border-t-0">
-        <div className="absolute left-1/2 top-4 z-30 -translate-x-1/2">
+      <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
+        <div
+          className="relative h-full overflow-hidden bg-paper-sheet"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 16% 20%, var(--paper-grain-light) 0 0.8px, transparent 1.15px), radial-gradient(circle at 76% 32%, var(--paper-grain-dark) 0 0.75px, transparent 1.05px), radial-gradient(circle at 38% 78%, var(--paper-grain-dark) 0 0.65px, transparent 0.95px), radial-gradient(circle at 86% 66%, var(--paper-grain-light) 0 0.7px, transparent 0.98px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 14%, transparent 86%, var(--paper-grain-shadow))",
+            backgroundSize: "18px 18px, 24px 24px, 20px 20px, 16px 16px, 100% 100%",
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-20 flex flex-col justify-between py-8"
+            style={{ width: `${NOTEBOOK_GUTTER_WIDTH_PX}px` }}
+          >
+            {NOTEBOOK_BINDER_MARKS.map((mark, index) => (
+                <span
+                  key={`${mark}-${index}`}
+                  className={[
+                  "mx-auto block bg-paper-gutter shadow-[inset_0_1px_0_rgb(255_255_255_/_0.34)]",
+                  mark === "circle"
+                    ? "h-4 w-4 rounded-full"
+                    : "h-8 w-4 rounded-full",
+                ].join(" ")}
+              />
+            ))}
+          </div>
+
           <button
             aria-label="Add new note"
-            className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+            className="absolute left-1/2 top-4 z-30 -translate-x-1/2 cursor-pointer transition-transform duration-200 hover:-translate-x-1/2 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
             type="button"
             onClick={onOpenFreshRootWindow}
             onPointerDown={(event) => {
@@ -316,70 +339,77 @@ function ChatCanvas({
           >
             <img alt="" className="h-9 w-auto select-none" draggable={false} src="/new-note.png" />
           </button>
-        </div>
-
-        <div
-          className="relative h-full overflow-hidden"
-          ref={canvasRef}
-          onPointerDown={onCanvasPointerDown}
-        >
-          <WorkspaceGridCanvas hostRef={canvasRef} viewport={viewport} />
 
           <div
-            className="absolute inset-0 origin-top-left"
+            className="absolute overflow-hidden border-b border-r border-paper-stroke/30"
+            ref={canvasRef}
             style={{
-              transform: `translate(${snappedViewportX}px, ${snappedViewportY}px)`,
-            }}
+              top: "1rem",
+              right: "2rem",
+              bottom: "1rem",
+              left: `${NOTEBOOK_GUTTER_WIDTH_PX}px`,
+              "--paper": "var(--paper-sheet)",
+            } as CSSProperties}
+            onPointerDown={onCanvasPointerDown}
           >
+            <WorkspaceGridCanvas hostRef={canvasRef} viewport={viewport} />
+
             <div
-              className="relative min-h-full min-w-full origin-top-left"
+              className="absolute inset-0 origin-top-left"
               style={{
-                zoom: effectiveScale,
+                transform: `translate(${snappedViewportX}px, ${snappedViewportY}px)`,
               }}
             >
-              {floatingWindowEntries.map((entry, index) => (
-                <motion.div
-                  key={entry.windowData.id}
-                  animate={
-                    entry.isExiting
-                      ? { opacity: 0, x: 24, y: 16, scale: 0.985 }
-                      : { opacity: 1, scale: 1, x: 0, y: 0 }
-                  }
-                  initial={
-                    entry.enterKind === "newNote"
-                      ? { opacity: 0, y: -28 }
-                      : { opacity: 0, scale: 0.96, y: 10 }
-                  }
-                  transition={{
-                    duration: FLOATING_WINDOW_EXIT_DURATION_MS / 1000,
-                    ease: "easeOut",
-                  }}
-                >
-                  <ChatWindow
-                    anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-                    isFocused={!entry.isExiting && index === windows.length - 1}
-                    messages={entry.messages}
-                    onClose={onWindowClose}
-                    onComposerChange={onComposerChange}
-                    onEffortChange={onEffortChange}
-                    onGeometryChange={onGeometryChange}
-                    onHeaderPointerDown={onHeaderPointerDown}
-                    onMessageMouseDown={onMessageMouseDown}
-                    onModelChange={onModelChange}
-                    onResizePointerDown={onResizePointerDown}
-                    onRetry={onRetry}
-                    onSend={onSend}
-                    onToggleHistoryExpanded={onToggleHistoryExpanded}
-                    onWindowFocus={onWindowFocus}
-                    onWindowScrollStateChange={onWindowScrollStateChange}
-                    registerAnchorRef={registerAnchorRef}
-                    registerWindowRef={registerWindowRef}
-                    savedScrollState={entry.savedScrollState}
-                    windowData={entry.windowData}
-                    zIndex={entry.zIndex}
-                  />
-                </motion.div>
-              ))}
+              <div
+                className="relative min-h-full min-w-full origin-top-left"
+                style={{
+                  zoom: effectiveScale,
+                }}
+              >
+                {floatingWindowEntries.map((entry, index) => (
+                  <motion.div
+                    key={entry.windowData.id}
+                    animate={
+                      entry.isExiting
+                        ? { opacity: 0, x: 24, y: 16, scale: 0.985 }
+                        : { opacity: 1, scale: 1, x: 0, y: 0 }
+                    }
+                    initial={
+                      entry.enterKind === "newNote"
+                        ? { opacity: 0, y: -28 }
+                        : { opacity: 0, scale: 0.96, y: 10 }
+                    }
+                    transition={{
+                      duration: FLOATING_WINDOW_EXIT_DURATION_MS / 1000,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <ChatWindow
+                      anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+                      isFocused={!entry.isExiting && index === windows.length - 1}
+                      messages={entry.messages}
+                      onClose={onWindowClose}
+                      onComposerChange={onComposerChange}
+                      onEffortChange={onEffortChange}
+                      onGeometryChange={onGeometryChange}
+                      onHeaderPointerDown={onHeaderPointerDown}
+                      onMessageMouseDown={onMessageMouseDown}
+                      onModelChange={onModelChange}
+                      onResizePointerDown={onResizePointerDown}
+                      onRetry={onRetry}
+                      onSend={onSend}
+                      onToggleHistoryExpanded={onToggleHistoryExpanded}
+                      onWindowFocus={onWindowFocus}
+                      onWindowScrollStateChange={onWindowScrollStateChange}
+                      registerAnchorRef={registerAnchorRef}
+                      registerWindowRef={registerWindowRef}
+                      savedScrollState={entry.savedScrollState}
+                      windowData={entry.windowData}
+                      zIndex={entry.zIndex}
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
