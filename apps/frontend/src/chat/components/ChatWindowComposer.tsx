@@ -285,7 +285,7 @@ function ChatWindowComposer({
               autoFocus
               rows={1}
               className={textareaClassName}
-              placeholder="Ask a follow-up..."
+              placeholder={isFixedPane ? "Write something..." : "Ask a follow-up..."}
               value={composer}
               onChange={(event) => onComposerChange(event.target.value)}
               onKeyDown={(event) => {
@@ -306,7 +306,7 @@ function ChatWindowComposer({
               autoFocus
               rows={1}
               className={textareaClassName}
-              placeholder="Ask a follow-up..."
+              placeholder={isFixedPane ? "Write something..." : "Ask a follow-up..."}
               value={composer}
               onChange={(event) => onComposerChange(event.target.value)}
               onKeyDown={(event) => {

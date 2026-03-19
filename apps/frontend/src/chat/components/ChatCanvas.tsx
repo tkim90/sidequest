@@ -301,14 +301,7 @@ function ChatCanvas({
       </div>
 
       <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
-        <div
-          className="relative h-full overflow-hidden bg-paper-sheet"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 16% 20%, var(--paper-grain-light) 0 0.8px, transparent 1.15px), radial-gradient(circle at 76% 32%, var(--paper-grain-dark) 0 0.75px, transparent 1.05px), radial-gradient(circle at 38% 78%, var(--paper-grain-dark) 0 0.65px, transparent 0.95px), radial-gradient(circle at 86% 66%, var(--paper-grain-light) 0 0.7px, transparent 0.98px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 14%, transparent 86%, var(--paper-grain-shadow))",
-            backgroundSize: "18px 18px, 24px 24px, 20px 20px, 16px 16px, 100% 100%",
-          }}
-        >
+        <div className="paper-texture relative h-full overflow-hidden bg-paper-sheet">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-y-0 left-0 z-20 flex flex-col justify-between py-8"
@@ -371,7 +364,7 @@ function ChatCanvas({
                     key={entry.windowData.id}
                     animate={
                       entry.isExiting
-                        ? { opacity: 0, x: 24, y: 16, scale: 0.985 }
+                        ? { opacity: 0 }
                         : { opacity: 1, scale: 1, x: 0, y: 0 }
                     }
                     initial={

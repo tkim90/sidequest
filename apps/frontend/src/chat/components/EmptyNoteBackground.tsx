@@ -79,7 +79,7 @@ export default function EmptyNoteBackground({
     <section
       className={[
         "relative my-auto isolate overflow-hidden",
-        "min-h-[360px] px-4 py-8"
+        "max-w-[540px] min-h-[360px] px-4 py-8 mx-auto"
       ].join(" ")}
     >
       <div

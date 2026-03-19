@@ -65,4 +65,20 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).toContain('text-[16px] leading-[1.35] text-muted-foreground italic');
     expect(floatingMarkup).toContain('Focus: &quot;selected text&quot;');
   });
+
+  it("renders an svg close glyph instead of a letter for floating windows", () => {
+    const floatingMarkup = renderToStaticMarkup(
+      <ChatWindowHeader
+        branchFocus={null}
+        isFixedPane={false}
+        onClose={() => {}}
+        showCloseButton
+        title="Chat 1.1"
+      />,
+    );
+
+    expect(floatingMarkup).toContain('aria-label="Close note"');
+    expect(floatingMarkup).toContain("<svg");
+    expect(floatingMarkup).not.toContain(">X<");
+  });
 });

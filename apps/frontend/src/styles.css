@@ -93,9 +93,28 @@
   --paper-ink-soft: #897966;
   --paper-accent: #E2D1AF;
   --paper-grain-light: rgb(255 255 255 / 0.34);
-  --paper-grain-dark: rgb(118 100 74 / 0.055);
+  --paper-grain-dark: rgb(118 100 74 / 0.07);
+  --paper-grain-speckle: rgb(129 108 79 / 0.05);
+  --paper-grain-fiber: rgb(255 255 255 / 0.2);
   --paper-grain-wash: rgb(255 255 255 / 0.18);
   --paper-grain-shadow: rgb(118 100 74 / 0.03);
+  --paper-texture-image:
+    radial-gradient(circle at 16% 20%, var(--paper-grain-light) 0 0.75px, transparent 1px),
+    radial-gradient(circle at 71% 31%, var(--paper-grain-dark) 0 0.7px, transparent 0.98px),
+    radial-gradient(circle at 38% 76%, var(--paper-grain-dark) 0 0.58px, transparent 0.92px),
+    radial-gradient(circle at 84% 67%, var(--paper-grain-light) 0 0.62px, transparent 0.94px),
+    radial-gradient(circle at 27% 48%, var(--paper-grain-speckle) 0 0.45px, transparent 0.72px),
+    radial-gradient(circle at 62% 58%, var(--paper-grain-fiber) 0 0.5px, transparent 0.78px),
+    linear-gradient(to bottom, var(--paper-grain-wash), transparent 15%, transparent 85%, var(--paper-grain-shadow));
+  --paper-texture-size: 13px 13px, 17px 17px, 11px 11px, 19px 19px, 8px 8px, 9px 9px, 100% 100%;
+  --paper-texture-window-image:
+    radial-gradient(circle at 18% 22%, var(--paper-grain-light) 0 0.7px, transparent 0.96px),
+    radial-gradient(circle at 74% 34%, var(--paper-grain-dark) 0 0.64px, transparent 0.94px),
+    radial-gradient(circle at 39% 77%, var(--paper-grain-speckle) 0 0.44px, transparent 0.72px),
+    radial-gradient(circle at 86% 70%, var(--paper-grain-light) 0 0.56px, transparent 0.86px),
+    radial-gradient(circle at 28% 56%, var(--paper-grain-fiber) 0 0.45px, transparent 0.72px),
+    linear-gradient(to bottom, var(--paper-grain-wash), transparent 16%, transparent 84%, var(--paper-grain-shadow));
+  --paper-texture-window-size: 14px 14px, 18px 18px, 8px 8px, 16px 16px, 9px 9px, 100% 100%;
   --composer-surface: #F6F0E6;
   --composer-surface-compact: #F4EBDB;
   --composer-placeholder: rgb(144 127 102 / 0.68);
@@ -227,6 +246,16 @@
   .notebook-scrollbar-hidden::-webkit-scrollbar {
     width: 0;
     height: 0;
+  }
+
+  .paper-texture {
+    background-image: var(--paper-texture-image);
+    background-size: var(--paper-texture-size);
+  }
+
+  .paper-texture-window {
+    background-image: var(--paper-texture-window-image);
+    background-size: var(--paper-texture-window-size);
   }
 }
 

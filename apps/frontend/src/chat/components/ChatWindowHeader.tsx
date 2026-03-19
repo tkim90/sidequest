@@ -124,15 +124,14 @@ function ChatWindowHeader({
 }: ChatWindowHeaderProps) {
   const titleClassName = isFixedPane
     ? "font-serif text-3xl tracking-tight text-foreground sm:text-4xl"
-    : "font-serif text-[16px] leading-tight tracking-tight text-foreground";
+    : "font-serif text-[24px] leading-tight tracking-tight text-foreground";
 
   const focusClassName = isFixedPane
     ? "mt-3 max-w-xl text-base leading-6 text-muted-foreground italic"
     : "mt-2 max-w-xl text-[16px] leading-[1.35] text-muted-foreground italic";
 
-  const closeButtonClassName = isFixedPane
-    ? "cursor-pointer inline-flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-sm border border-border bg-paper-sheet text-sm font-medium text-foreground transition-colors hover:bg-card"
-    : "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-[20px] font-medium text-foreground transition-colors hover:bg-paper-raised/60";
+  const closeButtonClassName =
+    "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
 
   return (
     <header className="relative z-10 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4">
@@ -154,12 +153,26 @@ function ChatWindowHeader({
       </div>
       {showCloseButton ? (
         <button
+          aria-label="Close note"
           className={closeButtonClassName}
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={onClose}
         >
-          <span style={{ fontFamily: "system-ui, sans-serif" }}>X</span>
+          <svg
+            aria-hidden
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="none"
+            className="h-4 w-4"
+          >
+            <path
+              d="M5.5 5.5L14.5 14.5M14.5 5.5L5.5 14.5"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.8"
+            />
+          </svg>
         </button>
       ) : null}
     </header>

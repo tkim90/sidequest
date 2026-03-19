@@ -121,7 +121,7 @@ const ChatWindow = memo(function ChatWindow({
         "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
           ? "relative h-full w-full min-w-0 overflow-hidden bg-transparent shadow-none"
-          : "absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] will-change-transform active:cursor-grabbing",
+          : "group/chat-window absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] will-change-transform active:cursor-grabbing",
       ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}
@@ -132,12 +132,7 @@ const ChatWindow = memo(function ChatWindow({
         <>
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 z-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 18% 22%, var(--paper-grain-light) 0 0.75px, transparent 1px), radial-gradient(circle at 74% 34%, var(--paper-grain-dark) 0 0.7px, transparent 0.98px), radial-gradient(circle at 38% 78%, var(--paper-grain-dark) 0 0.65px, transparent 0.94px), radial-gradient(circle at 86% 70%, var(--paper-grain-light) 0 0.6px, transparent 0.9px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 16%, transparent 84%, var(--paper-grain-shadow))",
-              backgroundSize: "18px 18px, 20px 20px, 16px 16px, 14px 14px, 100% 100%",
-            }}
+            className="paper-texture-window pointer-events-none absolute inset-0 z-0"
           />
         </>
       )}
