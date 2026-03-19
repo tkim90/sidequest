@@ -30,6 +30,8 @@ const MIN_START_SPEED = 90;
 const STOP_SPEED = 20;
 const MAX_FRAME_DT_S = 0.032;
 const FRICTION_PER_SECOND = 8;
+const BOUNDARY_RESTITUTION = 0.34;
+const MIN_BOUNCE_SPEED = 60;
 
 interface Bounds {
   maxX: number;
@@ -166,10 +168,18 @@ export function stepMomentumFrame({
   let nextVy = vy * decay;
 
   if (clampedX !== nextX) {
-    nextVx = 0;
+    const bouncedVx =
+      clampedX === bounds.minX
+        ? Math.abs(nextVx) * BOUNDARY_RESTITUTION
+        : -Math.abs(nextVx) * BOUNDARY_RESTITUTION;
+    nextVx = Math.abs(bouncedVx) < MIN_BOUNCE_SPEED ? 0 : bouncedVx;
   }
   if (clampedY !== nextY) {
-    nextVy = 0;
+    const bouncedVy =
+      clampedY === bounds.minY
+        ? Math.abs(nextVy) * BOUNDARY_RESTITUTION
+        : -Math.abs(nextVy) * BOUNDARY_RESTITUTION;
+    nextVy = Math.abs(bouncedVy) < MIN_BOUNCE_SPEED ? 0 : bouncedVy;
   }
 
   return {
