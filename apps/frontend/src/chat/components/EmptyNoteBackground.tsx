@@ -87,7 +87,7 @@ export default function EmptyNoteBackground({
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage:
-            "linear-gradient(to bottom, transparent, transparent 11px, rgb(158 141 114 / 0.48) 11px, transparent 12px)",
+            "linear-gradient(to bottom, transparent, transparent 11px, var(--paper-rule) 11px, transparent 12px)",
           backgroundSize: "100% 28px",
           maskImage:
             "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
