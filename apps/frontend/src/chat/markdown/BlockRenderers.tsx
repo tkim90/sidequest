@@ -460,18 +460,16 @@ export function RenderFinalizedBlock({
   }
 
   return (
-    <div className="my-3">
-      <p className="whitespace-pre-wrap leading-7">
-        {renderAnchoredInlineSource({
-          anchors,
-          isFocused: ctx.isFocused,
-          keyPrefix,
-          registerAnchorRef: ctx.registerAnchorRef,
-          sourceStart: 0,
-          text: block.text,
-        })}
-      </p>
-    </div>
+    <p className="my-2 whitespace-pre-wrap leading-7">
+      {renderAnchoredInlineSource({
+        anchors,
+        isFocused: ctx.isFocused,
+        keyPrefix,
+        registerAnchorRef: ctx.registerAnchorRef,
+        sourceStart: 0,
+        text: block.text,
+      })}
+    </p>
   );
 }
 
