@@ -94,13 +94,25 @@ function ChatWindowComposer({
   }, [openPicker]);
 
   const usesCompactControls = isChildPane || isFixedPane;
+  const textareaBaseClassName = [
+    "resize-none overflow-y-auto bg-transparent text-foreground/90 outline-none transition-colors",
+    "placeholder:text-composer-placeholder placeholder:opacity-100 placeholder:font-normal",
+  ].join(" ");
   const textareaClassName = [
-    "resize-none overflow-y-auto bg-transparent outline-none placeholder:text-muted-foreground",
+    textareaBaseClassName,
     isChildPane
-      ? "min-h-9 max-h-[92px] min-w-0 flex-1 px-3 py-2 text-sm leading-5"
+      ? "min-h-9 max-h-[92px] min-w-0 flex-1 px-3 py-2 text-[15px] leading-5 placeholder:text-[15px]"
       : isFixedPane
-        ? "w-full min-h-[40px] max-h-[200px] px-4 py-3 text-sm leading-6"
-        : "w-full min-h-[72px] max-h-[200px] py-2 text-[22px] placeholder:text-[22px]",
+        ? "w-full min-h-[44px] max-h-[200px] px-4 py-3 text-[18px] leading-7 placeholder:text-[18px]"
+        : "w-full min-h-[72px] max-h-[200px] py-2 text-[22px] leading-[1.45] placeholder:text-[22px]",
+  ].join(" ");
+  const composerShellClassName = [
+    "rounded-2xl transition-colors",
+    isFixedPane
+      ? "border border-transparent bg-transparent"
+      : isChildPane
+        ? "shadow-[inset_0_1px_0_rgb(255_255_255_/_0.22)]"
+        : "border border-transparent bg-composer-surface/88 focus-within:bg-composer-surface",
   ].join(" ");
   const pickerButtonClassName = [
     "cursor-pointer flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
@@ -260,19 +272,11 @@ function ChatWindowComposer({
     <footer
       className={[
         "relative z-10",
-        isFixedPane
-          ? "border-t border-paper-stroke/12 bg-transparent px-4 py-2"
-          : "border-t border-paper-stroke/12 bg-transparent px-4 pb-4",
+        // isFixedPane
+        // "border-t border-paper-stroke/12 bg-transparent px-4 pb-4",
       ].join(" ")}
     >
-      <div
-        className={[
-          "rounded-2xl transition-colors",
-          isFixedPane || isChildPane
-            ? "border border-border bg-paper-raised focus-within:border-ring"
-            : "border border-transparent bg-transparent focus-within:bg-paper-sheet/28",
-        ].join(" ")}
-      >
+      <div className={composerShellClassName}>
         {isChildPane ? (
           <div className="flex min-w-0 items-end gap-2 px-4 py-3">
             <textarea

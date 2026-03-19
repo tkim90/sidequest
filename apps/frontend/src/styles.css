@@ -96,6 +96,9 @@
   --paper-grain-dark: rgb(118 100 74 / 0.055);
   --paper-grain-wash: rgb(255 255 255 / 0.18);
   --paper-grain-shadow: rgb(118 100 74 / 0.03);
+  --composer-surface: #F6F0E6;
+  --composer-surface-compact: #F4EBDB;
+  --composer-placeholder: rgb(144 127 102 / 0.68);
   --scrollbar-track: var(--paper-raised);
   --scrollbar-thumb: #CDBCA3;
   --scrollbar-thumb-hover: #BAA689;
@@ -151,6 +154,9 @@
   --color-paper-grain-dark: var(--paper-grain-dark);
   --color-paper-grain-wash: var(--paper-grain-wash);
   --color-paper-grain-shadow: var(--paper-grain-shadow);
+  --color-composer-surface: var(--composer-surface);
+  --color-composer-surface-compact: var(--composer-surface-compact);
+  --color-composer-placeholder: var(--composer-placeholder);
   --color-scrollbar-track: var(--scrollbar-track);
   --color-scrollbar-thumb: var(--scrollbar-thumb);
   --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
