@@ -1,9 +1,11 @@
 import {
   memo,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type RefObject,
 } from "react";
 
@@ -18,6 +20,8 @@ import MessageContent from "./MessageContent";
 const FIXED_PANE_SCROLLBAR_TOP_INSET = 20;
 const FIXED_PANE_SCROLLBAR_BOTTOM_INSET = 40;
 const FIXED_PANE_SCROLLBAR_MIN_THUMB_HEIGHT = 40;
+const HISTORY_CONTENT_ANIMATION_DURATION_MS = 260;
+const HISTORY_CONTENT_ANIMATION_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -45,6 +49,22 @@ interface ChatMessageCardProps {
   onRetry: ChatWindowMessagesProps["onRetry"];
   registerAnchorRef: ChatWindowMessagesProps["registerAnchorRef"];
   windowId: string;
+}
+
+export function getHistoryContentShellStyle(
+  isExpanded: boolean,
+  measuredHeight: number,
+): CSSProperties {
+  return {
+    height: isExpanded ? measuredHeight : 0,
+    marginTop: isExpanded ? 16 : 0,
+    opacity: isExpanded ? 1 : 0,
+    overflow: "hidden",
+    pointerEvents: isExpanded ? "auto" : "none",
+    transitionDuration: `${HISTORY_CONTENT_ANIMATION_DURATION_MS}ms`,
+    transitionProperty: "height, opacity, margin-top",
+    transitionTimingFunction: HISTORY_CONTENT_ANIMATION_EASING,
+  };
 }
 
 
@@ -194,12 +214,38 @@ function ChatWindowMessages({
     scrollTop: 0,
   });
   const dragOffsetRef = useRef(0);
+  const historyContentRef = useRef<HTMLDivElement | null>(null);
+  const [historyContentHeight, setHistoryContentHeight] = useState(0);
   const clampedHistoryPreviewCount = Math.min(historyPreviewCount, messages.length);
   const historyMessages = messages.slice(0, clampedHistoryPreviewCount);
   const visibleMessages =
     clampedHistoryPreviewCount > 0
       ? messages.slice(clampedHistoryPreviewCount)
       : messages;
+
+  useLayoutEffect(() => {
+    const node = historyContentRef.current;
+    if (!node || historyMessages.length === 0) {
+      setHistoryContentHeight(0);
+      return;
+    }
+    const historyNode = node;
+
+    function updateHistoryContentHeight(): void {
+      setHistoryContentHeight(historyNode.scrollHeight);
+    }
+
+    updateHistoryContentHeight();
+
+    const observer = new ResizeObserver(() => {
+      updateHistoryContentHeight();
+    });
+    observer.observe(historyNode);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [historyMessages, isHistoryExpanded]);
 
   useEffect(() => {
     const activeNode = scrollRef.current;
@@ -423,11 +469,21 @@ function ChatWindowMessages({
             >
               {isHistoryExpanded ? "Hide previous history" : "See previous history"}
             </button>
-            {isHistoryExpanded && (
-              <div className="mt-4 flex min-w-0 flex-col gap-4">
+            <div
+              aria-hidden={!isHistoryExpanded}
+              data-history-shell="true"
+              style={getHistoryContentShellStyle(
+                isHistoryExpanded,
+                historyContentHeight,
+              )}
+            >
+              <div
+                className="flex min-w-0 flex-col gap-4"
+                ref={historyContentRef}
+              >
                 {historyMessages.map(renderMessage)}
               </div>
-            )}
+            </div>
           </section>
         ) : null}
 

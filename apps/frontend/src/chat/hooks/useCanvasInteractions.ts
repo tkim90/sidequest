@@ -109,6 +109,7 @@ export function useCanvasInteractions({
     canvasRef,
     requestGeometryRefresh,
     setAppState,
+    viewport: appState.viewport,
   });
 
   const anchorGroupsByMessageKey = useMemo(

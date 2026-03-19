@@ -45,4 +45,24 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).not.toContain('data-animated-title="true"');
     expect(floatingMarkup).toContain(">Chat 1</h2>");
   });
+
+  it("renders smaller child-window title and focus typography", () => {
+    const floatingMarkup = renderToStaticMarkup(
+      <ChatWindowHeader
+        branchFocus={{
+          selectedText: "selected text",
+          parentWindowTitle: "Chat 1",
+          parentMessageRole: "assistant",
+        }}
+        isFixedPane={false}
+        onClose={() => {}}
+        showCloseButton={false}
+        title="Chat 1.1"
+      />,
+    );
+
+    expect(floatingMarkup).toContain('text-[16px] leading-tight tracking-tight');
+    expect(floatingMarkup).toContain('text-[16px] leading-[1.35] text-muted-foreground italic');
+    expect(floatingMarkup).toContain('Focus: &quot;selected text&quot;');
+  });
 });

@@ -5,6 +5,19 @@ export interface ResizeEdges {
   west: boolean;
 }
 
+export interface PointerSample {
+  clientX: number;
+  clientY: number;
+  timeMs: number;
+}
+
+export interface InertiaState {
+  lastTimeMs: number;
+  vx: number;
+  vy: number;
+  windowId: string;
+}
+
 export type CanvasInteraction =
   | {
       type: "drag";

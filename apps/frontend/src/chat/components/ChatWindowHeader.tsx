@@ -124,11 +124,11 @@ function ChatWindowHeader({
 }: ChatWindowHeaderProps) {
   const titleClassName = isFixedPane
     ? "font-serif text-3xl tracking-tight text-foreground sm:text-4xl"
-    : "font-serif text-[42px] leading-tight tracking-tight text-foreground";
+    : "font-serif text-[16px] leading-tight tracking-tight text-foreground";
 
   const focusClassName = isFixedPane
     ? "mt-3 max-w-xl text-base leading-6 text-muted-foreground italic"
-    : "mt-2 max-w-xl text-[24px] leading-[1.35] text-muted-foreground italic";
+    : "mt-2 max-w-xl text-[16px] leading-[1.35] text-muted-foreground italic";
 
   const closeButtonClassName = isFixedPane
     ? "cursor-pointer inline-flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-sm border border-border bg-paper-sheet text-sm font-medium text-foreground transition-colors hover:bg-card"
