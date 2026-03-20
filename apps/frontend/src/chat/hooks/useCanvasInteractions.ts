@@ -30,6 +30,7 @@ interface UseCanvasInteractionsResult {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: RefObject<HTMLDivElement | null>;
   connectorPaths: ConnectorPath[];
+  getAnchorNode: (groupKey: string) => HTMLSpanElement | null;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onHeaderPointerDown: (
     event: React.PointerEvent<HTMLElement>,
@@ -153,6 +154,7 @@ export function useCanvasInteractions({
     anchorGroupsByMessageKey,
     canvasRef,
     connectorPaths,
+    getAnchorNode: (groupKey) => anchorRefs.current[groupKey] ?? null,
     onCanvasPointerDown: pointerInteractions.onCanvasPointerDown,
     onHeaderPointerDown: pointerInteractions.onHeaderPointerDown,
     onResizePointerDown: pointerInteractions.onResizePointerDown,

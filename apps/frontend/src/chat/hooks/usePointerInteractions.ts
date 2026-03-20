@@ -14,6 +14,7 @@ import {
   MIN_WINDOW_WIDTH,
 } from "../lib/constants";
 import { clamp } from "../lib/geometry";
+import { bringWindowToFront as bringWindowToFrontInState } from "../lib/workspaceActions";
 import { getViewportEffectiveScale } from "./canvasUtils";
 import type {
   CanvasInteraction,
@@ -529,28 +530,7 @@ export function usePointerInteractions({
     (windowId: string) => {
       cancelInertia();
 
-      setAppState((current) => {
-        const targetWindow = current.windows[windowId];
-        if (!targetWindow) {
-          return current;
-        }
-
-        const pinnedMainWindowId = current.zOrder.find((candidateId) => {
-          const candidateWindow = current.windows[candidateId];
-          return candidateWindow?.parentId === null;
-        });
-        if (pinnedMainWindowId === windowId) {
-          return current;
-        }
-
-        return {
-          ...current,
-          zOrder: [
-            ...current.zOrder.filter((candidateId) => candidateId !== windowId),
-            windowId,
-          ],
-        };
-      });
+      setAppState((current) => bringWindowToFrontInState(current, windowId));
     },
     [cancelInertia, setAppState],
   );

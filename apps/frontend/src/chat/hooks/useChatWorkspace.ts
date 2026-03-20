@@ -96,6 +96,10 @@ export interface ChatWorkspaceViewModel {
   onMessageMouseDown: ReturnType<
     typeof useBranchSelection
   >["onMessageMouseDown"];
+  onNavigateToBranchSource: (
+    windowId: string,
+    branchAnchorId: string | null,
+  ) => void;
   onOpenFreshRootWindow: () => void;
   onPaneResizePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
@@ -158,6 +162,62 @@ export function mergeSelectionPreviewAnchorGroup(
   return {
     ...base,
     [messageKey]: groupsWithPreview,
+  };
+}
+
+interface BranchSourceNavigation {
+  shouldBringSourceToFront: boolean;
+  shouldExpandSourceHistory: boolean;
+  sourceGroupKey: string;
+  sourceWindowId: string;
+}
+
+export function resolveBranchSourceNavigation(
+  appState: AppState,
+  windowId: string,
+  branchAnchorId: string | null,
+): BranchSourceNavigation | null {
+  if (!branchAnchorId) {
+    return null;
+  }
+
+  const childWindow = appState.windows[windowId];
+  if (!childWindow?.parentId) {
+    return null;
+  }
+
+  if (!appState.windows[childWindow.parentId]) {
+    return null;
+  }
+
+  const anchor = appState.anchors[branchAnchorId];
+  if (!anchor || anchor.childWindowId !== windowId) {
+    return null;
+  }
+
+  const sourceWindow = appState.windows[anchor.parentWindowId];
+  if (!sourceWindow) {
+    return null;
+  }
+
+  const sourceMessages = appState.messagesByWindowId[sourceWindow.id] ?? [];
+  const sourceMessageIndex = sourceMessages.findIndex(
+    (message) => message.id === anchor.parentMessageId,
+  );
+  if (sourceMessageIndex < 0) {
+    return null;
+  }
+
+  const shouldExpandSourceHistory =
+    sourceWindow.inheritedMessageCount > 0 &&
+    !sourceWindow.isHistoryExpanded &&
+    sourceMessageIndex < sourceWindow.inheritedMessageCount;
+
+  return {
+    shouldBringSourceToFront: sourceWindow.parentId !== null,
+    shouldExpandSourceHistory,
+    sourceGroupKey: anchor.groupKey,
+    sourceWindowId: sourceWindow.id,
   };
 }
 
@@ -739,6 +799,58 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.requestGeometryRefresh();
   }
 
+  const handleNavigateToBranchSource = useCallback((
+    windowId: string,
+    branchAnchorId: string | null,
+  ): void => {
+    const target = resolveBranchSourceNavigation(
+      appStateRef.current,
+      windowId,
+      branchAnchorId,
+    );
+    if (!target) {
+      return;
+    }
+
+    const navigationTarget = target;
+
+    selection.dismissSelection();
+
+    if (navigationTarget.shouldBringSourceToFront) {
+      canvas.onWindowFocus(navigationTarget.sourceWindowId);
+    }
+
+    if (navigationTarget.shouldExpandSourceHistory) {
+      setAppState((current) =>
+        setWindowHistoryExpanded(current, navigationTarget.sourceWindowId, true),
+      );
+    }
+
+    let attempts = 0;
+    const maxAttempts = 8;
+
+    function scrollToSourceAnchor(): void {
+      const anchorNode = canvas.getAnchorNode(navigationTarget.sourceGroupKey);
+      if (anchorNode) {
+        anchorNode.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+        return;
+      }
+
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        return;
+      }
+
+      window.requestAnimationFrame(scrollToSourceAnchor);
+    }
+
+    window.requestAnimationFrame(scrollToSourceAnchor);
+  }, [canvas, selection, setAppState]);
+
   function handlePaneResizePointerDown(
     event: ReactPointerEvent<HTMLDivElement>,
   ): void {
@@ -811,6 +923,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       canvas.onResizePointerDown(event, windowId, edges);
     },
     onMessageMouseDown: selection.onMessageMouseDown,
+    onNavigateToBranchSource: handleNavigateToBranchSource,
     onOpenFreshRootWindow: openFreshRootWindow,
     onPaneResizePointerDown: handlePaneResizePointerDown,
     onRetry: handleRetry,

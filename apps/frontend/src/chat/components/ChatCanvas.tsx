@@ -83,6 +83,10 @@ interface ChatCanvasProps {
     windowId: string,
     messageId: string,
   ) => void;
+  onNavigateToBranchSource: (
+    windowId: string,
+    branchAnchorId: string | null,
+  ) => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
@@ -118,6 +122,7 @@ function ChatCanvas({
   onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
+  onNavigateToBranchSource,
   onRetry,
   onSend,
   onToggleHistoryExpanded,
@@ -261,6 +266,7 @@ function ChatCanvas({
                 onGeometryChange={onGeometryChange}
                 onHeaderPointerDown={onHeaderPointerDown}
                 onMessageMouseDown={onMessageMouseDown}
+                onNavigateToBranchSource={onNavigateToBranchSource}
                 onModelChange={onModelChange}
                 onResizePointerDown={onResizePointerDown}
                 onRetry={onRetry}
@@ -387,6 +393,7 @@ function ChatCanvas({
                       onGeometryChange={onGeometryChange}
                       onHeaderPointerDown={onHeaderPointerDown}
                       onMessageMouseDown={onMessageMouseDown}
+                      onNavigateToBranchSource={onNavigateToBranchSource}
                       onModelChange={onModelChange}
                       onResizePointerDown={onResizePointerDown}
                       onRetry={onRetry}

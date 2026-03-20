@@ -32,6 +32,10 @@ interface ChatWindowProps {
     edges: ResizeEdges,
   ) => void;
   onMessageMouseDown: React.ComponentProps<typeof ChatWindowMessages>["onMessageMouseDown"];
+  onNavigateToBranchSource: (
+    windowId: string,
+    branchAnchorId: string | null,
+  ) => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
@@ -60,6 +64,7 @@ const ChatWindow = memo(function ChatWindow({
   onEffortChange,
   onResizePointerDown,
   onMessageMouseDown,
+  onNavigateToBranchSource,
   onRetry,
   onSend,
   onToggleHistoryExpanded,
@@ -146,8 +151,12 @@ const ChatWindow = memo(function ChatWindow({
       )}
 
       <ChatWindowHeader
+        branchAnchorId={windowData.branchAnchorId}
         branchFocus={windowData.branchFocus}
         isFixedPane={isFixedPane}
+        onNavigateToBranchSource={() =>
+          onNavigateToBranchSource(windowData.id, windowData.branchAnchorId)
+        }
         onClose={() => onClose(windowData.id)}
         showCloseButton={!isFixedPane}
         title={windowData.title}

@@ -49,21 +49,28 @@ describe("ChatWindowHeader", () => {
   it("renders smaller child-window title and focus typography", () => {
     const floatingMarkup = renderToStaticMarkup(
       <ChatWindowHeader
+        branchAnchorId="anchor-1"
         branchFocus={{
           selectedText: "selected text",
           parentWindowTitle: "Chat 1",
           parentMessageRole: "assistant",
         }}
         isFixedPane={false}
+        onNavigateToBranchSource={() => {}}
         onClose={() => {}}
         showCloseButton={false}
         title="Chat 1.1"
       />,
     );
 
-    expect(floatingMarkup).toContain('text-[16px] leading-tight tracking-tight');
+    expect(floatingMarkup).toContain('text-[24px] leading-tight tracking-tight');
     expect(floatingMarkup).toContain('text-[16px] leading-[1.35] text-muted-foreground italic');
     expect(floatingMarkup).toContain('Focus: &quot;selected text&quot;');
+    expect(floatingMarkup).toContain('overflow-hidden text-ellipsis whitespace-nowrap');
+    expect(floatingMarkup).toContain('max-w-[22rem] max-h-40 overflow-auto');
+    expect(floatingMarkup).toContain('group-hover/focus-summary:visible');
+    expect(floatingMarkup).toContain('group-focus-within/focus-summary:visible');
+    expect(floatingMarkup).toContain('<button');
   });
 
   it("renders an svg close glyph instead of a letter for floating windows", () => {

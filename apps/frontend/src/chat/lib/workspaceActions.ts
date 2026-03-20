@@ -129,6 +129,32 @@ export function setWindowHistoryExpanded(
   });
 }
 
+export function bringWindowToFront(
+  state: AppState,
+  windowId: string,
+): AppState {
+  const targetWindow = state.windows[windowId];
+  if (!targetWindow) {
+    return state;
+  }
+
+  const pinnedMainWindowId = state.zOrder.find((candidateId) => {
+    const candidateWindow = state.windows[candidateId];
+    return candidateWindow?.parentId === null;
+  });
+  if (pinnedMainWindowId === windowId) {
+    return state;
+  }
+
+  return {
+    ...state,
+    zOrder: [
+      ...state.zOrder.filter((candidateId) => candidateId !== windowId),
+      windowId,
+    ],
+  };
+}
+
 export function queueOutgoingMessages(
   state: AppState,
   windowId: string,

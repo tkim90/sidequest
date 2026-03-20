@@ -108,16 +108,20 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
 }
 
 interface ChatWindowHeaderProps {
+  branchAnchorId?: string | null;
   branchFocus: BranchFocus | null;
   isFixedPane?: boolean;
+  onNavigateToBranchSource?: () => void;
   onClose: () => void;
   showCloseButton?: boolean;
   title: string;
 }
 
 function ChatWindowHeader({
+  branchAnchorId = null,
   branchFocus,
   isFixedPane = false,
+  onNavigateToBranchSource,
   onClose,
   showCloseButton = true,
   title,
@@ -129,6 +133,28 @@ function ChatWindowHeader({
   const focusClassName = isFixedPane
     ? "mt-3 max-w-xl text-base leading-6 text-muted-foreground italic"
     : "mt-2 max-w-xl text-[16px] leading-[1.35] text-muted-foreground italic";
+  const focusButtonClassName = [
+    focusClassName,
+    "group/focus-summary relative block w-full min-w-0 cursor-pointer text-left transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none",
+  ].join(" ");
+  const focusTextClassName = "block overflow-hidden text-ellipsis whitespace-nowrap";
+  const focusPopoverClassName = [
+    "pointer-events-none invisible absolute left-0 top-full z-20 mt-2 w-max max-w-[22rem] max-h-40 overflow-auto rounded-xl border border-border bg-popover px-3 py-2 text-sm leading-5 text-popover-foreground not-italic opacity-0 shadow-lg transition-[opacity,visibility] duration-150",
+    "group-hover/focus-summary:visible group-hover/focus-summary:opacity-100",
+    "group-focus-within/focus-summary:visible group-focus-within/focus-summary:opacity-100",
+  ].join(" ");
+  const focusLabel = branchFocus
+    ? `Focus: "${branchFocus.selectedText}"`
+    : null;
+  const navigateToBranchSource = onNavigateToBranchSource;
+
+  function handleFocusClick(): void {
+    if (!branchAnchorId || !navigateToBranchSource) {
+      return;
+    }
+
+    navigateToBranchSource();
+  }
 
   const closeButtonClassName =
     "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
@@ -146,9 +172,21 @@ function ChatWindowHeader({
           <h2 className={titleClassName}>{title}</h2>
         )}
         {branchFocus ? (
-          <p className={focusClassName}>
-            Focus: "{branchFocus.selectedText}"
-          </p>
+          <button
+            aria-label={focusLabel ?? undefined}
+            className={focusButtonClassName}
+            type="button"
+            onClick={handleFocusClick}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <span className={focusTextClassName}>{focusLabel}</span>
+            <span
+              aria-hidden="true"
+              className={focusPopoverClassName}
+            >
+              {focusLabel}
+            </span>
+          </button>
         ) : null}
       </div>
       {showCloseButton ? (

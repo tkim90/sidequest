@@ -4,6 +4,7 @@ import { createAnchorRecord, createInitialState, createMessage, createWindowReco
 import {
   appendAssistantDelta,
   appendAssistantReasoningDelta,
+  bringWindowToFront,
   buildCloseAllChildrenPrompt,
   completeAssistantMessage,
   queueOutgoingMessages,
@@ -202,5 +203,50 @@ describe("workspaceActions", () => {
     );
 
     expect(nextState.windows[rootWindowId]?.selectedEffort).toBe("high");
+  });
+
+  it("brings floating windows to the front without moving the main pane", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+    const childA = createWindowRecord({
+      title: "Chat 1.1",
+      x: 400,
+      y: 80,
+      parentId: rootWindowId,
+    });
+    const childB = createWindowRecord({
+      title: "Chat 1.2",
+      x: 720,
+      y: 120,
+      parentId: rootWindowId,
+    });
+
+    const stateWithChildren = {
+      ...initialState,
+      windows: {
+        ...initialState.windows,
+        [rootWindowId]: {
+          ...initialState.windows[rootWindowId],
+          childIds: [childA.id, childB.id],
+        },
+        [childA.id]: childA,
+        [childB.id]: childB,
+      },
+      zOrder: [rootWindowId, childA.id, childB.id],
+      messagesByWindowId: {
+        ...initialState.messagesByWindowId,
+        [childA.id]: [],
+        [childB.id]: [],
+      },
+    };
+
+    expect(bringWindowToFront(stateWithChildren, childA.id).zOrder).toEqual([
+      rootWindowId,
+      childB.id,
+      childA.id,
+    ]);
+    expect(bringWindowToFront(stateWithChildren, rootWindowId)).toBe(
+      stateWithChildren,
+    );
   });
 });

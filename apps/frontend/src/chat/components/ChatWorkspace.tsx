@@ -33,6 +33,7 @@ function ChatWorkspace() {
             onGeometryChange={workspace.onGeometryChange}
             onHeaderPointerDown={workspace.onHeaderPointerDown}
             onMessageMouseDown={workspace.onMessageMouseDown}
+            onNavigateToBranchSource={workspace.onNavigateToBranchSource}
             onModelChange={workspace.onModelChange}
             onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
             onPaneResizePointerDown={workspace.onPaneResizePointerDown}
