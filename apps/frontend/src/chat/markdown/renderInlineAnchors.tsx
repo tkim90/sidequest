@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+import {
+  getAnchorBadgeClass,
+  getAnchorHighlightClass,
+} from "../lib/anchorHighlight";
 import { parseInlineMarkdown } from "./inlineParser";
 import {
   flattenInlineLeaves,
@@ -15,6 +19,7 @@ export interface AnchorRange {
   endOffset: number;
   count: number;
   preview?: boolean;
+  activeSource?: boolean;
 }
 
 interface RenderAnchoredTextOptions {
@@ -76,27 +81,29 @@ function renderFormattedSpan(
   if (span.highlighted && span.anchorGroupKey) {
     const focused = isFocused !== false;
     const isPreview = !!span.preview;
+    const isActiveSource = !!span.activeSource;
     let highlightClass: string;
     let badgeClass: string;
 
     if (isPreview) {
-      highlightClass =
-        "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+      highlightClass = getAnchorHighlightClass({
+        isPreview,
+        isFocused: focused,
+        tone: darkBackground ? "dark" : "plain",
+      });
       badgeClass = ""; // unused for preview
-    } else if (darkBackground) {
-      highlightClass = focused
-        ? "border border-warning/60 bg-warning/25 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-        : "border border-warning/35 bg-warning/10 px-0.2 text-warning-foreground/70 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-      badgeClass = focused
-        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/60 bg-warning/25 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
-        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
     } else {
-      highlightClass = focused
-        ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-        : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-      badgeClass = focused
-        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
-        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
+      const tone = darkBackground ? "dark" : "plain";
+      highlightClass = getAnchorHighlightClass({
+        activeSource: isActiveSource,
+        isFocused: focused,
+        tone,
+      });
+      badgeClass = getAnchorBadgeClass({
+        activeSource: isActiveSource,
+        isFocused: focused,
+        tone,
+      });
     }
 
     return (

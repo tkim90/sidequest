@@ -1,12 +1,18 @@
 import { Fragment, useState, useCallback } from "react";
 import { Highlight, themes, type Token } from "prism-react-renderer";
 
+import {
+  getAnchorBadgeClass,
+  getAnchorHighlightClass,
+} from "../lib/anchorHighlight";
+
 interface CodeBlockAnchorRange {
   key: string;
   startOffset: number;
   endOffset: number;
   count: number;
   preview?: boolean;
+  activeSource?: boolean;
 }
 
 interface TokenSegment {
@@ -134,34 +140,6 @@ function splitTokenByAnchors(
   }
 
   return segments;
-}
-
-function getAnchorHighlightClass(isMonochrome: boolean, isFocused: boolean, isPreview?: boolean): string {
-  if (isPreview) {
-    return "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-  }
-
-  if (isMonochrome) {
-    return isFocused
-      ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-      : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-  }
-
-  return isFocused
-    ? "border border-warning/65 bg-warning/25 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-    : "border border-warning/35 bg-warning/15 px-0.2 text-warning-foreground/80 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-}
-
-function getAnchorBadgeClass(isMonochrome: boolean, isFocused: boolean): string {
-  if (isMonochrome) {
-    return isFocused
-      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
-      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
-  }
-
-  return isFocused
-    ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/25 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
-    : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/15 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
 }
 
 function groupLineSegments(parts: LinePart[]): LineRun[] {
@@ -312,7 +290,12 @@ export default function CodeBlock({
                           return (
                             <span
                               key={`r${runIndex}`}
-                              className={getAnchorHighlightClass(isMonochrome, isFocused, anchor.preview)}
+                              className={getAnchorHighlightClass({
+                                activeSource: anchor.activeSource,
+                                isFocused,
+                                isPreview: anchor.preview,
+                                tone: isMonochrome ? "monochrome" : "dark",
+                              })}
                               ref={
                                 shouldAttachRef
                                   ? (node) => registerAnchorRef(anchor.key, node)
@@ -340,10 +323,11 @@ export default function CodeBlock({
                               })}
                               {showBadge ? (
                                 <span
-                                  className={getAnchorBadgeClass(
-                                    isMonochrome,
+                                  className={getAnchorBadgeClass({
+                                    activeSource: anchor.activeSource,
                                     isFocused,
-                                  )}
+                                    tone: isMonochrome ? "monochrome" : "dark",
+                                  })}
                                 >
                                   {anchor.count}
                                 </span>

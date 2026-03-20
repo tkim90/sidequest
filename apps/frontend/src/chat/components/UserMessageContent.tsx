@@ -7,6 +7,10 @@ import {
 } from "react";
 
 import type { AnchorGroup, MessageRecord } from "../../types";
+import {
+  getAnchorBadgeClass,
+  getAnchorHighlightClass,
+} from "../lib/anchorHighlight";
 
 export interface UserMessageContentProps {
   className?: string;
@@ -208,14 +212,17 @@ function renderChunkContent({
       chunkLocalEnd - startOffset,
     );
     const isPreview = !!group.preview;
-    const highlightClass = isPreview
-      ? "border border-dashed border-warning/60 bg-warning/15 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-      : isFocused
-        ? "border border-warning/60 bg-warning/20 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-        : "border border-warning/35 bg-warning/10 px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
-    const badgeClass = isFocused
-      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-foreground"
-      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/35 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground/70";
+    const highlightClass = getAnchorHighlightClass({
+      activeSource: group.activeSource,
+      isFocused,
+      isPreview,
+      tone: "plain",
+    });
+    const badgeClass = getAnchorBadgeClass({
+      activeSource: group.activeSource,
+      isFocused,
+      tone: "plain",
+    });
 
     nodes.push(
       <span

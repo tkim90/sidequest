@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import ChatWindowHeader, { getAnimatedTitleUnits } from "./ChatWindowHeader";
+import ChatWindowHeader, {
+  getAnimatedTitleUnits,
+  resolveFocusTooltipPosition,
+} from "./ChatWindowHeader";
 
 describe("getAnimatedTitleUnits", () => {
   it("preserves spaces and only staggers visible characters", () => {
@@ -46,7 +49,7 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).toContain(">Chat 1</h2>");
   });
 
-  it("renders smaller child-window title and focus typography", () => {
+  it("renders smaller child-window title and a truncated focus button", () => {
     const floatingMarkup = renderToStaticMarkup(
       <ChatWindowHeader
         branchAnchorId="anchor-1"
@@ -67,10 +70,11 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).toContain('text-[16px] leading-[1.35] text-muted-foreground italic');
     expect(floatingMarkup).toContain('Focus: &quot;selected text&quot;');
     expect(floatingMarkup).toContain('overflow-hidden text-ellipsis whitespace-nowrap');
-    expect(floatingMarkup).toContain('max-w-[22rem] max-h-40 overflow-auto');
-    expect(floatingMarkup).toContain('group-hover/focus-summary:visible');
-    expect(floatingMarkup).toContain('group-focus-within/focus-summary:visible');
+    expect(floatingMarkup).toContain('max-w-[400px]');
+    expect(floatingMarkup).toContain('relative z-30');
     expect(floatingMarkup).toContain('<button');
+    expect(floatingMarkup).not.toContain('overflow-auto');
+    expect(floatingMarkup).not.toContain('max-h-40');
   });
 
   it("renders an svg close glyph instead of a letter for floating windows", () => {
@@ -87,5 +91,39 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).toContain('aria-label="Close note"');
     expect(floatingMarkup).toContain("<svg");
     expect(floatingMarkup).not.toContain(">X<");
+  });
+});
+
+describe("resolveFocusTooltipPosition", () => {
+  it("places the tooltip above the pointer and clamps within viewport bounds", () => {
+    expect(
+      resolveFocusTooltipPosition({
+        pointerX: 200,
+        pointerY: 120,
+        tooltipHeight: 80,
+        tooltipWidth: 160,
+        viewportHeight: 700,
+        viewportWidth: 400,
+      }),
+    ).toEqual({
+      left: 120,
+      top: 26,
+    });
+  });
+
+  it("clamps the tooltip to the top margin when there is not enough space above", () => {
+    expect(
+      resolveFocusTooltipPosition({
+        pointerX: 40,
+        pointerY: 40,
+        tooltipHeight: 120,
+        tooltipWidth: 200,
+        viewportHeight: 500,
+        viewportWidth: 320,
+      }),
+    ).toEqual({
+      left: 16,
+      top: 16,
+    });
   });
 });

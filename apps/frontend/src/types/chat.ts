@@ -78,6 +78,7 @@ export interface AnchorGroup {
   endOffset: number;
   anchorIds: string[];
   preview?: boolean;
+  activeSource?: boolean;
 }
 
 export type WindowMap = Record<string, WindowRecord>;

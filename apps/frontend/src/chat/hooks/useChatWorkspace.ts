@@ -165,6 +165,36 @@ export function mergeSelectionPreviewAnchorGroup(
   };
 }
 
+export function mergeActiveSourceAnchorGroup(
+  base: AnchorGroupsByMessageKey,
+  activeSourceGroupKey: string | null,
+): AnchorGroupsByMessageKey {
+  if (!activeSourceGroupKey) {
+    return base;
+  }
+
+  let didMarkActiveSource = false;
+  const nextGroupsByMessageKey = Object.fromEntries(
+    Object.entries(base).map(([messageKey, groups]) => {
+      const nextGroups = groups.map((group) => {
+        if (group.preview || group.key !== activeSourceGroupKey) {
+          return group;
+        }
+
+        didMarkActiveSource = true;
+        return {
+          ...group,
+          activeSource: true,
+        };
+      });
+
+      return [messageKey, nextGroups];
+    }),
+  );
+
+  return didMarkActiveSource ? nextGroupsByMessageKey : base;
+}
+
 interface BranchSourceNavigation {
   shouldBringSourceToFront: boolean;
   shouldExpandSourceHistory: boolean;
@@ -236,6 +266,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
   const [leftPaneWidthPx, setLeftPaneWidthPx] = useState<number | null>(null);
   const [isPaneResizing, setIsPaneResizing] = useState(false);
+  const [activeSourceGroupKey, setActiveSourceGroupKey] = useState<string | null>(null);
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
@@ -813,6 +844,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     }
 
     const navigationTarget = target;
+    setActiveSourceGroupKey(navigationTarget.sourceGroupKey);
 
     selection.dismissSelection();
 
@@ -881,11 +913,20 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   const anchorGroupsByMessageKey = useMemo((): AnchorGroupsByMessageKey => {
-    return mergeSelectionPreviewAnchorGroup(
+    const groupsWithPreview = mergeSelectionPreviewAnchorGroup(
       canvas.anchorGroupsByMessageKey,
       selection.selectionState,
     );
-  }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
+
+    return mergeActiveSourceAnchorGroup(
+      groupsWithPreview,
+      activeSourceGroupKey,
+    );
+  }, [
+    activeSourceGroupKey,
+    canvas.anchorGroupsByMessageKey,
+    selection.selectionState,
+  ]);
 
   const orderedWindows = appState.zOrder
     .map((windowId) => appState.windows[windowId])

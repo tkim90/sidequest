@@ -174,6 +174,7 @@ function getBlockAnchorRanges(ctx: BlockRenderContext): AnchorRange[] {
         blockOffset.renderedStart,
       count: group.anchorIds.length,
       preview: group.preview,
+      activeSource: group.activeSource,
     }));
 }
 

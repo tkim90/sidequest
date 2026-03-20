@@ -7,7 +7,11 @@ import {
   createMessage,
   createWindowRecord,
 } from "../lib/state";
-import { mergeSelectionPreviewAnchorGroup, resolveBranchSourceNavigation } from "./useChatWorkspace";
+import {
+  mergeActiveSourceAnchorGroup,
+  mergeSelectionPreviewAnchorGroup,
+  resolveBranchSourceNavigation,
+} from "./useChatWorkspace";
 
 describe("mergeSelectionPreviewAnchorGroup", () => {
   const baseGroups: AnchorGroupsByMessageKey = {
@@ -61,6 +65,71 @@ describe("mergeSelectionPreviewAnchorGroup", () => {
         anchorIds: ["anchor-1"],
       },
     ]);
+  });
+});
+
+describe("mergeActiveSourceAnchorGroup", () => {
+  const baseGroups: AnchorGroupsByMessageKey = {
+    "window-1:message-1": [
+      {
+        key: "anchor-1",
+        startOffset: 10,
+        endOffset: 20,
+        anchorIds: ["anchor-1"],
+      },
+      {
+        key: "__preview__",
+        startOffset: 22,
+        endOffset: 26,
+        anchorIds: [],
+        preview: true,
+      },
+    ],
+    "window-2:message-2": [
+      {
+        key: "anchor-2",
+        startOffset: 0,
+        endOffset: 6,
+        anchorIds: ["anchor-2"],
+      },
+    ],
+  };
+
+  it("marks the selected source anchor group as active", () => {
+    const result = mergeActiveSourceAnchorGroup(baseGroups, "anchor-2");
+
+    expect(result["window-2:message-2"]).toEqual([
+      {
+        key: "anchor-2",
+        startOffset: 0,
+        endOffset: 6,
+        anchorIds: ["anchor-2"],
+        activeSource: true,
+      },
+    ]);
+    expect(result["window-1:message-1"]).toEqual(baseGroups["window-1:message-1"]);
+  });
+
+  it("replaces the previous active source instead of accumulating", () => {
+    const result = mergeActiveSourceAnchorGroup(baseGroups, "anchor-1");
+
+    expect(result["window-1:message-1"]).toEqual([
+      {
+        key: "anchor-1",
+        startOffset: 10,
+        endOffset: 20,
+        anchorIds: ["anchor-1"],
+        activeSource: true,
+      },
+      {
+        key: "__preview__",
+        startOffset: 22,
+        endOffset: 26,
+        anchorIds: [],
+        preview: true,
+      },
+    ]);
+    expect(result["window-2:message-2"]).toEqual(baseGroups["window-2:message-2"]);
   });
 });
 
