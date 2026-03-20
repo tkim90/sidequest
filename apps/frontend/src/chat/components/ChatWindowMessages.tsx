@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type RefObject,
 } from "react";
 
@@ -88,54 +87,6 @@ export function getReasoningDisclosureData(
   };
 }
 
-interface AssistantReasoningDisclosureProps {
-  isFixedPane: boolean;
-  message: MessageRecord;
-}
-
-const AssistantReasoningDisclosure = memo(function AssistantReasoningDisclosure({
-  isFixedPane,
-  message,
-}: AssistantReasoningDisclosureProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const { displayedReasoning, reasoningMessage } = useMemo(
-    () => getReasoningDisclosureData(message),
-    [message],
-  );
-
-  if (!displayedReasoning || !reasoningMessage) {
-    return null;
-  }
-
-  return (
-    <CollapsibleDisclosure
-      buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 text-left text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
-      buttonLabel="Reasoning"
-      className={[
-        "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground rounded-lg",
-        isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
-      ].join(" ")}
-      contentClassName="min-w-0 border-t border-border px-4 py-4"
-      contentShellClassName="min-w-0"
-      isExpanded={isExpanded}
-      labelClassName=""
-      onToggle={() => setIsExpanded((current) => !current)}
-    >
-      <MarkdownContent
-        windowId=""
-        message={reasoningMessage}
-        anchorGroups={EMPTY_ANCHORS}
-        isFocused={false}
-        className="text-[16px] leading-6 text-muted-foreground"
-        hideStreamingChrome
-        registerAnchorRef={noopRegisterAnchorRef}
-        renderStatus={message.status}
-        onMessageMouseDown={noopMouseDown}
-      />
-    </CollapsibleDisclosure>
-  );
-});
-
 const ChatMessageCard = memo(function ChatMessageCard({
   anchorGroups,
   isFocused,
@@ -150,13 +101,46 @@ const ChatMessageCard = memo(function ChatMessageCard({
   const roleConfig = CHAT_MESSAGE_ROLE_CONFIG[roleKey];
   const messageClassName = roleConfig.messageClassName;
   const contentClassName = roleConfig.getContentClassName(isFixedPane);
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
+  const { displayedReasoning, reasoningMessage } = useMemo(
+    () => getReasoningDisclosureData(message),
+    [message],
+  );
+  const reasoningDisclosure =
+    roleKey === "assistant" && displayedReasoning && reasoningMessage ? (
+      <CollapsibleDisclosure
+        buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 text-left text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
+        buttonLabel="Reasoning"
+        className={[
+          "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground rounded-lg",
+          isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
+        ].join(" ")}
+        contentClassName="min-w-0 border-t border-border px-4 py-4"
+        contentShellClassName="min-w-0"
+        isExpanded={isReasoningExpanded}
+        labelClassName=""
+        onToggle={() => setIsReasoningExpanded((current) => !current)}
+      >
+        <MarkdownContent
+          windowId=""
+          message={reasoningMessage}
+          anchorGroups={EMPTY_ANCHORS}
+          isFocused={false}
+          className="text-[16px] leading-6 text-muted-foreground"
+          hideStreamingChrome
+          registerAnchorRef={noopRegisterAnchorRef}
+          renderStatus={message.status}
+          onMessageMouseDown={noopMouseDown}
+        />
+      </CollapsibleDisclosure>
+    ) : null;
 
   return (
     <section
       data-message-card
       className={`group relative cursor-text select-text ${isFixedPane ? "w-full min-w-0" : ""} ${messageClassName}`.trim()}
     >
-      {roleConfig.renderHeader({ isFixedPane, message })}
+      {reasoningDisclosure}
       <MessageContent
         windowId={windowId}
         message={message}
@@ -182,7 +166,6 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
       isFixedPane
         ? "w-full min-w-0 text-right font-normal text-foreground/80"
         : "text-right font-normal text-foreground/80 text-[16px] leading-[1.42]",
-    renderHeader: () => null,
     renderFooter: () => null,
   },
   assistant: {
@@ -191,15 +174,6 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
       isFixedPane
         ? "w-full min-w-0 font-normal text-foreground"
         : "font-normal text-foreground text-[16px]",
-    renderHeader: ({
-      isFixedPane,
-      message,
-    }: Pick<ChatMessageCardProps, "isFixedPane" | "message">) => (
-      <AssistantReasoningDisclosure
-        isFixedPane={isFixedPane}
-        message={message}
-      />
-    ),
     renderFooter: ({
       isFixedPane,
       message,
@@ -499,9 +473,7 @@ function ChatWindowMessages({
         {historyMessages.length > 0 ? (
           <CollapsibleDisclosure
             buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 text-left text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
-            buttonLabel={
-              isHistoryExpanded ? "Hide previous history" : "See previous history"
-            }
+            buttonLabel="See previous history"
             className={[
               "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground rounded-lg",
               isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
