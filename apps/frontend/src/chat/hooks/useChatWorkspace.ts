@@ -99,6 +99,7 @@ export interface ChatWorkspaceViewModel {
   onOpenFreshRootWindow: () => void;
   onPaneResizePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
+  onSelectionExpand: () => void;
   onSelectionBranch: (prompt?: string) => void;
   onSend: (windowId: string, promptOverride?: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
@@ -121,6 +122,43 @@ export interface ChatWorkspaceViewModel {
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
   mainWindow: WindowRecord | null;
+}
+
+export function mergeSelectionPreviewAnchorGroup(
+  base: AnchorGroupsByMessageKey,
+  selectionState: SelectionState | null,
+): AnchorGroupsByMessageKey {
+  if (
+    !selectionState ||
+    selectionState.stage !== "compose" ||
+    selectionState.startOffset === undefined ||
+    selectionState.endOffset === undefined
+  ) {
+    return base;
+  }
+
+  const messageKey = `${selectionState.parentWindowId}:${selectionState.parentMessageId}`;
+  const previewGroup: AnchorGroup = {
+    key: `__preview__`,
+    startOffset: selectionState.startOffset,
+    endOffset: selectionState.endOffset,
+    anchorIds: [],
+    preview: true,
+  };
+
+  const existing = base[messageKey] ?? [];
+  const groupsWithPreview = [...existing, previewGroup].sort((left, right) => {
+    if (left.startOffset !== right.startOffset) {
+      return left.startOffset - right.startOffset;
+    }
+
+    return left.endOffset - right.endOffset;
+  });
+
+  return {
+    ...base,
+    [messageKey]: groupsWithPreview,
+  };
 }
 
 function getViewportCenteredRootX(windowWidth: number): number {
@@ -731,34 +769,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   }
 
   const anchorGroupsByMessageKey = useMemo((): AnchorGroupsByMessageKey => {
-    const base = canvas.anchorGroupsByMessageKey;
-    const sel = selection.selectionState;
-    if (!sel || sel.startOffset === undefined || sel.endOffset === undefined) {
-      return base;
-    }
-
-    const messageKey = `${sel.parentWindowId}:${sel.parentMessageId}`;
-    const previewGroup: AnchorGroup = {
-      key: `__preview__`,
-      startOffset: sel.startOffset,
-      endOffset: sel.endOffset,
-      anchorIds: [],
-      preview: true,
-    };
-
-    const existing = base[messageKey] ?? [];
-    const groupsWithPreview = [...existing, previewGroup].sort((left, right) => {
-      if (left.startOffset !== right.startOffset) {
-        return left.startOffset - right.startOffset;
-      }
-
-      return left.endOffset - right.endOffset;
-    });
-
-    return {
-      ...base,
-      [messageKey]: groupsWithPreview,
-    };
+    return mergeSelectionPreviewAnchorGroup(
+      canvas.anchorGroupsByMessageKey,
+      selection.selectionState,
+    );
   }, [canvas.anchorGroupsByMessageKey, selection.selectionState]);
 
   const orderedWindows = appState.zOrder
@@ -800,6 +814,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onOpenFreshRootWindow: openFreshRootWindow,
     onPaneResizePointerDown: handlePaneResizePointerDown,
     onRetry: handleRetry,
+    onSelectionExpand: selection.expandSelectionComposer,
     onSelectionBranch: (prompt?: string) => {
       const childWindowId = selection.onSelectionBranch();
       if (childWindowId && prompt?.trim()) {

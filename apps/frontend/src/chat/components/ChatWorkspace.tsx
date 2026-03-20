@@ -54,6 +54,7 @@ function ChatWorkspace() {
 
       {workspace.selectionState ? (
         <SelectionPopover
+          onExpand={workspace.onSelectionExpand}
           onBranch={workspace.onSelectionBranch}
           popoverRef={workspace.popoverRef}
           selectionState={workspace.selectionState}

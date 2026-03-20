@@ -1,4 +1,9 @@
-import { useLayoutEffect, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type RefObject,
+} from "react";
 
 import type { SelectionState } from "../../types";
 
@@ -53,12 +58,14 @@ export function resolveSelectionPopoverPosition(options: {
 }
 
 interface SelectionPopoverProps {
+  onExpand: () => void;
   onBranch: (prompt?: string) => void;
   popoverRef: RefObject<HTMLDivElement | null>;
   selectionState: SelectionState;
 }
 
 function SelectionPopover({
+  onExpand,
   onBranch,
   popoverRef,
   selectionState,
@@ -73,6 +80,14 @@ function SelectionPopover({
       onBranch();
     }
   }
+
+  useEffect(() => {
+    setInputValue("");
+  }, [
+    selectionState.parentMessageId,
+    selectionState.parentWindowId,
+    selectionState.selectedText,
+  ]);
 
   useLayoutEffect(() => {
     function updatePosition(): void {
@@ -105,7 +120,11 @@ function SelectionPopover({
 
   return (
     <div
-      className="fixed z-40 flex min-w-[420px] flex-col gap-2 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
+      className={
+        selectionState.stage === "compose"
+          ? "fixed z-40 flex min-w-[420px] flex-col gap-2 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
+          : "fixed z-40"
+      }
       ref={popoverRef}
       style={{
         left: position?.left ?? selectionState.x,
@@ -113,32 +132,44 @@ function SelectionPopover({
         visibility: position ? "visible" : "hidden",
       }}
     >
-      <p className="m-0">Sidebar this selection into a new chat?</p>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
-          <input
-            autoFocus
-            type="text"
-            className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Ask a new question..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          />
-        </div>
+      {selectionState.stage === "compose" ? (
+        <>
+          <p className="m-0">Sidebar this selection into a new chat?</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
+              <input
+                autoFocus
+                type="text"
+                className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="Ask a new question..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+              />
+            </div>
+            <button
+              className="inline-flex shrink-0 self-stretch cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-2 py-1.5 text-xs font-semibold uppercase text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              type="button"
+              onClick={handleSubmit}
+            >
+              New Chat
+            </button>
+          </div>
+        </>
+      ) : (
         <button
-          className="inline-flex shrink-0 self-stretch cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-2 py-1.5 text-xs font-semibold uppercase text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-neutral-950 px-4 py-2 text-sm font-medium text-white shadow-lg transition-colors hover:bg-neutral-800"
           type="button"
-          onClick={handleSubmit}
+          onClick={onExpand}
         >
-          New Chat
+          Explore further in new chat window
         </button>
-      </div>
+      )}
     </div>
   );
 }

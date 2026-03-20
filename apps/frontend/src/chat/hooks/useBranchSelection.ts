@@ -52,6 +52,7 @@ interface MouseDownContext {
 
 interface UseBranchSelectionResult {
   dismissSelection: () => void;
+  expandSelectionComposer: () => void;
   onMessageMouseDown: (
     event: ReactMouseEvent<HTMLDivElement>,
     windowId: string,
@@ -192,6 +193,7 @@ export function useBranchSelection({
           parentWindowId: windowId,
           parentMessageId: messageId,
           selectedText,
+          stage: "cta",
           ...(offsets && { startOffset: offsets.startOffset, endOffset: offsets.endOffset }),
           x: rect.left + rect.width / 2,
           y: rect.top - 10,
@@ -211,6 +213,19 @@ export function useBranchSelection({
   function dismissSelection(): void {
     setSelectionState(null);
     window.getSelection()?.removeAllRanges();
+  }
+
+  function expandSelectionComposer(): void {
+    setSelectionState((current) => {
+      if (!current || current.stage === "compose") {
+        return current;
+      }
+
+      return {
+        ...current,
+        stage: "compose",
+      };
+    });
   }
 
   const handleMessageMouseDown = useCallback(
@@ -467,6 +482,7 @@ export function useBranchSelection({
 
   return {
     dismissSelection,
+    expandSelectionComposer,
     onMessageMouseDown: handleMessageMouseDown,
     onSelectionBranch: createBranchFromSelection,
     popoverRef,
