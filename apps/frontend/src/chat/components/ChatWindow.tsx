@@ -126,7 +126,7 @@ const ChatWindow = memo(function ChatWindow({
         "grid grid-rows-[auto_1fr_auto]",
         isFixedPane
           ? "relative h-full w-full min-w-0 overflow-hidden bg-transparent shadow-none"
-          : "group/chat-window absolute origin-top-left cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] will-change-transform active:cursor-grabbing",
+          : "group/chat-window absolute origin-top-left min-w-0 cursor-grab overflow-hidden rounded-[26px] bg-paper-window shadow-[var(--paper-window-shadow)] will-change-transform active:cursor-grabbing",
       ].join(" ")}
       data-chat-window
       ref={(node) => registerWindowRef(windowData.id, node)}

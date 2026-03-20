@@ -1,12 +1,10 @@
-export const ROOT_WINDOW_TITLE = "Chat 1";
+export const ROOT_WINDOW_TITLE = "Sidequest";
 export const ROOT_WINDOW_X = 88;
 export const ROOT_WINDOW_Y = 72;
 export const WINDOW_WIDTH = 860;
 export const WINDOW_HEIGHT = 1060;
-export const FLOATING_ROOT_WINDOW_WIDTH = 430;
+export const FLOATING_ROOT_WINDOW_WIDTH = 500;
 export const FLOATING_ROOT_WINDOW_HEIGHT = 630;
-export const CHILD_WINDOW_WIDTH = 640;
-export const CHILD_WINDOW_HEIGHT = 840;
 export const WINDOW_GAP = 128;
 export const CHILD_VERTICAL_STAGGER = 56;
 export const MIN_WINDOW_WIDTH = 420;

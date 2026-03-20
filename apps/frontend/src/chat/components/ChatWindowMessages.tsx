@@ -4,17 +4,19 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type RefObject,
 } from "react";
 
 import type {
+  AnchorGroup,
   AnchorGroupsByMessageKey,
   MessageRecord,
 } from "../../types";
-import AssistantReasoningPanel from "./AssistantReasoningPanel";
 import CollapsibleDisclosure from "./CollapsibleDisclosure";
 import EmptyNoteBackground from "./EmptyNoteBackground";
 import MessageContent from "./MessageContent";
+import MarkdownContent from "../markdown/MarkdownContent";
 
 const FIXED_PANE_SCROLLBAR_TOP_INSET = 20;
 const FIXED_PANE_SCROLLBAR_BOTTOM_INSET = 40;
@@ -47,6 +49,92 @@ interface ChatMessageCardProps {
   registerAnchorRef: ChatWindowMessagesProps["registerAnchorRef"];
   windowId: string;
 }
+
+const EMPTY_ANCHORS: AnchorGroup[] = [];
+
+function noopRegisterAnchorRef(): void {
+  return undefined;
+}
+
+function noopMouseDown(): void {
+  return undefined;
+}
+
+export interface ReasoningDisclosureData {
+  displayedReasoning: string | null;
+  reasoningMessage: MessageRecord | null;
+}
+
+export function getReasoningDisclosureData(
+  message: MessageRecord,
+): ReasoningDisclosureData {
+  const displayedReasoning =
+    message.reasoningRawContent || message.reasoningSummaryContent || null;
+
+  if (!displayedReasoning) {
+    return {
+      displayedReasoning: null,
+      reasoningMessage: null,
+    };
+  }
+
+  return {
+    displayedReasoning,
+    reasoningMessage: {
+      ...message,
+      id: `${message.id}:reasoning`,
+      content: displayedReasoning,
+    },
+  };
+}
+
+interface AssistantReasoningDisclosureProps {
+  isFixedPane: boolean;
+  message: MessageRecord;
+}
+
+const AssistantReasoningDisclosure = memo(function AssistantReasoningDisclosure({
+  isFixedPane,
+  message,
+}: AssistantReasoningDisclosureProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { displayedReasoning, reasoningMessage } = useMemo(
+    () => getReasoningDisclosureData(message),
+    [message],
+  );
+
+  if (!displayedReasoning || !reasoningMessage) {
+    return null;
+  }
+
+  return (
+    <CollapsibleDisclosure
+      buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 text-left text-sm font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
+      buttonLabel="Reasoning"
+      className={[
+        "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground rounded-lg",
+        isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
+      ].join(" ")}
+      contentClassName="min-w-0 border-t border-border px-4 py-4"
+      contentShellClassName="min-w-0"
+      isExpanded={isExpanded}
+      labelClassName=""
+      onToggle={() => setIsExpanded((current) => !current)}
+    >
+      <MarkdownContent
+        windowId=""
+        message={reasoningMessage}
+        anchorGroups={EMPTY_ANCHORS}
+        isFocused={false}
+        className="text-[16px] leading-6 text-muted-foreground"
+        hideStreamingChrome
+        registerAnchorRef={noopRegisterAnchorRef}
+        renderStatus={message.status}
+        onMessageMouseDown={noopMouseDown}
+      />
+    </CollapsibleDisclosure>
+  );
+});
 
 const ChatMessageCard = memo(function ChatMessageCard({
   anchorGroups,
@@ -107,7 +195,7 @@ const CHAT_MESSAGE_ROLE_CONFIG = {
       isFixedPane,
       message,
     }: Pick<ChatMessageCardProps, "isFixedPane" | "message">) => (
-      <AssistantReasoningPanel
+      <AssistantReasoningDisclosure
         isFixedPane={isFixedPane}
         message={message}
       />
@@ -415,7 +503,7 @@ function ChatWindowMessages({
               isHistoryExpanded ? "Hide previous history" : "See previous history"
             }
             className={[
-              "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground",
+              "min-w-0 border border-dashed border-border px-8 py-2 text-muted-foreground rounded-lg",
               isFixedPane ? "bg-paper-raised/80" : "bg-secondary/70",
             ].join(" ")}
             contentClassName="flex min-w-0 flex-col gap-4"

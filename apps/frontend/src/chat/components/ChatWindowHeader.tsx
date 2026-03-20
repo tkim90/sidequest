@@ -11,6 +11,7 @@ import {
 import { createPortal } from "react-dom";
 
 import type { BranchFocus } from "../../types";
+import { FLOATING_ROOT_WINDOW_WIDTH } from "../lib/constants";
 
 const TITLE_CHARACTER_ANIMATION_DURATION_MS = 2200;
 const TITLE_CHARACTER_ANIMATION_STAGGER_MS = 100;
@@ -19,6 +20,9 @@ const FOCUS_TOOLTIP_GAP_PX = 14;
 const FOCUS_TOOLTIP_VIEWPORT_MARGIN_PX = 16;
 const FOCUS_TOOLTIP_SHOW_DELAY_MS = 550;
 const FOCUS_TOOLTIP_FADE_DURATION_MS = 180;
+const FLOATING_HEADER_HORIZONTAL_PADDING_PX = 32;
+const FLOATING_HEADER_CLOSE_BUTTON_WIDTH_PX = 40;
+const FLOATING_HEADER_GAP_PX = 12;
 
 interface AnimatedTitleUnit {
   character: string;
@@ -207,8 +211,8 @@ function ChatWindowHeader({
     : "font-serif text-[24px] leading-tight tracking-tight text-foreground";
 
   const focusClassName = isFixedPane
-    ? "mt-3 max-w-xl text-base leading-6 text-muted-foreground italic"
-    : "mt-2 max-w-xl text-[16px] leading-[1.35] text-muted-foreground italic";
+    ? "mt-3 text-base leading-6 text-muted-foreground italic"
+    : "mt-2 text-[16px] leading-[1.35] text-muted-foreground italic";
   const focusButtonClassName = [
     focusClassName,
     "block w-full min-w-0 cursor-pointer text-left transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none",
@@ -221,6 +225,15 @@ function ChatWindowHeader({
     ? branchFocus.selectedText
     : null;
   const navigateToBranchSource = onNavigateToBranchSource;
+  const floatingHeaderContentMaxWidth =
+    FLOATING_ROOT_WINDOW_WIDTH -
+    FLOATING_HEADER_HORIZONTAL_PADDING_PX -
+    (showCloseButton
+      ? FLOATING_HEADER_CLOSE_BUTTON_WIDTH_PX + FLOATING_HEADER_GAP_PX
+      : 0);
+  const headerContentStyle = isFixedPane
+    ? undefined
+    : { maxWidth: `${floatingHeaderContentMaxWidth}px` };
 
   function clearFocusTooltipShowTimeout(): void {
     if (focusTooltipShowTimeoutRef.current === null) {
@@ -406,8 +419,11 @@ function ChatWindowHeader({
 
   return (
     <>
-      <header className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4 max-w-[430px]">
-        <div className="min-w-0">
+      <header className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4">
+        <div
+          className="flex-1 min-w-0 overflow-hidden"
+          style={headerContentStyle}
+        >
           {isFixedPane ? (
             <AnimatedTitleText
               key={title}

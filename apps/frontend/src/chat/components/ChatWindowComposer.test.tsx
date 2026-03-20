@@ -36,5 +36,7 @@ describe("ChatWindowComposer", () => {
     );
 
     expect(markup).toContain('placeholder="Ask a follow-up..."');
+    expect(markup).toContain('w-full min-w-0 rounded-2xl');
+    expect(markup).toContain('flex w-full min-w-0 items-end gap-2');
   });
 });

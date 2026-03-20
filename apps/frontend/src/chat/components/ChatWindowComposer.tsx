@@ -21,7 +21,7 @@ interface ChatWindowComposerProps {
 }
 
 function getEffortLabel(effort: ReasoningEffort): string {
-  return effort === "none" ? "Effort: off" : `Effort: ${effort}`;
+  return effort === "none" ? "" : `${effort}`;
 }
 
 function ChatWindowComposer({
@@ -107,7 +107,7 @@ function ChatWindowComposer({
         : "w-full min-h-[72px] max-h-[200px] py-2 text-[22px] leading-[1.45] placeholder:text-[22px]",
   ].join(" ");
   const composerShellClassName = [
-    "rounded-2xl transition-colors",
+    "w-full min-w-0 rounded-2xl transition-colors",
     isFixedPane
       ? "border border-transparent bg-transparent"
       : isChildPane
@@ -136,7 +136,6 @@ function ChatWindowComposer({
         <div className="relative">
           <button
             type="button"
-            disabled={isStreaming}
             className={pickerButtonClassName}
             onClick={() =>
               setOpenPicker((current) =>
@@ -190,7 +189,6 @@ function ChatWindowComposer({
         <div className="relative">
           <button
             type="button"
-            disabled={isStreaming}
             className={pickerButtonClassName}
             onClick={() =>
               setOpenPicker((current) =>
@@ -278,7 +276,7 @@ function ChatWindowComposer({
     >
       <div className={composerShellClassName}>
         {isChildPane ? (
-          <div className="flex min-w-0 items-end gap-2 px-4 py-3">
+          <div className="flex w-full min-w-0 items-end gap-2 px-4 py-3">
             <textarea
               ref={textareaRef}
               aria-label={`Message ${title}`}

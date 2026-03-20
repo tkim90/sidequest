@@ -68,13 +68,62 @@ describe("ChatWindowHeader", () => {
 
     expect(floatingMarkup).toContain('text-[24px] leading-tight tracking-tight');
     expect(floatingMarkup).toContain('text-[16px] leading-[1.35] text-muted-foreground italic');
-    expect(floatingMarkup).toContain('Focus: &quot;selected text&quot;');
+    expect(floatingMarkup).toContain('flex-1 min-w-0 overflow-hidden');
+    expect(floatingMarkup).toContain('style="max-width:468px"');
+    expect(floatingMarkup).toContain('aria-label="selected text"');
+    expect(floatingMarkup).toContain('block w-full min-w-0');
     expect(floatingMarkup).toContain('overflow-hidden text-ellipsis whitespace-nowrap');
-    expect(floatingMarkup).toContain('max-w-[400px]');
     expect(floatingMarkup).toContain('relative z-30');
     expect(floatingMarkup).toContain('<button');
     expect(floatingMarkup).not.toContain('overflow-auto');
     expect(floatingMarkup).not.toContain('max-h-40');
+  });
+
+  it("keeps long focus text constrained by the floating pane width", () => {
+    const floatingMarkup = renderToStaticMarkup(
+      <ChatWindowHeader
+        branchAnchorId="anchor-1"
+        branchFocus={{
+          selectedText:
+            "This is a very long focus string that should stay within the floating child note width and never push the composer row out of alignment supercalifragilisticexpialidociousunbrokenvalue",
+          parentWindowTitle: "Chat 1",
+          parentMessageRole: "assistant",
+        }}
+        isFixedPane={false}
+        onNavigateToBranchSource={() => {}}
+        onClose={() => {}}
+        showCloseButton
+        title="Chat 1.1"
+      />,
+    );
+
+    expect(floatingMarkup).toContain('flex justify-between gap-3');
+    expect(floatingMarkup).toContain('flex-1 min-w-0 overflow-hidden');
+    expect(floatingMarkup).toContain('style="max-width:416px"');
+    expect(floatingMarkup).toContain('block w-full min-w-0');
+    expect(floatingMarkup).toContain('overflow-hidden text-ellipsis whitespace-nowrap');
+    expect(floatingMarkup).not.toContain('max-w-xl');
+  });
+
+  it("uses the wider floating pane cap when the close button is hidden", () => {
+    const floatingMarkup = renderToStaticMarkup(
+      <ChatWindowHeader
+        branchAnchorId="anchor-1"
+        branchFocus={{
+          selectedText: "selected text",
+          parentWindowTitle: "Chat 1",
+          parentMessageRole: "assistant",
+        }}
+        isFixedPane={false}
+        onNavigateToBranchSource={() => {}}
+        onClose={() => {}}
+        showCloseButton={false}
+        title="Chat 1.1"
+      />,
+    );
+
+    expect(floatingMarkup).toContain('style="max-width:468px"');
+    expect(floatingMarkup).not.toContain('style="max-width:416px"');
   });
 
   it("renders an svg close glyph instead of a letter for floating windows", () => {
