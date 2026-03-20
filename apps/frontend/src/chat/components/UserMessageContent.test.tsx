@@ -5,7 +5,7 @@ import type { AnchorGroup } from "../../types";
 import UserMessageContent from "./UserMessageContent";
 
 describe("UserMessageContent", () => {
-  it("renders active source anchors with the lighter highlight", () => {
+  it("renders active source anchors with the stronger highlight", () => {
     const anchorGroups: AnchorGroup[] = [
       {
         key: "anchor-1",
@@ -34,7 +34,7 @@ describe("UserMessageContent", () => {
       />,
     );
 
-    expect(markup).toContain('border-warning/45 bg-warning/10');
+    expect(markup).toContain('border-warning/70 bg-warning/30');
     expect(markup).not.toContain('bg-warning/20');
   });
 });

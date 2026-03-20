@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import CodeBlock from "./CodeBlock";
 
 describe("CodeBlock", () => {
-  it("renders active source anchors with the lighter code highlight", () => {
+  it("renders active source anchors with the stronger code highlight", () => {
     const markup = renderToStaticMarkup(
       <CodeBlock
         anchorRanges={[
@@ -22,7 +22,7 @@ describe("CodeBlock", () => {
       />,
     );
 
-    expect(markup).toContain('border-warning/45 bg-warning/15');
+    expect(markup).toContain('border-warning/70 bg-warning/35');
     expect(markup).not.toContain('bg-warning/25');
   });
 });

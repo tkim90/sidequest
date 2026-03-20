@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { renderAnchoredInlineSource } from "./renderInlineAnchors";
 
 describe("renderAnchoredInlineSource", () => {
-  it("renders active source anchors with the lighter highlight", () => {
+  it("renders active source anchors with the stronger highlight", () => {
     const markup = renderToStaticMarkup(
       <div>
         {renderAnchoredInlineSource({
@@ -26,7 +26,7 @@ describe("renderAnchoredInlineSource", () => {
       </div>,
     );
 
-    expect(markup).toContain('border-warning/45 bg-warning/10');
+    expect(markup).toContain('border-warning/70 bg-warning/30');
     expect(markup).not.toContain('bg-warning/20');
   });
 });

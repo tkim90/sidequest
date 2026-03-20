@@ -17,6 +17,8 @@ const TITLE_CHARACTER_ANIMATION_STAGGER_MS = 100;
 const TITLE_CHARACTER_ANIMATION_EASING = "cubic-bezier(0.16, 1, 0.1, 1)";
 const FOCUS_TOOLTIP_GAP_PX = 14;
 const FOCUS_TOOLTIP_VIEWPORT_MARGIN_PX = 16;
+const FOCUS_TOOLTIP_SHOW_DELAY_MS = 550;
+const FOCUS_TOOLTIP_FADE_DURATION_MS = 180;
 
 interface AnimatedTitleUnit {
   character: string;
@@ -187,12 +189,18 @@ function ChatWindowHeader({
   showCloseButton = true,
   title,
 }: ChatWindowHeaderProps) {
-  const [isFocusTooltipVisible, setIsFocusTooltipVisible] = useState(false);
+  const [isFocusTooltipMounted, setIsFocusTooltipMounted] = useState(false);
+  const [isFocusTooltipActive, setIsFocusTooltipActive] = useState(false);
+  const [isFocusTooltipExiting, setIsFocusTooltipExiting] = useState(false);
   const [focusTooltipPosition, setFocusTooltipPosition] =
     useState<FocusTooltipPosition | null>(null);
   const [tooltipPointerPosition, setTooltipPointerPosition] =
     useState<TooltipPointerPosition | null>(null);
   const focusTooltipRef = useRef<HTMLDivElement | null>(null);
+  const focusTooltipShowTimeoutRef =
+    useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const focusTooltipHideTimeoutRef =
+    useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   const titleClassName = isFixedPane
     ? "font-serif text-3xl tracking-tight text-foreground sm:text-4xl"
@@ -208,10 +216,42 @@ function ChatWindowHeader({
   const focusTextClassName = "block overflow-hidden text-ellipsis whitespace-nowrap";
   const focusTooltipClassName =
     "pointer-events-none fixed z-[120] max-w-[min(32rem,calc(100vw-32px))] whitespace-normal break-words rounded-xl border border-border bg-popover px-3 py-2 text-sm leading-5 text-popover-foreground not-italic shadow-lg";
+  const focusTooltipTransition = `opacity ${FOCUS_TOOLTIP_FADE_DURATION_MS}ms ease, transform ${FOCUS_TOOLTIP_FADE_DURATION_MS}ms ease`;
   const focusLabel = branchFocus
     ? branchFocus.selectedText
     : null;
   const navigateToBranchSource = onNavigateToBranchSource;
+
+  function clearFocusTooltipShowTimeout(): void {
+    if (focusTooltipShowTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(focusTooltipShowTimeoutRef.current);
+    focusTooltipShowTimeoutRef.current = null;
+  }
+
+  function clearFocusTooltipHideTimeout(): void {
+    if (focusTooltipHideTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(focusTooltipHideTimeoutRef.current);
+    focusTooltipHideTimeoutRef.current = null;
+  }
+
+  function queueFocusTooltip(position: TooltipPointerPosition): void {
+    setTooltipPointerPosition(position);
+    setFocusTooltipPosition(null);
+    setIsFocusTooltipMounted(true);
+    setIsFocusTooltipExiting(false);
+    clearFocusTooltipHideTimeout();
+    clearFocusTooltipShowTimeout();
+    focusTooltipShowTimeoutRef.current = window.setTimeout(() => {
+      setIsFocusTooltipActive(true);
+      focusTooltipShowTimeoutRef.current = null;
+    }, FOCUS_TOOLTIP_SHOW_DELAY_MS);
+  }
 
   function handleFocusClick(): void {
     if (!branchAnchorId || !navigateToBranchSource) {
@@ -222,8 +262,17 @@ function ChatWindowHeader({
   }
 
   function hideFocusTooltip(): void {
-    setIsFocusTooltipVisible(false);
-    setFocusTooltipPosition(null);
+    clearFocusTooltipShowTimeout();
+    clearFocusTooltipHideTimeout();
+    setIsFocusTooltipExiting(true);
+    setIsFocusTooltipActive(false);
+    focusTooltipHideTimeoutRef.current = window.setTimeout(() => {
+      setIsFocusTooltipMounted(false);
+      setIsFocusTooltipExiting(false);
+      setFocusTooltipPosition(null);
+      setTooltipPointerPosition(null);
+      focusTooltipHideTimeoutRef.current = null;
+    }, FOCUS_TOOLTIP_FADE_DURATION_MS);
   }
 
   function handleFocusTooltipPointerMove(
@@ -238,27 +287,25 @@ function ChatWindowHeader({
   function handleFocusTooltipPointerEnter(
     event: ReactPointerEvent<HTMLButtonElement>,
   ): void {
-    setTooltipPointerPosition({
+    queueFocusTooltip({
       x: event.clientX,
       y: event.clientY,
     });
-    setIsFocusTooltipVisible(true);
   }
 
   function handleFocusTooltipFocus(
     event: ReactFocusEvent<HTMLButtonElement>,
   ): void {
     const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPointerPosition({
+    queueFocusTooltip({
       x: rect.left + rect.width / 2,
       y: rect.top,
     });
-    setIsFocusTooltipVisible(true);
   }
 
   useLayoutEffect(() => {
     if (
-      !isFocusTooltipVisible ||
+      !isFocusTooltipMounted ||
       !tooltipPointerPosition ||
       !focusTooltipRef.current
     ) {
@@ -276,10 +323,10 @@ function ChatWindowHeader({
         viewportWidth: window.innerWidth,
       }),
     );
-  }, [isFocusTooltipVisible, tooltipPointerPosition, focusLabel]);
+  }, [isFocusTooltipMounted, tooltipPointerPosition, focusLabel]);
 
   useEffect(() => {
-    if (!isFocusTooltipVisible) {
+    if (!isFocusTooltipMounted) {
       return;
     }
 
@@ -310,7 +357,14 @@ function ChatWindowHeader({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [isFocusTooltipVisible, tooltipPointerPosition]);
+  }, [isFocusTooltipMounted, tooltipPointerPosition]);
+
+  useEffect(() => {
+    return () => {
+      clearFocusTooltipShowTimeout();
+      clearFocusTooltipHideTimeout();
+    };
+  }, []);
 
   const closeButtonClassName =
     "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
@@ -318,7 +372,7 @@ function ChatWindowHeader({
   const focusTooltip =
     branchFocus &&
     focusLabel &&
-    isFocusTooltipVisible &&
+    isFocusTooltipMounted &&
     typeof document !== "undefined"
       ? createPortal(
           <div
@@ -335,7 +389,13 @@ function ChatWindowHeader({
                 focusTooltipPosition?.top ??
                 tooltipPointerPosition?.y ??
                 FOCUS_TOOLTIP_VIEWPORT_MARGIN_PX,
+              opacity: isFocusTooltipActive ? 1 : 0,
+              transform: isFocusTooltipActive || isFocusTooltipExiting
+                ? "translateY(0)"
+                : "translateY(6px)",
+              transition: focusTooltipTransition,
               visibility: focusTooltipPosition ? "visible" : "hidden",
+              willChange: "opacity, transform",
             }}
           >
             {focusLabel}
@@ -346,7 +406,7 @@ function ChatWindowHeader({
 
   return (
     <>
-      <header className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4 max-w-[400px]">
+      <header className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4 max-w-[430px]">
         <div className="min-w-0">
           {isFixedPane ? (
             <AnimatedTitleText

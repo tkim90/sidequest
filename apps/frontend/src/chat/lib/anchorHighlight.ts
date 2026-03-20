@@ -6,7 +6,7 @@ interface AnchorHighlightOptions {
 }
 
 const BOX_DECORATION_CLASS =
-  "px-0.2 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
+  "[box-decoration-break:clone] [-webkit-box-decoration-break:clone]";
 
 export function getAnchorHighlightClass({
   activeSource = false,
@@ -21,8 +21,8 @@ export function getAnchorHighlightClass({
   if (tone === "plain" || tone === "monochrome") {
     if (activeSource) {
       return isFocused
-        ? `border border-warning/45 bg-warning/10 ${BOX_DECORATION_CLASS}`
-        : `border border-warning/30 bg-warning/5 ${BOX_DECORATION_CLASS}`;
+        ? `border border-warning/90 bg-warning/40 ${BOX_DECORATION_CLASS}`
+        : `border border-warning/40 bg-yellow/50 ${BOX_DECORATION_CLASS}`;
     }
 
     return isFocused
@@ -32,8 +32,8 @@ export function getAnchorHighlightClass({
 
   if (activeSource) {
     return isFocused
-      ? `border border-warning/45 bg-warning/15 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]`
-      : `border border-warning/30 bg-warning/10 px-0.2 text-warning-foreground/80 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]`;
+      ? `border border-warning/70 bg-warning/35 px-0.2 text-warning-foreground [box-decoration-break:clone] [-webkit-box-decoration-break:clone]`
+      : `border border-warning/45 bg-warning/20 px-0.2 text-warning-foreground/80 [box-decoration-break:clone] [-webkit-box-decoration-break:clone]`;
   }
 
   return isFocused
@@ -49,8 +49,8 @@ export function getAnchorBadgeClass({
   if (tone === "plain" || tone === "monochrome") {
     if (activeSource) {
       return isFocused
-        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/45 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-foreground"
-        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/30 bg-warning/5 px-1 align-middle text-[11px] font-semibold text-foreground/70";
+        ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/30 px-1 align-middle text-[11px] font-semibold text-foreground"
+        : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/45 bg-warning/18 px-1 align-middle text-[11px] font-semibold text-foreground/70";
     }
 
     return isFocused
@@ -60,8 +60,8 @@ export function getAnchorBadgeClass({
 
   if (activeSource) {
     return isFocused
-      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/45 bg-warning/15 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
-      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/30 bg-warning/10 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
+      ? "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/70 bg-warning/35 px-1 align-middle text-[11px] font-semibold text-warning-foreground"
+      : "ml-1 inline-flex min-w-5 translate-y-[-1px] justify-center border border-warning/45 bg-warning/20 px-1 align-middle text-[11px] font-semibold text-warning-foreground/70";
   }
 
   return isFocused
