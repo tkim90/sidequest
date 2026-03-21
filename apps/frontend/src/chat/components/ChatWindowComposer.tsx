@@ -222,7 +222,7 @@ function ChatWindowComposer({
                   type="button"
                   className={`w-full px-3 py-2 text-left ${pickerItemTextClassName} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
                     effort === resolvedSelectedEffort
-                      ? "bg-accent font-medium text-accent-foreground"
+                      ? "bg-accent font-medium text-white hover:text-white"
                       : ""
                   }`}
                   onClick={() => {
