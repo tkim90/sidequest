@@ -125,6 +125,8 @@
   --paper-window-shadow: 0 18px 30px 0 rgb(92 81 63 / 0.12);
   --modal-shadow: 10px 10px 0 0 rgb(24 24 27 / 0.12);
   --toast-shadow: 8px 8px 0 0 rgb(24 24 27 / 0.2);
+  --paper-surface-background: #F8F4EC;
+  --paper-surface-highlight: rgb(255 250 242 / 0.92);
 }
 
 @theme inline {
@@ -261,7 +263,7 @@
   .paper-surface {
     position: relative;
     overflow: hidden;
-    background: var(--paper-surface-background, #f5f5f4);
+    background: var(--paper-surface-background, #F8F4EC);
   }
 
   .paper-surface::before {
@@ -281,7 +283,7 @@
 
   @supports (filter: url("#paperFilter")) {
     .paper-surface::before {
-      background: rgb(255 255 255 / 0.92);
+      background: var(--paper-surface-highlight, rgb(255 245 229 / 0.92));
       background-image: none;
       background-size: auto;
       filter: url("#paperFilter");
