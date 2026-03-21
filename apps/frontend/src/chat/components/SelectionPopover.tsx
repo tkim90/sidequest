@@ -141,7 +141,7 @@ function SelectionPopover({
                 autoFocus
                 type="text"
                 className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-                placeholder="Ask a new question..."
+                placeholder="Ask a follow-up question..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -167,7 +167,7 @@ function SelectionPopover({
           type="button"
           onClick={onExpand}
         >
-          Explore further in new chat window
+          Branch in new window
         </button>
       )}
     </div>
