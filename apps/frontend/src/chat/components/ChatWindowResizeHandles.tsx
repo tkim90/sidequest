@@ -9,7 +9,7 @@ const resizeHandles: Array<{
 }> = [
   {
     key: "top",
-    className: "absolute inset-x-3 top-0 z-20 h-2 cursor-n-resize",
+    className: "absolute inset-x-5 top-0 z-40 h-3 cursor-n-resize",
     edges: { north: true, south: false, east: false, west: false },
   },
   {
@@ -30,13 +30,13 @@ const resizeHandles: Array<{
   {
     key: "top-left",
     className:
-      "absolute -left-2 -top-2 z-30 h-6 w-6 cursor-nwse-resize",
+      "absolute left-0 top-0 z-40 h-5 w-5 cursor-nwse-resize",
     edges: { north: true, south: false, east: false, west: true },
   },
   {
     key: "top-right",
     className:
-      "absolute -right-2 -top-2 z-30 h-6 w-6 cursor-nesw-resize",
+      "absolute right-0 top-0 z-40 h-5 w-5 cursor-nesw-resize",
     edges: { north: true, south: false, east: true, west: false },
   },
   {
@@ -70,6 +70,7 @@ function ChatWindowResizeHandles({
           key={handle.key}
           aria-hidden="true"
           className={handle.className}
+          data-resize-handle={handle.key}
           onPointerDown={(event) => onResizePointerDown(event, handle.edges)}
         />
       ))}

@@ -113,5 +113,13 @@ describe("ChatCanvas", () => {
     expect(markup).toContain('class="paper-surface relative overflow-hidden h-full min-h-0 min-w-0"');
     expect(markup).toContain('group/chat-window absolute origin-top-left');
     expect(markup).toContain('paper-texture-window pointer-events-none absolute inset-0 z-0');
+    expect(markup).toContain('data-resize-handle="top"');
+    expect(markup).toContain('data-resize-handle="top-left"');
+    expect(markup).toContain('data-resize-handle="top-right"');
+    expect(markup).toContain('data-resize-handle="bottom"');
+    expect(markup).toContain('inset-x-5 top-0 z-40 h-3 cursor-n-resize');
+    expect(markup).toContain('left-0 top-0 z-40 h-5 w-5 cursor-nwse-resize');
+    expect(markup).toContain('right-0 top-0 z-40 h-5 w-5 cursor-nesw-resize');
+    expect(markup.match(/data-resize-handle=/g)?.length).toBe(8);
   });
 });
