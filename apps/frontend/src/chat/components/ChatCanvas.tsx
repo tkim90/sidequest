@@ -23,6 +23,7 @@ import {
 } from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
 import ConnectionLayer from "./ConnectionLayer";
+import PaperSurface from "./PaperSurface";
 import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
 
 const EMPTY_MESSAGES: MessageRecord[] = [];
@@ -241,18 +242,12 @@ function ChatCanvas({
         <ConnectionLayer paths={connectorPaths} />
       </div>
 
-      <aside className="notebook-pane group/notebook relative z-10 min-h-0 min-w-0 overflow-hidden border-b border-border bg-paper-sheet lg:border-b-0">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 20% 24%, var(--paper-grain-light) 0 0.7px, transparent 1px), radial-gradient(circle at 72% 38%, var(--paper-grain-dark) 0 0.75px, transparent 1.05px), radial-gradient(circle at 34% 76%, var(--paper-grain-dark) 0 0.65px, transparent 0.95px), radial-gradient(circle at 84% 68%, var(--paper-grain-light) 0 0.6px, transparent 0.9px), linear-gradient(to bottom, var(--paper-grain-wash), transparent 18%, transparent 82%, var(--paper-grain-shadow))",
-            backgroundSize: "18px 18px, 22px 22px, 20px 20px, 16px 16px, 100% 100%",
-          }}
-        />
-
-        <div className="relative flex h-full min-h-0 min-w-0 flex-col px-4">
+      <aside className="notebook-pane group/notebook relative z-10 min-h-0 min-w-0 overflow-hidden border-b border-border lg:border-b-0">
+        <PaperSurface
+          className="h-full min-h-0 min-w-0"
+          contentClassName="flex h-full min-h-0 min-w-0 flex-col px-4"
+          intensity="default"
+        >
           {mainWindow ? (
             <div className="min-h-0 min-w-0 flex-1 py-4">
               <ChatWindow
@@ -284,7 +279,7 @@ function ChatCanvas({
               />
             </div>
           ) : null}
-        </div>
+        </PaperSurface>
       </aside>
 
       <div
