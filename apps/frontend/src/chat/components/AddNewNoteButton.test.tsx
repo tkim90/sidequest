@@ -27,7 +27,15 @@ describe("AddNewNoteButton", () => {
 
     expect(markup).toContain('src="/new-note.png"');
     expect(markup).toContain('draggable="false"');
-    expect(markup).toContain('class="h-9 w-auto select-none"');
+    expect(markup).toContain('class="h-9 w-auto max-w-none select-none"');
+  });
+
+  it("does not constrain the button to the shared square icon size", () => {
+    const markup = renderToStaticMarkup(
+      <AddNewNoteButton onClick={() => {}} />,
+    );
+
+    expect(markup).not.toContain("size-9");
   });
 
   it("applies the expected positioning classes for the canvas", () => {
