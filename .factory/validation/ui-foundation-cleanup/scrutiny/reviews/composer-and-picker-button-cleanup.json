@@ -1,0 +1,13 @@
+{
+  "featureId": "composer-and-picker-button-cleanup",
+  "milestone": "ui-foundation-cleanup",
+  "status": "pass",
+  "summary": "Commit 7e8480a cleanly extracts composer controls into presentational leaves and adopts Button primitive while preserving behavior covered by tests.",
+  "issues": [],
+  "sharedStateObservations": [
+    {
+      "target": "skills",
+      "observation": "Skill step ordering (test-first vs implementation-first) is interpreted inconsistently; clarify expected sequencing language to avoid procedural drift."
+    }
+  ]
+}

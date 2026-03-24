@@ -1,0 +1,8 @@
+{
+  "featureId": "shell-button-and-empty-state-cleanup",
+  "milestone": "ui-foundation-cleanup",
+  "status": "pass",
+  "summary": "Shell and empty-state refactor keeps expected root/floating affordances and adopts shared button surfaces while maintaining behavior contracts.",
+  "issues": [],
+  "sharedStateObservations": []
+}
