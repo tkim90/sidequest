@@ -25,3 +25,10 @@ Mission-specific scope notes for the React cleanup.
 - Treat large JSX-heavy files as smells; extract pure presentational leaves and let containers compose them.
 - Preserve drag/resize, branch creation, source navigation, inherited history, and close-tree behavior while simplifying the structure behind those flows.
 - If tests disagree with current live behavior, prefer the current intended product behavior and update stale tests accordingly.
+
+## Baseline Test Debt Discovered During Mission Start
+
+- `apps/frontend/src/chat/components/SelectionPopover.test.ts` has stale copy expectations relative to the current UI.
+- `apps/frontend/src/chat/components/UserMessageContent.test.tsx` and `apps/frontend/src/chat/markdown/renderInlineAnchors.test.tsx` have stale highlight-opacity expectations.
+- `apps/frontend/src/chat/lib/panePlacement.test.ts` has a stale placement-offset expectation.
+- Treat these as baseline expectation fixes, not behavior changes.

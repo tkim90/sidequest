@@ -32,7 +32,7 @@ Use this skill for features that:
    - decide which file/hook stays the container
    - decide which new or existing components become pure presentation leaves
    - keep orchestration, state ownership, and side effects out of presentational components
-3. Write or update focused tests first so they fail against the intended refactor slice. Prefer isolated Vitest coverage around extracted helpers/components and behavior-focused regression tests for touched UI.
+3. Write or update focused tests first so they fail against the intended refactor slice. For purely additive foundation code with no existing call sites yet, add focused tests alongside the new files before adopting them elsewhere. Prefer isolated Vitest coverage around extracted helpers/components and behavior-focused regression tests for touched UI.
 4. Implement the refactor:
    - preserve the current notebook/paper styling
    - move raw SVG into dedicated icon/mark components

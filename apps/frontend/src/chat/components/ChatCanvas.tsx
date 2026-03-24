@@ -23,8 +23,10 @@ import {
   getViewportEffectiveScale,
   snapToDevicePixel,
 } from "../hooks/canvasUtils";
+import AddNewNoteButton from "./AddNewNoteButton";
 import ChatWindow from "./ChatWindow";
 import GithubLogo from "./GithubLogo";
+import NotebookBinderMarks from "./NotebookBinderMarks";
 import PaperSurface from "./PaperSurface";
 import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
 
@@ -35,15 +37,6 @@ const DEFAULT_SCROLL_STATE: WindowScrollState = {
 };
 const FLOATING_WINDOW_EXIT_DURATION_MS = 220;
 const NOTEBOOK_GUTTER_WIDTH_PX = 68;
-const NOTEBOOK_BINDER_MARKS = [
-  "circle",
-  "capsule",
-  "capsule",
-  "circle",
-  "capsule",
-  "capsule",
-  "circle",
-] as const;
 
 interface FloatingWindowPresenceEntry {
   enterKind: "branch" | "newNote";
@@ -302,36 +295,9 @@ function ChatCanvas({
           {mainWindow?.title === ROOT_WINDOW_TITLE ? (
             <GithubLogo className="absolute right-10 top-8 z-30" />
           ) : null}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-20 flex flex-col justify-between py-8"
-            style={{ width: `${NOTEBOOK_GUTTER_WIDTH_PX}px` }}
-          >
-            {NOTEBOOK_BINDER_MARKS.map((mark, index) => (
-                <span
-                  key={`${mark}-${index}`}
-                  className={[
-                  "mx-auto block bg-paper-gutter shadow-[inset_0_1px_0_rgb(255_255_255_/_0.34)]",
-                  mark === "circle"
-                    ? "h-4 w-4 rounded-full"
-                    : "h-8 w-4 rounded-full",
-                ].join(" ")}
-              />
-            ))}
-          </div>
+          <NotebookBinderMarks gutterWidthPx={NOTEBOOK_GUTTER_WIDTH_PX} />
 
-          <button
-            aria-label="Add new note"
-            className="absolute left-1/2 top-4 z-30 -translate-x-1/2 cursor-pointer transition-transform duration-200 hover:-translate-x-1/2 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
-            type="button"
-            onClick={onOpenFreshRootWindow}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-            }}
-          >
-            <img alt="" className="h-9 w-auto select-none" draggable={false} src="/new-note.png" />
-          </button>
+          <AddNewNoteButton onClick={onOpenFreshRootWindow} />
 
           <div
             className="absolute overflow-hidden border-b border-r border-paper-stroke/30"

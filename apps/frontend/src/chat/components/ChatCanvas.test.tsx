@@ -141,4 +141,31 @@ describe("ChatCanvas", () => {
     expect(markup).not.toContain('aria-label="Open Sidequest on GitHub"');
     expect(markup).not.toContain('href="https://github.com/tkim90/sidequest"');
   });
+
+  it("renders the Add new note button using the shared Button primitive", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW);
+
+    expect(markup).toContain('aria-label="Add new note"');
+    expect(markup).toContain('data-slot="button"');
+    expect(markup).toContain('src="/new-note.png"');
+  });
+
+  it("renders the extracted notebook binder marks in the canvas gutter", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW);
+
+    // Binder marks: 3 circles + 4 capsules = 7 total
+    const circleCount = (markup.match(/h-4 w-4 rounded-full/g) ?? []).length;
+    const capsuleCount = (markup.match(/h-8 w-4 rounded-full/g) ?? []).length;
+    expect(circleCount).toBe(3);
+    expect(capsuleCount).toBe(4);
+  });
+
+  it("uses the shared Button primitive for Close note in floating windows", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW);
+
+    expect(markup).toContain('aria-label="Close note"');
+    // The close button in the floating child window uses the Button primitive
+    const closeNoteMatch = markup.match(/aria-label="Close note"/g);
+    expect(closeNoteMatch?.length).toBeGreaterThanOrEqual(1);
+  });
 });

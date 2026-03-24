@@ -11,7 +11,9 @@ import {
 import { createPortal } from "react-dom";
 
 import type { BranchFocus } from "../../types";
+import { Button } from "../../components/ui/button";
 import { FLOATING_ROOT_WINDOW_WIDTH } from "../lib/constants";
+import CloseIcon from "./CloseIcon";
 
 const TITLE_CHARACTER_ANIMATION_DURATION_MS = 2200;
 const TITLE_CHARACTER_ANIMATION_STAGGER_MS = 100;
@@ -380,7 +382,7 @@ function ChatWindowHeader({
   }, []);
 
   const closeButtonClassName =
-    "cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
+    "h-10 w-10 shrink-0 self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
 
   const focusTooltip =
     branchFocus &&
@@ -451,28 +453,17 @@ function ChatWindowHeader({
           ) : null}
         </div>
         {showCloseButton ? (
-          <button
+          <Button
             aria-label="Close note"
             className={closeButtonClassName}
+            variant="ghost"
+            size="icon"
             type="button"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={onClose}
           >
-            <svg
-              aria-hidden
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4"
-            >
-              <path
-                d="M5.5 5.5L14.5 14.5M14.5 5.5L5.5 14.5"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeWidth="1.8"
-              />
-            </svg>
-          </button>
+            <CloseIcon />
+          </Button>
         ) : null}
       </header>
       {focusTooltip}
