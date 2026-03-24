@@ -1,9 +1,6 @@
 import type { ClosePrompt } from "../../types";
-import {
-  eyebrowClassName,
-  primaryButtonClassName,
-  secondaryButtonClassName,
-} from "./ui";
+import { Button } from "../../components/ui/button";
+import { eyebrowClassName } from "./ui";
 
 interface CloseTreeModalProps {
   closePrompt: ClosePrompt;
@@ -31,20 +28,12 @@ function CloseTreeModal({
           </ul>
         ) : null}
         <div className="mt-6 flex justify-end gap-3">
-          <button
-            className={secondaryButtonClassName}
-            type="button"
-            onClick={onCancel}
-          >
+          <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            className={primaryButtonClassName}
-            type="button"
-            onClick={onConfirm}
-          >
+          </Button>
+          <Button type="button" onClick={onConfirm}>
             {closePrompt.confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

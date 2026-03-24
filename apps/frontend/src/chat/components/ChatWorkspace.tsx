@@ -6,7 +6,7 @@ import ChatCanvas from "./ChatCanvas";
 import CloseTreeModal from "./CloseTreeModal";
 import NoticeToast from "./NoticeToast";
 import PaperTextureDefs from "./PaperTextureDefs";
-import SelectionPopover from "./SelectionPopover";
+import SelectionPopover, { getSelectionIdentityKey } from "./SelectionPopover";
 
 function ChatWorkspace() {
   const workspace = useChatWorkspace();
@@ -57,6 +57,7 @@ function ChatWorkspace() {
 
       {workspace.selectionState ? (
         <SelectionPopover
+          key={getSelectionIdentityKey(workspace.selectionState)}
           onExpand={workspace.onSelectionExpand}
           onBranch={workspace.onSelectionBranch}
           popoverRef={workspace.popoverRef}

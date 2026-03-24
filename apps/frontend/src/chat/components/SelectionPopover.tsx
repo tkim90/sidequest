@@ -1,11 +1,11 @@
 import {
-  useEffect,
   useLayoutEffect,
   useState,
   type RefObject,
 } from "react";
 
 import type { SelectionState } from "../../types";
+import { Button } from "../../components/ui/button";
 
 const POPOVER_VIEWPORT_MARGIN_PX = 16;
 const POPOVER_ANCHOR_GAP_PX = 12;
@@ -57,6 +57,87 @@ export function resolveSelectionPopoverPosition(options: {
   return { left, top };
 }
 
+/**
+ * Derives a stable identity string for a selection so the parent can use it as
+ * a React `key`. When the key changes the popover remounts, which resets local
+ * state (e.g. the compose input) without an effect.
+ */
+export function getSelectionIdentityKey(selectionState: SelectionState): string {
+  return `${selectionState.parentWindowId}:${selectionState.parentMessageId}:${selectionState.selectedText}`;
+}
+
+// ---------------------------------------------------------------------------
+// Presentation leaves
+// ---------------------------------------------------------------------------
+
+interface BranchCtaButtonProps {
+  onExpand: () => void;
+}
+
+function BranchCtaButton({ onExpand }: BranchCtaButtonProps) {
+  return (
+    <button
+      className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-neutral-950 px-4 py-2 text-sm font-medium text-white shadow-lg transition-colors hover:bg-neutral-800"
+      type="button"
+      onClick={onExpand}
+    >
+      Branch in new window
+    </button>
+  );
+}
+
+interface BranchComposeFormProps {
+  onBranch: (prompt?: string) => void;
+}
+
+function BranchComposeForm({ onBranch }: BranchComposeFormProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  function handleSubmit() {
+    if (inputValue.trim()) {
+      onBranch(inputValue.trim());
+    } else {
+      onBranch();
+    }
+  }
+
+  return (
+    <>
+      <p className="m-0">Sidebar this selection into a new chat?</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
+          <input
+            autoFocus
+            type="text"
+            className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+            placeholder="Ask a follow-up question..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+          />
+        </div>
+        <Button
+          className="shrink-0 self-stretch rounded-lg px-2 py-1.5"
+          type="button"
+          size="sm"
+          onClick={handleSubmit}
+        >
+          New Chat
+        </Button>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Container popover
+// ---------------------------------------------------------------------------
+
 interface SelectionPopoverProps {
   onExpand: () => void;
   onBranch: (prompt?: string) => void;
@@ -70,24 +151,7 @@ function SelectionPopover({
   popoverRef,
   selectionState,
 }: SelectionPopoverProps) {
-  const [inputValue, setInputValue] = useState("");
   const [position, setPosition] = useState<SelectionPopoverPosition | null>(null);
-
-  function handleSubmit() {
-    if (inputValue.trim()) {
-      onBranch(inputValue.trim());
-    } else {
-      onBranch();
-    }
-  }
-
-  useEffect(() => {
-    setInputValue("");
-  }, [
-    selectionState.parentMessageId,
-    selectionState.parentWindowId,
-    selectionState.selectedText,
-  ]);
 
   useLayoutEffect(() => {
     function updatePosition(): void {
@@ -133,45 +197,13 @@ function SelectionPopover({
       }}
     >
       {selectionState.stage === "compose" ? (
-        <>
-          <p className="m-0">Sidebar this selection into a new chat?</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
-              <input
-                autoFocus
-                type="text"
-                className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-                placeholder="Ask a follow-up question..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-              />
-            </div>
-            <button
-              className="inline-flex shrink-0 self-stretch cursor-pointer items-center justify-center rounded-lg border border-primary bg-primary px-2 py-1.5 text-xs font-semibold uppercase text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              type="button"
-              onClick={handleSubmit}
-            >
-              New Chat
-            </button>
-          </div>
-        </>
+        <BranchComposeForm onBranch={onBranch} />
       ) : (
-        <button
-          className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-neutral-950 px-4 py-2 text-sm font-medium text-white shadow-lg transition-colors hover:bg-neutral-800"
-          type="button"
-          onClick={onExpand}
-        >
-          Branch in new window
-        </button>
+        <BranchCtaButton onExpand={onExpand} />
       )}
     </div>
   );
 }
 
 export default SelectionPopover;
+export { BranchComposeForm, BranchCtaButton };

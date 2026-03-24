@@ -2,7 +2,12 @@ import { createElement, createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import SelectionPopover, { resolveSelectionPopoverPosition } from "./SelectionPopover";
+import SelectionPopover, {
+  getSelectionIdentityKey,
+  resolveSelectionPopoverPosition,
+  BranchComposeForm,
+  BranchCtaButton,
+} from "./SelectionPopover";
 
 describe("resolveSelectionPopoverPosition", () => {
   it("centers the popover when there is enough room", () => {
@@ -123,5 +128,64 @@ describe("SelectionPopover", () => {
 
     expect(markup).toContain('placeholder="Ask a follow-up question..."');
     expect(markup).toContain(">New Chat<");
+  });
+});
+
+describe("getSelectionIdentityKey", () => {
+  it("returns a composite key from the selection identity fields", () => {
+    expect(
+      getSelectionIdentityKey({
+        parentWindowId: "win-a",
+        parentMessageId: "msg-b",
+        selectedText: "hello world",
+        stage: "cta",
+        x: 0,
+        y: 0,
+        windowLocalY: 0,
+      }),
+    ).toBe("win-a:msg-b:hello world");
+  });
+
+  it("produces a different key when any identity field changes", () => {
+    const base = {
+      parentWindowId: "w1",
+      parentMessageId: "m1",
+      selectedText: "text",
+      stage: "cta" as const,
+      x: 0,
+      y: 0,
+      windowLocalY: 0,
+    };
+
+    const keyA = getSelectionIdentityKey(base);
+    const keyB = getSelectionIdentityKey({ ...base, parentMessageId: "m2" });
+    const keyC = getSelectionIdentityKey({ ...base, selectedText: "other" });
+
+    expect(keyA).not.toBe(keyB);
+    expect(keyA).not.toBe(keyC);
+    expect(keyB).not.toBe(keyC);
+  });
+});
+
+describe("BranchCtaButton", () => {
+  it("renders the expand CTA label", () => {
+    const markup = renderToStaticMarkup(
+      createElement(BranchCtaButton, { onExpand: () => {} }),
+    );
+
+    expect(markup).toContain("Branch in new window");
+    expect(markup).toContain("<button");
+  });
+});
+
+describe("BranchComposeForm", () => {
+  it("renders the compose input and submit button", () => {
+    const markup = renderToStaticMarkup(
+      createElement(BranchComposeForm, { onBranch: () => {} }),
+    );
+
+    expect(markup).toContain('placeholder="Ask a follow-up question..."');
+    expect(markup).toContain(">New Chat<");
+    expect(markup).toContain("Sidebar this selection into a new chat?");
   });
 });
