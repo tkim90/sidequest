@@ -34,7 +34,7 @@ describe("UserMessageContent", () => {
       />,
     );
 
-    expect(markup).toContain('border-warning/70 bg-warning/30');
+    expect(markup).toContain('border-warning/90 bg-warning/40');
     expect(markup).not.toContain('bg-warning/20');
   });
 });

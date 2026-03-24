@@ -107,8 +107,8 @@ describe("SelectionPopover", () => {
       }),
     );
 
-    expect(markup).toContain("Explore further in new chat window");
-    expect(markup).not.toContain("Ask a new question...");
+    expect(markup).toContain("Branch in new window");
+    expect(markup).not.toContain("Ask a follow-up question...");
   });
 
   it("renders the composer UI when expanded", () => {
@@ -121,7 +121,7 @@ describe("SelectionPopover", () => {
       }),
     );
 
-    expect(markup).toContain('placeholder="Ask a new question..."');
+    expect(markup).toContain('placeholder="Ask a follow-up question..."');
     expect(markup).toContain(">New Chat<");
   });
 });

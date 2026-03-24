@@ -257,7 +257,7 @@ describe("getNextOverlappingPanePlacement", () => {
         rng: () => 0,
       }),
     ).toEqual({
-      x: 152,
+      x: 160,
       y: 170,
     });
   });
