@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import { motion } from "motion/react";
+import type { CSSProperties } from "react";
 
 import type {
   AnchorGroupsByMessageKey,
@@ -14,38 +8,18 @@ import type {
   WindowScrollState,
   WindowRecord,
 } from "../../types";
-import type { ResizeEdges } from "../hooks/useCanvasInteractions";
-import {
-  PANE_SEPARATOR_WIDTH,
-  ROOT_WINDOW_TITLE,
-} from "../lib/constants";
-import {
-  getViewportEffectiveScale,
-  snapToDevicePixel,
-} from "../hooks/canvasUtils";
-import AddNewNoteButton from "./AddNewNoteButton";
-import ChatWindow from "./ChatWindow";
-import GithubLogo from "./GithubLogo";
-import NotebookBinderMarks from "./NotebookBinderMarks";
-import PaperSurface from "./PaperSurface";
-import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
+import type { ResizeEdges } from "../hooks/canvasTypes";
+import { PANE_SEPARATOR_WIDTH } from "../lib/constants";
+import { useFloatingWindowPresence } from "../hooks/useFloatingWindowPresence";
+import CanvasPane from "./CanvasPane";
+import NotebookPane from "./NotebookPane";
+import SplitPaneDivider from "./SplitPaneDivider";
 
 const EMPTY_MESSAGES: MessageRecord[] = [];
 const DEFAULT_SCROLL_STATE: WindowScrollState = {
   scrollTop: null,
   shouldAutoScroll: true,
 };
-const FLOATING_WINDOW_EXIT_DURATION_MS = 220;
-const NOTEBOOK_GUTTER_WIDTH_PX = 68;
-
-interface FloatingWindowPresenceEntry {
-  enterKind: "branch" | "newNote";
-  isExiting: boolean;
-  messages: MessageRecord[];
-  savedScrollState: WindowScrollState;
-  windowData: WindowRecord;
-  zIndex: number;
-}
 
 interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -130,100 +104,17 @@ function ChatCanvas({
   windowScrollStates,
   windows,
 }: ChatCanvasProps) {
-  const effectiveScale = getViewportEffectiveScale(viewport);
-  const snappedViewportX = snapToDevicePixel(viewport.x);
-  const snappedViewportY = snapToDevicePixel(viewport.y);
+  const floatingWindowEntries = useFloatingWindowPresence({
+    messagesByWindowId,
+    windows,
+    windowScrollStates,
+  });
+
   const splitPaneStyle = {
     "--chat-split-columns": leftPaneWidthPx
       ? `${leftPaneWidthPx}px ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`
       : `minmax(420px, 44%) ${PANE_SEPARATOR_WIDTH}px minmax(0, 1fr)`,
   } as CSSProperties;
-  const exitTimeoutsRef = useRef<Record<string, number>>({});
-  const [floatingWindowEntries, setFloatingWindowEntries] = useState<
-    FloatingWindowPresenceEntry[]
-  >(() =>
-    windows.map((windowData, index) => ({
-      enterKind: windowData.parentId === null ? "newNote" : "branch",
-      isExiting: false,
-      messages: messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES,
-      savedScrollState:
-        windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE,
-      windowData,
-      zIndex: index + 1,
-    })),
-  );
-
-  useEffect(() => {
-    setFloatingWindowEntries((current) => {
-      const currentById = new Map(
-        current.map((entry) => [entry.windowData.id, entry] as const),
-      );
-      const nextIds = new Set(windows.map((windowData) => windowData.id));
-      const nextEntries: FloatingWindowPresenceEntry[] = windows.map((windowData, index) => {
-        const existing = currentById.get(windowData.id);
-
-        return {
-          enterKind:
-            existing?.enterKind ??
-            (windowData.parentId === null ? "newNote" : "branch"),
-          isExiting: false,
-          messages: messagesByWindowId[windowData.id] ?? existing?.messages ?? EMPTY_MESSAGES,
-          savedScrollState:
-            windowScrollStates[windowData.id] ??
-            existing?.savedScrollState ??
-            DEFAULT_SCROLL_STATE,
-          windowData,
-          zIndex: index + 1,
-        };
-      });
-
-      current.forEach((entry) => {
-        if (!nextIds.has(entry.windowData.id)) {
-          nextEntries.push({
-            ...entry,
-            isExiting: true,
-          });
-        }
-      });
-
-      return nextEntries;
-    });
-  }, [windows, messagesByWindowId, windowScrollStates]);
-
-  useEffect(() => {
-    floatingWindowEntries.forEach((entry) => {
-      const windowId = entry.windowData.id;
-
-      if (entry.isExiting) {
-        if (exitTimeoutsRef.current[windowId]) {
-          return;
-        }
-
-        exitTimeoutsRef.current[windowId] = window.setTimeout(() => {
-          setFloatingWindowEntries((current) =>
-            current.filter((candidate) => candidate.windowData.id !== windowId),
-          );
-          delete exitTimeoutsRef.current[windowId];
-        }, FLOATING_WINDOW_EXIT_DURATION_MS);
-        return;
-      }
-
-      const activeTimeout = exitTimeoutsRef.current[windowId];
-      if (activeTimeout) {
-        window.clearTimeout(activeTimeout);
-        delete exitTimeoutsRef.current[windowId];
-      }
-    });
-  }, [floatingWindowEntries]);
-
-  useEffect(() => {
-    return () => {
-      Object.values(exitTimeoutsRef.current).forEach((timeoutId) => {
-        window.clearTimeout(timeoutId);
-      });
-      exitTimeoutsRef.current = {};
-    };
-  }, []);
 
   return (
     <div
@@ -231,149 +122,68 @@ function ChatCanvas({
       ref={splitPaneRef}
       style={splitPaneStyle}
     >
-      <aside className="notebook-pane group/notebook relative z-10 min-h-0 min-w-0 overflow-hidden border-b border-border lg:border-b-0">
-        <PaperSurface
-          className="h-full min-h-0 min-w-0"
-          contentClassName="flex h-full min-h-0 min-w-0 flex-col px-4"
-          intensity="default"
-        >
-          {mainWindow ? (
-            <div className="min-h-0 min-w-0 flex-1 py-4">
-              <ChatWindow
-                anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-                isFixedPane
-                isFocused
-                messages={messagesByWindowId[mainWindow.id] ?? EMPTY_MESSAGES}
-                onClose={onWindowClose}
-                onComposerChange={onComposerChange}
-                onEffortChange={onEffortChange}
-                onGeometryChange={onGeometryChange}
-                onHeaderPointerDown={onHeaderPointerDown}
-                onMessageMouseDown={onMessageMouseDown}
-                onNavigateToBranchSource={onNavigateToBranchSource}
-                onModelChange={onModelChange}
-                onResizePointerDown={onResizePointerDown}
-                onRetry={onRetry}
-                onSend={onSend}
-                onToggleHistoryExpanded={onToggleHistoryExpanded}
-                onWindowFocus={onWindowFocus}
-                onWindowScrollStateChange={onWindowScrollStateChange}
-                registerAnchorRef={registerAnchorRef}
-                registerWindowRef={registerWindowRef}
-                savedScrollState={
-                  windowScrollStates[mainWindow.id] ?? DEFAULT_SCROLL_STATE
-                }
-                windowData={mainWindow}
-                zIndex={100}
-              />
-            </div>
-          ) : null}
-        </PaperSurface>
-      </aside>
+      <NotebookPane
+        anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+        mainWindow={mainWindow}
+        messages={
+          mainWindow
+            ? messagesByWindowId[mainWindow.id] ?? EMPTY_MESSAGES
+            : EMPTY_MESSAGES
+        }
+        onComposerChange={onComposerChange}
+        onEffortChange={onEffortChange}
+        onGeometryChange={onGeometryChange}
+        onHeaderPointerDown={onHeaderPointerDown}
+        onMessageMouseDown={onMessageMouseDown}
+        onModelChange={onModelChange}
+        onNavigateToBranchSource={onNavigateToBranchSource}
+        onResizePointerDown={onResizePointerDown}
+        onRetry={onRetry}
+        onSend={onSend}
+        onToggleHistoryExpanded={onToggleHistoryExpanded}
+        onWindowClose={onWindowClose}
+        onWindowFocus={onWindowFocus}
+        onWindowScrollStateChange={onWindowScrollStateChange}
+        registerAnchorRef={registerAnchorRef}
+        registerWindowRef={registerWindowRef}
+        savedScrollState={
+          mainWindow
+            ? windowScrollStates[mainWindow.id] ?? DEFAULT_SCROLL_STATE
+            : DEFAULT_SCROLL_STATE
+        }
+      />
 
-      <div
-        aria-hidden
-        className="relative z-20 hidden h-full touch-none cursor-col-resize lg:block"
+      <SplitPaneDivider
+        isResizing={isPaneResizing}
         onPointerDown={onPaneResizePointerDown}
-      >
-        <div
-          className={[
-            "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors duration-200",
-            isPaneResizing ? "bg-foreground/35" : "bg-border/90",
-          ].join(" ")}
-        />
-        <div
-          className={[
-            "absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 rounded-full transition-colors duration-200",
-            isPaneResizing ? "bg-paper-raised/80" : "hover:bg-paper-raised/55",
-          ].join(" ")}
-        />
-      </div>
+      />
 
-      <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
-        <div className="paper-texture relative h-full overflow-hidden bg-paper-sheet">
-          {mainWindow?.title === ROOT_WINDOW_TITLE ? (
-            <GithubLogo className="absolute right-10 top-8 z-30" />
-          ) : null}
-          <NotebookBinderMarks gutterWidthPx={NOTEBOOK_GUTTER_WIDTH_PX} />
-
-          <AddNewNoteButton onClick={onOpenFreshRootWindow} />
-
-          <div
-            className="absolute overflow-hidden border-b border-r border-paper-stroke/30"
-            ref={canvasRef}
-            style={{
-              top: "1rem",
-              right: "2rem",
-              bottom: "1rem",
-              left: `${NOTEBOOK_GUTTER_WIDTH_PX}px`,
-              "--paper": "var(--paper-sheet)",
-            } as CSSProperties}
-            onPointerDown={onCanvasPointerDown}
-          >
-            <WorkspaceGridCanvas hostRef={canvasRef} viewport={viewport} />
-
-            <div
-              className="absolute inset-0 origin-top-left"
-              style={{
-                transform: `translate(${snappedViewportX}px, ${snappedViewportY}px)`,
-              }}
-            >
-              <div
-                className="relative min-h-full min-w-full origin-top-left"
-                style={{
-                  zoom: effectiveScale,
-                }}
-              >
-                {floatingWindowEntries.map((entry, index) => (
-                  <motion.div
-                    key={entry.windowData.id}
-                    animate={
-                      entry.isExiting
-                        ? { opacity: 0 }
-                        : { opacity: 1, scale: 1, x: 0, y: 0 }
-                    }
-                    initial={
-                      entry.enterKind === "newNote"
-                        ? { opacity: 0, y: -28 }
-                        : { opacity: 0, scale: 0.96, y: 10 }
-                    }
-                    transition={{
-                      duration: FLOATING_WINDOW_EXIT_DURATION_MS / 1000,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <ChatWindow
-                      anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-                      isFocused={!entry.isExiting && index === windows.length - 1}
-                      messages={entry.messages}
-                      onClose={onWindowClose}
-                      onComposerChange={onComposerChange}
-                      onEffortChange={onEffortChange}
-                      onGeometryChange={onGeometryChange}
-                      onHeaderPointerDown={onHeaderPointerDown}
-                      onMessageMouseDown={onMessageMouseDown}
-                      onNavigateToBranchSource={onNavigateToBranchSource}
-                      onModelChange={onModelChange}
-                      onResizePointerDown={onResizePointerDown}
-                      onRetry={onRetry}
-                      onSend={onSend}
-                      onToggleHistoryExpanded={onToggleHistoryExpanded}
-                      onWindowFocus={onWindowFocus}
-                      onWindowScrollStateChange={onWindowScrollStateChange}
-                      registerAnchorRef={registerAnchorRef}
-                      registerWindowRef={registerWindowRef}
-                      savedScrollState={entry.savedScrollState}
-                      windowData={entry.windowData}
-                      zIndex={entry.zIndex}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CanvasPane
+        anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+        canvasRef={canvasRef}
+        floatingWindowEntries={floatingWindowEntries}
+        liveWindowCount={windows.length}
+        mainWindowTitle={mainWindow?.title ?? null}
+        onCanvasPointerDown={onCanvasPointerDown}
+        onComposerChange={onComposerChange}
+        onEffortChange={onEffortChange}
+        onGeometryChange={onGeometryChange}
+        onHeaderPointerDown={onHeaderPointerDown}
+        onMessageMouseDown={onMessageMouseDown}
+        onModelChange={onModelChange}
+        onNavigateToBranchSource={onNavigateToBranchSource}
+        onOpenFreshRootWindow={onOpenFreshRootWindow}
+        onResizePointerDown={onResizePointerDown}
+        onRetry={onRetry}
+        onSend={onSend}
+        onToggleHistoryExpanded={onToggleHistoryExpanded}
+        onWindowClose={onWindowClose}
+        onWindowFocus={onWindowFocus}
+        onWindowScrollStateChange={onWindowScrollStateChange}
+        registerAnchorRef={registerAnchorRef}
+        registerWindowRef={registerWindowRef}
+        viewport={viewport}
+      />
     </div>
   );
 }
