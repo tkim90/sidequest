@@ -1,4 +1,4 @@
-import ChatWorkspace from "./chat/components/ChatWorkspace";
+import ChatWorkspace from "./chat/components/workspace/ChatWorkspace";
 
 function App() {
   return <ChatWorkspace />;
