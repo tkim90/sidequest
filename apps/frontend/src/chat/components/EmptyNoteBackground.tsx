@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 
+import { Button } from "../../components/ui/button";
+
 const STARTER_QUESTIONS = [
   "Write a poem about history and science.",
   "What was Dijkstra known for?",
@@ -114,9 +116,10 @@ export default function EmptyNoteBackground({
               current === question ? null : current
             ))}
           >
-            <button
+            <Button
+              variant="ghost"
               className={[
-                "block cursor-pointer bg-transparent px-3 py-2 text-center font-serif text-[24px] leading-[1.35] text-foreground transition-colors duration-500 ease-out hover:text-paper-ink-soft",
+                "block h-auto cursor-pointer rounded-lg bg-transparent px-3 py-2 text-center font-serif text-[24px] leading-[1.35] text-foreground transition-colors duration-500 ease-out hover:-translate-y-0 hover:bg-transparent hover:text-paper-ink-soft",
                 index > 0 ? "mt-2" : "",
                 isFixedPane ? "max-w-[28ch]" : "max-w-[24ch]",
               ].join(" ")}
@@ -126,7 +129,7 @@ export default function EmptyNoteBackground({
               }}
             >
               {question}
-            </button>
+            </Button>
           </motion.div>
         ))}
       </div>

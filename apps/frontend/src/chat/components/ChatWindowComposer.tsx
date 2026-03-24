@@ -4,6 +4,9 @@ import type { RefObject } from "react";
 import type { ReasoningEffort } from "../../types";
 import { useModelStore } from "../../stores/modelStore";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
+import ComposerSendButton from "./ComposerSendButton";
+import EffortPicker from "./EffortPicker";
+import ModelPicker from "./ModelPicker";
 
 interface ChatWindowComposerProps {
   composer: string;
@@ -18,10 +21,6 @@ interface ChatWindowComposerProps {
   selectedEffort: ReasoningEffort | null;
   title: string;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
-}
-
-function getEffortLabel(effort: ReasoningEffort): string {
-  return effort === "none" ? "" : `${effort}`;
 }
 
 function ChatWindowComposer({
@@ -94,6 +93,7 @@ function ChatWindowComposer({
   }, [openPicker]);
 
   const usesCompactControls = isChildPane || isFixedPane;
+  const pickerMenuPositionClassName = isChildPane ? "right-0" : "left-0";
   const textareaBaseClassName = [
     "resize-none overflow-y-auto bg-transparent text-foreground/90 outline-none transition-colors",
     "placeholder:text-composer-placeholder placeholder:opacity-100 placeholder:font-normal",
@@ -114,15 +114,17 @@ function ChatWindowComposer({
         ? "shadow-[inset_0_1px_0_rgb(255_255_255_/_0.22)]"
         : "border border-transparent bg-composer-surface/88 focus-within:bg-composer-surface",
   ].join(" ");
-  const pickerButtonClassName = [
-    "cursor-pointer flex items-center rounded-lg text-muted-foreground transition-colors hover:bg-paper-sheet hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent",
-    usesCompactControls
-      ? "h-8 gap-1.5 px-2 text-xs"
-      : "gap-2 px-3 py-2 text-[18px]",
-  ].join(" ");
-  const pickerItemTextClassName = usesCompactControls ? "text-xs" : "text-[18px]";
-  const pickerIconSizeClassName = usesCompactControls ? "h-3.5 w-3.5" : "h-5 w-5";
-  const pickerMenuPositionClassName = isChildPane ? "right-0" : "left-0";
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void onSend();
+    }
+  }
+
+  const canSend = composer.trim().length > 0 && !isStreaming;
+  const placeholder = isFixedPane ? "Write something..." : "Ask a follow-up...";
+
   const controls = (
     <div
       ref={controlsRef}
@@ -132,148 +134,55 @@ function ChatWindowComposer({
       ].join(" ")}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {models.length > 0 ? (
-        <div className="relative">
-          <button
-            type="button"
-            className={pickerButtonClassName}
-            onClick={() =>
-              setOpenPicker((current) =>
-                current === "model" ? null : "model",
-              )
-            }
-          >
-            <span className={isChildPane ? "max-w-[120px] truncate" : "max-w-[200px] truncate"}>
-              {resolvedSelectedModel}
-            </span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className={`${pickerIconSizeClassName} transition-transform ${openPicker === "model" ? "rotate-180" : ""}`}
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-          {openPicker === "model" ? (
-            <div
-              className={`absolute bottom-full ${pickerMenuPositionClassName} z-50 mb-1 min-w-[200px] rounded-lg border border-border bg-popover py-1 shadow-lg`}
-            >
-              {models.map((model) => (
-                <button
-                  key={model.id}
-                  type="button"
-                  className={`cursor-pointer w-full px-3 py-2 text-left ${pickerItemTextClassName} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                    model.id === resolvedSelectedModel
-                      ? "bg-accent font-medium text-primary-foreground"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    onModelChange(model.id);
-                    setOpenPicker(null);
-                  }}
-                >
-                  {model.id}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <ModelPicker
+        compact={usesCompactControls}
+        isOpen={openPicker === "model"}
+        models={models}
+        onSelect={(modelId) => {
+          onModelChange(modelId);
+          setOpenPicker(null);
+        }}
+        onToggle={() =>
+          setOpenPicker((current) =>
+            current === "model" ? null : "model",
+          )
+        }
+        positionClassName={pickerMenuPositionClassName}
+        selectedModelId={resolvedSelectedModel}
+      />
 
       {showEffortPicker && resolvedModelOption && resolvedSelectedEffort ? (
-        <div className="relative">
-          <button
-            type="button"
-            className={pickerButtonClassName}
-            onClick={() =>
-              setOpenPicker((current) =>
-                current === "effort" ? null : "effort",
-              )
-            }
-          >
-            <span className={isChildPane ? "max-w-[96px] truncate" : "max-w-[160px] truncate"}>
-              {getEffortLabel(resolvedSelectedEffort)}
-            </span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className={`${pickerIconSizeClassName} transition-transform ${openPicker === "effort" ? "rotate-180" : ""}`}
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-          {openPicker === "effort" ? (
-            <div
-              className={`absolute bottom-full ${pickerMenuPositionClassName} z-50 mb-1 min-w-[180px] rounded-lg border border-border bg-popover py-1 shadow-lg`}
-            >
-              {resolvedModelOption.efforts.map((effort) => (
-                <button
-                  key={effort}
-                  type="button"
-                  className={`w-full px-3 py-2 text-left ${pickerItemTextClassName} text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                    effort === resolvedSelectedEffort
-                      ? "bg-accent font-medium text-white hover:text-white"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    onEffortChange(effort);
-                    setOpenPicker(null);
-                  }}
-                >
-                  {getEffortLabel(effort)}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <EffortPicker
+          compact={usesCompactControls}
+          efforts={resolvedModelOption.efforts}
+          isOpen={openPicker === "effort"}
+          onSelect={(effort) => {
+            onEffortChange(effort);
+            setOpenPicker(null);
+          }}
+          onToggle={() =>
+            setOpenPicker((current) =>
+              current === "effort" ? null : "effort",
+            )
+          }
+          positionClassName={pickerMenuPositionClassName}
+          selectedEffort={resolvedSelectedEffort}
+        />
       ) : null}
     </div>
   );
-  const submitButton = composer.trim().length > 0 && !isStreaming ? (
-    <button
-      className={[
-        "flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80",
-        isChildPane ? "h-9 w-9" : usesCompactControls ? "h-8 w-8" : "h-12 w-12",
-      ].join(" ")}
-      type="button"
+
+  const sendButton = canSend ? (
+    <ComposerSendButton
+      compact={usesCompactControls}
       onClick={() => {
         void onSend();
       }}
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={usesCompactControls ? "h-4 w-4" : "h-5 w-5"}
-      >
-        <line x1="12" y1="19" x2="12" y2="5" />
-        <polyline points="5 12 12 5 19 12" />
-      </svg>
-    </button>
+    />
   ) : null;
 
   return (
-    <footer
-      className={[
-        "relative z-10",
-        // isFixedPane
-        // "border-t border-paper-stroke/12 bg-transparent px-4 pb-4",
-      ].join(" ")}
-    >
+    <footer className="relative z-10">
       <div className={composerShellClassName}>
         {isChildPane ? (
           <div className="flex w-full min-w-0 items-end gap-2 px-4 py-3">
@@ -283,18 +192,13 @@ function ChatWindowComposer({
               autoFocus
               rows={1}
               className={textareaClassName}
-              placeholder={isFixedPane ? "Write something..." : "Ask a follow-up..."}
+              placeholder={placeholder}
               value={composer}
               onChange={(event) => onComposerChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void onSend();
-                }
-              }}
+              onKeyDown={handleKeyDown}
             />
             {controls}
-            {submitButton}
+            {sendButton}
           </div>
         ) : (
           <>
@@ -304,15 +208,10 @@ function ChatWindowComposer({
               autoFocus
               rows={1}
               className={textareaClassName}
-              placeholder={isFixedPane ? "Write something..." : "Ask a follow-up..."}
+              placeholder={placeholder}
               value={composer}
               onChange={(event) => onComposerChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void onSend();
-                }
-              }}
+              onKeyDown={handleKeyDown}
             />
             <div
               className={[
@@ -321,7 +220,7 @@ function ChatWindowComposer({
               ].join(" ")}
             >
               {controls}
-              {submitButton}
+              {sendButton}
             </div>
           </>
         )}
