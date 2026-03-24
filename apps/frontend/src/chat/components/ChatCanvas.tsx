@@ -29,6 +29,7 @@ interface ChatCanvasProps {
   mainWindow: WindowRecord | null;
   messagesByWindowId: MessagesByWindowId;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
   onComposerChange: (windowId: string, composer: string) => void;
   onGeometryChange: () => void;
   onHeaderPointerDown: (
@@ -81,6 +82,7 @@ function ChatCanvas({
   mainWindow,
   messagesByWindowId,
   onCanvasPointerDown,
+  onCanvasWheel,
   onComposerChange,
   onGeometryChange,
   onHeaderPointerDown,
@@ -165,6 +167,7 @@ function ChatCanvas({
         liveWindowCount={windows.length}
         mainWindowTitle={mainWindow?.title ?? null}
         onCanvasPointerDown={onCanvasPointerDown}
+        onCanvasWheel={onCanvasWheel}
         onComposerChange={onComposerChange}
         onEffortChange={onEffortChange}
         onGeometryChange={onGeometryChange}

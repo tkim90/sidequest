@@ -29,6 +29,7 @@ interface UseCanvasInteractionsResult {
   canvasRef: RefObject<HTMLDivElement | null>;
   getAnchorNode: (groupKey: string) => HTMLSpanElement | null;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
   onHeaderPointerDown: (
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
@@ -95,12 +96,10 @@ export function useCanvasInteractions({
     };
   });
 
-  useViewportWheel({
+  const onCanvasWheel = useViewportWheel({
     appStateRef,
-    canvasRef,
     setAppState,
   });
-
   const pointerInteractions = usePointerInteractions({
     appStateRef,
     canvasRef,
@@ -140,6 +139,7 @@ export function useCanvasInteractions({
     canvasRef,
     getAnchorNode: (groupKey) => anchorRefs.current[groupKey] ?? null,
     onCanvasPointerDown: pointerInteractions.onCanvasPointerDown,
+    onCanvasWheel,
     onHeaderPointerDown: pointerInteractions.onHeaderPointerDown,
     onResizePointerDown: pointerInteractions.onResizePointerDown,
     onWindowFocus: pointerInteractions.onWindowFocus,

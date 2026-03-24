@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 
-import { useMountEffect } from "../../../hooks/useMountEffect";
 import { labelTextClass, insetSurfaceClass } from "../theme";
 
 interface OptionObj {
@@ -33,23 +32,6 @@ export default function Select({
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(defaultValue ?? null);
   const ref = useRef<HTMLDivElement>(null);
-  const openRef = useRef(open);
-  openRef.current = open;
-
-  useMountEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (!openRef.current) {
-        return;
-      }
-
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  });
 
   const selectedLabel =
     normalized.find((o) => o.value === selected)?.label ?? null;
@@ -58,11 +40,25 @@ export default function Select({
     <div
       ref={ref}
       className="relative flex flex-col gap-1"
+      onBlurCapture={(event) => {
+        const nextFocusedNode = event.relatedTarget;
+        if (nextFocusedNode instanceof Node && ref.current?.contains(nextFocusedNode)) {
+          return;
+        }
+
+        setOpen(false);
+      }}
+      onKeyDownCapture={(event) => {
+        if (event.key === "Escape" && open) {
+          setOpen(false);
+        }
+      }}
       onPointerDown={(e) => e.stopPropagation()}
       onPointerUp={(e) => e.stopPropagation()}
     >
       {label && <span className={labelTextClass}>{label}</span>}
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className={`${insetSurfaceClass} flex items-center justify-between px-3 py-1.5 text-sm text-left`}
       >
@@ -86,6 +82,7 @@ export default function Select({
           {normalized.map((opt) => (
             <button
               key={opt.value}
+              type="button"
               onClick={() => {
                 setSelected(opt.value);
                 setOpen(false);

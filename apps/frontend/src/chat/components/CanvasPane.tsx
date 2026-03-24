@@ -28,6 +28,7 @@ interface CanvasPaneProps {
   liveWindowCount: number;
   mainWindowTitle: string | null;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
   onComposerChange: (windowId: string, composer: string) => void;
   onEffortChange: (
     windowId: string,
@@ -75,6 +76,7 @@ function CanvasPane({
   liveWindowCount,
   mainWindowTitle,
   onCanvasPointerDown,
+  onCanvasWheel,
   onComposerChange,
   onEffortChange,
   onGeometryChange,
@@ -121,6 +123,7 @@ function CanvasPane({
             } as CSSProperties
           }
           onPointerDown={onCanvasPointerDown}
+          onWheel={onCanvasWheel}
         >
           <WorkspaceGridCanvas hostRef={canvasRef} viewport={viewport} />
 

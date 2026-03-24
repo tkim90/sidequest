@@ -81,6 +81,7 @@ function renderChatCanvas(mainWindow: WindowRecord | null) {
       mainWindow={mainWindow}
       messagesByWindowId={MESSAGES}
       onCanvasPointerDown={() => {}}
+      onCanvasWheel={() => {}}
       onComposerChange={() => {}}
       onEffortChange={() => {}}
       onGeometryChange={() => {}}

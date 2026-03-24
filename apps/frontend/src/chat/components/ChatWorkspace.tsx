@@ -30,6 +30,7 @@ function ChatWorkspace() {
           mainWindow={workspace.mainWindow}
           messagesByWindowId={workspace.messagesByWindowId}
           onCanvasPointerDown={workspace.onCanvasPointerDown}
+          onCanvasWheel={workspace.onCanvasWheel}
           onComposerChange={workspace.onComposerChange}
           onEffortChange={workspace.onEffortChange}
           onGeometryChange={workspace.onGeometryChange}

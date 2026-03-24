@@ -1,10 +1,10 @@
 import {
+  type WheelEvent as ReactWheelEvent,
   type Dispatch,
   type RefObject,
   type SetStateAction,
 } from "react";
 
-import { useMountEffect } from "../../hooks/useMountEffect";
 import type { AppState } from "../../types";
 import {
   MAX_VIEWPORT_ZOOM,
@@ -15,7 +15,6 @@ import { getViewportEffectiveScale } from "./canvasUtils";
 
 interface UseViewportWheelOptions {
   appStateRef: RefObject<AppState>;
-  canvasRef: RefObject<HTMLDivElement | null>;
   setAppState: Dispatch<SetStateAction<AppState>>;
 }
 
@@ -34,53 +33,41 @@ export function getNextViewportZoomScale(
 
 export function useViewportWheel({
   appStateRef,
-  canvasRef,
   setAppState,
-}: UseViewportWheelOptions): void {
-  useMountEffect(() => {
-    const canvasNode = canvasRef.current;
-    if (!canvasNode) {
+}: UseViewportWheelOptions) {
+  return function handleCanvasWheel(
+    event: ReactWheelEvent<HTMLDivElement>,
+  ): void {
+    const target = event.target instanceof Element ? event.target : null;
+    const isModifierZoom = event.ctrlKey || event.metaKey;
+
+    if (isModifierZoom) {
+      event.preventDefault();
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const currentViewport = appStateRef.current.viewport;
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      const currentScale = getViewportEffectiveScale(currentViewport);
+      const contentX = (pointerX - currentViewport.x) / currentScale;
+      const contentY = (pointerY - currentViewport.y) / currentScale;
+      const nextScale = getNextViewportZoomScale(currentScale, event.deltaY);
+
+      setAppState((current) => ({
+        ...current,
+        viewport: {
+          ...current.viewport,
+          zoom: nextScale,
+          scale: 1,
+          x: pointerX - contentX * nextScale,
+          y: pointerY - contentY * nextScale,
+        },
+      }));
       return;
     }
-    const sceneNode = canvasNode;
 
-    function handleCanvasWheel(event: WheelEvent): void {
-      const target = event.target instanceof Element ? event.target : null;
-      const isModifierZoom = event.ctrlKey || event.metaKey;
-
-      if (isModifierZoom) {
-        event.preventDefault();
-
-        const rect = sceneNode.getBoundingClientRect();
-        const currentViewport = appStateRef.current.viewport;
-        const pointerX = event.clientX - rect.left;
-        const pointerY = event.clientY - rect.top;
-        const currentScale = getViewportEffectiveScale(currentViewport);
-        const contentX = (pointerX - currentViewport.x) / currentScale;
-        const contentY = (pointerY - currentViewport.y) / currentScale;
-        const nextScale = getNextViewportZoomScale(currentScale, event.deltaY);
-
-        setAppState((current) => ({
-          ...current,
-          viewport: {
-            ...current.viewport,
-            zoom: nextScale,
-            scale: 1,
-            x: pointerX - contentX * nextScale,
-            y: pointerY - contentY * nextScale,
-          },
-        }));
-        return;
-      }
-
-      if (!target?.closest("[data-chat-window]")) {
-        event.preventDefault();
-      }
+    if (!target?.closest("[data-chat-window]")) {
+      event.preventDefault();
     }
-
-    sceneNode.addEventListener("wheel", handleCanvasWheel, { passive: false });
-    return () => {
-      sceneNode.removeEventListener("wheel", handleCanvasWheel);
-    };
-  });
+  };
 }

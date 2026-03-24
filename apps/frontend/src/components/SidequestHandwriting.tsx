@@ -1,11 +1,8 @@
 import {
   useId,
-  useState,
   useSyncExternalStore,
   type CSSProperties,
 } from "react";
-
-import { useMountEffect } from "../hooks/useMountEffect";
 
 export interface SidequestHandwritingProps {
   className?: string;
@@ -133,18 +130,11 @@ function usePrefersReducedMotion() {
   );
 }
 
-function resolveInitialStrokeStyle(isAnimated: boolean, shouldReduceMotion: boolean): CSSProperties {
+function resolveInitialStrokeStyle(shouldReduceMotion: boolean): CSSProperties {
   if (shouldReduceMotion) {
     return {
       opacity: 1,
       strokeDashoffset: 0,
-    };
-  }
-
-  if (isAnimated) {
-    return {
-      opacity: 0,
-      strokeDashoffset: 1,
     };
   }
 
@@ -161,22 +151,6 @@ function HandwritingStrokeGroup({
   duration: number;
   shouldReduceMotion: boolean;
 }) {
-  const [isAnimated, setIsAnimated] = useState(false);
-
-  useMountEffect(() => {
-    if (shouldReduceMotion) {
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      setIsAnimated(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  });
-
   return (
     <g
       aria-hidden="true"
@@ -196,10 +170,10 @@ function HandwritingStrokeGroup({
           pathLength={1}
           strokeDasharray="1 1"
           strokeDashoffset={1}
-          style={resolveInitialStrokeStyle(isAnimated, shouldReduceMotion)}
+          style={resolveInitialStrokeStyle(shouldReduceMotion)}
           transform={stroke.transform}
         >
-          {isAnimated && !shouldReduceMotion ? (
+          {!shouldReduceMotion ? (
             <>
               <animate
                 attributeName="opacity"

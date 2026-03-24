@@ -5,6 +5,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 
 import { useMountEffect } from "../../hooks/useMountEffect";
@@ -79,6 +80,7 @@ export interface ChatWorkspaceViewModel {
   leftPaneWidthPx: number | null;
   messagesByWindowId: MessagesByWindowId;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onCanvasWheel: (event: ReactWheelEvent<HTMLDivElement>) => void;
   onCloseAllChildWindows: () => void;
   onClosePromptCancel: () => void;
   onClosePromptConfirm: () => void;
@@ -863,6 +865,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       selection.dismissSelection();
       canvas.onCanvasPointerDown(event);
     },
+    onCanvasWheel: canvas.onCanvasWheel,
     onCloseAllChildWindows: handleCloseAllChildWindows,
     onClosePromptCancel: dismissClosePrompt,
     onClosePromptConfirm: confirmClosePrompt,

@@ -1,12 +1,10 @@
 import {
   useMemo,
-  useState,
   type CSSProperties,
 } from "react";
 
 import type { BranchFocus } from "../../types";
 import { Button } from "../../components/ui/button";
-import { useMountEffect } from "../../hooks/useMountEffect";
 import { FLOATING_ROOT_WINDOW_WIDTH } from "../lib/constants";
 import BranchFocusButton from "./BranchFocusButton";
 import CloseIcon from "./CloseIcon";
@@ -19,6 +17,7 @@ const FOCUS_TOOLTIP_VIEWPORT_MARGIN_PX = 16;
 const FLOATING_HEADER_HORIZONTAL_PADDING_PX = 32;
 const FLOATING_HEADER_CLOSE_BUTTON_WIDTH_PX = 40;
 const FLOATING_HEADER_GAP_PX = 12;
+const TITLE_CHARACTER_ANIMATION_NAME = "chat-window-title-reveal";
 
 interface AnimatedTitleUnit {
   character: string;
@@ -106,18 +105,7 @@ export function resolveFocusTooltipPosition(options: {
 }
 
 function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
-  const [isSettled, setIsSettled] = useState(false);
   const units = useMemo(() => getAnimatedTitleUnits(title), [title]);
-
-  useMountEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      setIsSettled(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  });
 
   return (
     <h2
@@ -125,6 +113,21 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
       className={className}
       data-animated-title="true"
     >
+      <style>{`
+@keyframes ${TITLE_CHARACTER_ANIMATION_NAME} {
+  from {
+    filter: blur(8px);
+    opacity: 0;
+    transform: translateY(0.18em);
+  }
+
+  to {
+    filter: blur(0px);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+`}</style>
       {units.map((unit) => {
         if (unit.isSpace) {
           return (
@@ -139,14 +142,15 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
         }
 
         const style: CSSProperties = {
+          animationDelay: `${(unit.visibleIndex ?? 0) * TITLE_CHARACTER_ANIMATION_STAGGER_MS}ms`,
+          animationDuration: `${TITLE_CHARACTER_ANIMATION_DURATION_MS}ms`,
+          animationFillMode: "forwards",
+          animationName: TITLE_CHARACTER_ANIMATION_NAME,
+          animationTimingFunction: TITLE_CHARACTER_ANIMATION_EASING,
           display: "inline-block",
-          filter: isSettled ? "blur(0px)" : "blur(8px)",
-          opacity: isSettled ? 1 : 0,
-          transform: isSettled ? "translateY(0)" : "translateY(0.18em)",
-          transitionDelay: `${(unit.visibleIndex ?? 0) * TITLE_CHARACTER_ANIMATION_STAGGER_MS}ms`,
-          transitionDuration: `${TITLE_CHARACTER_ANIMATION_DURATION_MS}ms`,
-          transitionProperty: "opacity, transform, filter",
-          transitionTimingFunction: TITLE_CHARACTER_ANIMATION_EASING,
+          filter: "blur(8px)",
+          opacity: 0,
+          transform: "translateY(0.18em)",
           willChange: "opacity, transform, filter",
         };
 

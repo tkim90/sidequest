@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import type { RefObject } from "react";
 
-import { useMountEffect } from "../../hooks/useMountEffect";
 import type { ReasoningEffort } from "../../types";
 import { useModelStore } from "../../stores/modelStore";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
@@ -57,37 +56,6 @@ function ChatWindowComposer({
   );
   const [openPicker, setOpenPicker] = useState<"model" | "effort" | null>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
-  const openPickerRef = useRef<"model" | "effort" | null>(openPicker);
-  openPickerRef.current = openPicker;
-
-  useMountEffect(() => {
-    function handleMouseDown(event: MouseEvent) {
-      if (openPickerRef.current === null) {
-        return;
-      }
-
-      if (
-        controlsRef.current &&
-        !controlsRef.current.contains(event.target as Node)
-      ) {
-        setOpenPicker(null);
-      }
-    }
-
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  });
-
-  useMountEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && openPickerRef.current !== null) {
-        setOpenPicker(null);
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  });
 
   const visibleOpenPicker =
     openPicker === "effort" && !showEffortPicker ? null : openPicker;
@@ -125,6 +93,18 @@ function ChatWindowComposer({
   const canSend = composer.trim().length > 0 && !isStreaming;
   const placeholder = isFixedPane ? "Write something..." : "Ask a follow-up...";
 
+  function handleControlsBlur(event: React.FocusEvent<HTMLDivElement>) {
+    const nextFocusedNode = event.relatedTarget;
+    if (
+      nextFocusedNode instanceof Node &&
+      controlsRef.current?.contains(nextFocusedNode)
+    ) {
+      return;
+    }
+
+    setOpenPicker(null);
+  }
+
   const controls = (
     <div
       ref={controlsRef}
@@ -132,6 +112,7 @@ function ChatWindowComposer({
         "flex shrink-0 items-center gap-2",
         isChildPane ? "flex-nowrap" : "flex-wrap",
       ].join(" ")}
+      onBlurCapture={handleControlsBlur}
       onPointerDown={(event) => event.stopPropagation()}
     >
       <ModelPicker
@@ -180,7 +161,14 @@ function ChatWindowComposer({
   ) : null;
 
   return (
-    <footer className="relative z-10">
+    <footer
+      className="relative z-10"
+      onKeyDownCapture={(event) => {
+        if (event.key === "Escape" && visibleOpenPicker !== null) {
+          setOpenPicker(null);
+        }
+      }}
+    >
       <div className={composerShellClassName}>
         {isChildPane ? (
           <div className="flex w-full min-w-0 items-end gap-2 px-4 py-3">
