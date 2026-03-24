@@ -14,16 +14,43 @@
 - Props are read-only snapshots; never mutate them.
 - If the desired behavior is “start fresh for a new entity,” reset with `key` and remount semantics instead of dependency choreography.
 
-## Effects and External Systems
-- For new and touched frontend code, do not call `useEffect` directly in application code.
-- For rare mount-time external synchronization, use a shared `useMountEffect` helper instead.
-- `useMountEffect` is only for setup-on-mount / cleanup-on-unmount external sync.
-- Allowed `useMountEffect` cases: DOM integration, focus/scroll setup, third-party widget lifecycle, browser API subscriptions, and other mount-scoped external setup.
-- Put user-event logic in event handlers, not in effects.
-- Use data-fetching libraries or higher-level data abstractions instead of effect-driven `fetch(...).then(setState)` logic.
-- Prefer conditional mounting over guards inside effects when behavior should begin only after preconditions are satisfied.
+## React `useEffect` Guidelines
+At our organization, we have strictly banned the direct use of `useEffect`. Most `useEffect` usage compensates for things React already handles better with other primitives: derived state, event handlers, and data-fetching abstractions. Banning the hook forces logic to be declarative and predictable, preventing race conditions, infinite loops, and brittle dependency arrays.
+
+Follow these 5 core patterns to replace `useEffect`:
+
+### 1. Derive State, Do Not Sync It
+Compute derived values inline during the render cycle instead of using an effect to sync state.
+*   **Smell Test:** You are writing `useEffect(() => setX(deriveFromY(y)), [y])`
+*   **❌ Bad:** Using two render cycles (first stale, then filtered) by updating a secondary state in an effect.
+*   **✅ Good:** Compute the value directly in the component body (`const filtered = items.filter(...)`).
+
+### 2. Use Data-Fetching Libraries
+Never use effects for data fetching. Effect-based fetching often creates race conditions, duplicated caching logic, and lacks cancellation.
+*   **Smell Test:** Your effect does `fetch(...)` and then `setState(...)`.
+*   **❌ Bad:** Fetching data in `useEffect` and manually setting loading/data states.
+*   **✅ Good:** Use robust query libraries (like React Query, SWR) that handle cancellation, caching, and staleness automatically.
+
+### 3. Use Event Handlers, Not Effects
+If an action is triggered by a user (e.g., a click), the logic belongs in the event handler, not an effect.
+*   **Smell Test:** State is used merely as a flag so an effect can trigger the real action (the "set flag -> effect runs -> reset flag" anti-pattern).
+*   **❌ Bad:** Setting `isSubmitting` to true in `onClick`, then having a `useEffect` listen to `isSubmitting` to make the API call.
+*   **✅ Good:** Make the API call directly inside the `onClick` handler.
+
+### 4. Use `useMountEffect` for One-Time External Sync
+For the rare cases where you genuinely need to sync with an external system on mount, use a custom `useMountEffect` hook.
+*   **Definition:** `export function useMountEffect(effect) { useEffect(effect, []); }`
+*   **Good Uses:** DOM integration (focus, scroll), 3rd-party widget lifecycles, browser API subscriptions.
+*   **Smell Test:** You are synchronizing with an external system and the behavior is naturally "setup on mount, cleanup on unmount".
+*   **Pattern:** Instead of putting `if (!isLoading)` guards inside an effect, use **conditional mounting**. Only render the component containing the `useMountEffect` when preconditions are met.
+
+### 5. Reset with `key`, Not Dependency Choreography
+Do not use effects to clear out or reset state when a prop (like an ID) changes.
+*   **Smell Test:** You are writing an effect whose only job is to reset local state when an ID/prop changes.
+*   **❌ Bad:** `useEffect(() => { resetState(); loadData(id); }, [id])`
+*   **✅ Good:** Pass the ID as a `key` prop to the component (`<Component key={id} id={id} />`). This forces React to unmount the old instance and cleanly remount a brand-new instance, naturally resetting all state.
+
 - Smells to reject here: `useEffect(() => setX(deriveFromY(y)), [y])`, `fetch(...).then(setState)` inside an effect, “set flag -> effect runs -> reset flag”, effects whose only job is to reset local state on ID/prop change, and chains of effects used as control flow.
-- Adoption note: this is a hard rule for new and touched code; existing direct `useEffect` call sites may be migrated opportunistically, and future lint enforcement is desirable but not part of this AGENTS-only change.
 
 ## Component Boundaries and Composition
 - Keep components small, named, single-purpose, and composable through props.
