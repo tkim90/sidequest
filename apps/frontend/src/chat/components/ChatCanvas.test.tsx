@@ -71,41 +71,45 @@ const SCROLL_STATE: Record<string, WindowScrollState> = {
   },
 };
 
+function renderChatCanvas(mainWindow: WindowRecord | null) {
+  return renderToStaticMarkup(
+    <ChatCanvas
+      anchorGroupsByMessageKey={{} as AnchorGroupsByMessageKey}
+      canvasRef={{ current: null }}
+      isPaneResizing={false}
+      leftPaneWidthPx={null}
+      mainWindow={mainWindow}
+      messagesByWindowId={MESSAGES}
+      onCanvasPointerDown={() => {}}
+      onComposerChange={() => {}}
+      onEffortChange={() => {}}
+      onGeometryChange={() => {}}
+      onHeaderPointerDown={() => {}}
+      onMessageMouseDown={() => {}}
+      onModelChange={() => {}}
+      onNavigateToBranchSource={() => {}}
+      onOpenFreshRootWindow={() => {}}
+      onPaneResizePointerDown={() => {}}
+      onResizePointerDown={() => {}}
+      onRetry={() => {}}
+      onSend={() => {}}
+      onToggleHistoryExpanded={() => {}}
+      onWindowClose={() => {}}
+      onWindowFocus={() => {}}
+      onWindowScrollStateChange={() => {}}
+      registerAnchorRef={() => {}}
+      registerWindowRef={() => {}}
+      splitPaneRef={{ current: null }}
+      viewport={VIEWPORT}
+      windowScrollStates={SCROLL_STATE}
+      windows={[CHILD_WINDOW]}
+    />,
+  );
+}
+
 describe("ChatCanvas", () => {
-  it("uses PaperSurface for the fixed notebook pane without changing floating panes", () => {
-    const markup = renderToStaticMarkup(
-      <ChatCanvas
-        anchorGroupsByMessageKey={{} as AnchorGroupsByMessageKey}
-        canvasRef={{ current: null }}
-        isPaneResizing={false}
-        leftPaneWidthPx={null}
-        mainWindow={ROOT_WINDOW}
-        messagesByWindowId={MESSAGES}
-        onCanvasPointerDown={() => {}}
-        onComposerChange={() => {}}
-        onEffortChange={() => {}}
-        onGeometryChange={() => {}}
-        onHeaderPointerDown={() => {}}
-        onMessageMouseDown={() => {}}
-        onModelChange={() => {}}
-        onNavigateToBranchSource={() => {}}
-        onOpenFreshRootWindow={() => {}}
-        onPaneResizePointerDown={() => {}}
-        onResizePointerDown={() => {}}
-        onRetry={() => {}}
-        onSend={() => {}}
-        onToggleHistoryExpanded={() => {}}
-        onWindowClose={() => {}}
-        onWindowFocus={() => {}}
-        onWindowScrollStateChange={() => {}}
-        registerAnchorRef={() => {}}
-        registerWindowRef={() => {}}
-        splitPaneRef={{ current: null }}
-        viewport={VIEWPORT}
-        windowScrollStates={SCROLL_STATE}
-        windows={[CHILD_WINDOW]}
-      />,
-    );
+  it("uses PaperSurface for the fixed notebook pane and shows the root GitHub link", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW);
 
     expect(markup.match(/data-paper-surface="true"/g)?.length).toBe(1);
     expect(markup).toContain('data-paper-surface-content="true"');
@@ -120,8 +124,21 @@ describe("ChatCanvas", () => {
     expect(markup).toContain('left-0 top-0 z-40 h-5 w-5 cursor-nwse-resize');
     expect(markup).toContain('right-0 top-0 z-40 h-5 w-5 cursor-nesw-resize');
     expect(markup.match(/data-resize-handle=/g)?.length).toBe(8);
-    expect(markup).toContain('data-sidequest-handwriting=');
     expect(markup).toContain('absolute right-10 top-8 z-30');
-    expect(markup).toContain('max-w-[120px]');
+    expect(markup).toContain('aria-label="Open Sidequest on GitHub"');
+    expect(markup).toContain('href="https://github.com/tkim90/sidequest"');
+    expect(markup).toContain('target="_blank"');
+    expect(markup).toContain('rel="noreferrer noopener"');
+    expect(markup).not.toContain('data-sidequest-handwriting=');
+  });
+
+  it("does not render the root GitHub link for non-root titles", () => {
+    const markup = renderChatCanvas({
+      ...ROOT_WINDOW,
+      title: "Research notes",
+    });
+
+    expect(markup).not.toContain('aria-label="Open Sidequest on GitHub"');
+    expect(markup).not.toContain('href="https://github.com/tkim90/sidequest"');
   });
 });

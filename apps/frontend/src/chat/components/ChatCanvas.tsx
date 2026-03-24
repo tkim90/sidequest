@@ -15,7 +15,6 @@ import type {
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
-import SidequestHandwriting from "../../components/SidequestHandwriting";
 import {
   PANE_SEPARATOR_WIDTH,
   ROOT_WINDOW_TITLE,
@@ -25,6 +24,7 @@ import {
   snapToDevicePixel,
 } from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
+import GithubLogo from "./GithubLogo";
 import PaperSurface from "./PaperSurface";
 import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
 
@@ -300,13 +300,7 @@ function ChatCanvas({
       <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
         <div className="paper-texture relative h-full overflow-hidden bg-paper-sheet">
           {mainWindow?.title === ROOT_WINDOW_TITLE ? (
-            <div className="pointer-events-none absolute right-10 top-8 z-30">
-              <SidequestHandwriting
-                className="w-full max-w-[120px] text-paper-ink-soft/85"
-                duration={2.2}
-                respectReducedMotion={false}
-              />
-            </div>
+            <GithubLogo className="absolute right-10 top-8 z-30" />
           ) : null}
           <div
             aria-hidden
