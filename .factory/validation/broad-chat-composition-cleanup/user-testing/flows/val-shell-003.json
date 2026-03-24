@@ -1,0 +1,18 @@
+{
+  "assertionId": "VAL-SHELL-003",
+  "result": "passed",
+  "description": "Root and floating empty states keep their distinct affordances",
+  "evidence": {
+    "screenshots": [
+      "val-shell-003-root-empty.png",
+      "val-shell-003-floating-empty.png"
+    ],
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Root empty state shows three starter-question buttons",
+    "Root has 'Write something...' placeholder and GitHub badge",
+    "Floating empty note shows same starter questions with 'Ask a follow-up...' placeholder",
+    "Floating note does not duplicate the root-only GitHub badge"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "milestone": "broad-chat-composition-cleanup",
+  "validationType": "user-testing",
+  "timestamp": "2026-03-24T13:30:00Z",
+  "workerSessionId": "c714698b-a426-457d-ad54-38fd77a06d9f",
+  "summary": "All 15 validation-contract assertions passed against the live app on http://127.0.0.1:5174. Every assertion was exercised with real browser interactions using agent-browser, with screenshot and state evidence collected for each flow.",
+  "results": {
+    "passed": 15,
+    "failed": 0,
+    "blocked": 0,
+    "total": 15
+  },
+  "assertions": {
+    "VAL-SHELL-001": { "status": "passed", "report": "flows/val-shell-001.json" },
+    "VAL-SHELL-002": { "status": "passed", "report": "flows/val-shell-002.json" },
+    "VAL-SHELL-003": { "status": "passed", "report": "flows/val-shell-003.json" },
+    "VAL-SHELL-004": { "status": "passed", "report": "flows/val-shell-004.json" },
+    "VAL-SHELL-005": { "status": "passed", "report": "flows/val-shell-005.json" },
+    "VAL-SHELL-006": { "status": "passed", "report": "flows/val-shell-006.json" },
+    "VAL-CONTROLS-001": { "status": "passed", "report": "flows/val-controls-001.json" },
+    "VAL-CONTROLS-002": { "status": "passed", "report": "flows/val-controls-002.json" },
+    "VAL-CONTROLS-003": { "status": "passed", "report": "flows/val-controls-003.json" },
+    "VAL-CONTROLS-004": { "status": "passed", "report": "flows/val-controls-004.json" },
+    "VAL-BRANCH-001": { "status": "passed", "report": "flows/val-branch-001.json" },
+    "VAL-BRANCH-002": { "status": "passed", "report": "flows/val-branch-002.json" },
+    "VAL-CROSS-001": { "status": "passed", "report": "flows/val-cross-001.json" },
+    "VAL-CROSS-002": { "status": "passed", "report": "flows/val-cross-002.json" },
+    "VAL-CROSS-003": { "status": "passed", "report": "flows/val-cross-003.json" }
+  },
+  "evidenceArtifacts": {
+    "screenshotsDir": "flows/",
+    "totalScreenshots": 30
+  }
+}

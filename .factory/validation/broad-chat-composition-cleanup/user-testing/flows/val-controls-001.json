@@ -1,0 +1,19 @@
+{
+  "assertionId": "VAL-CONTROLS-001",
+  "result": "passed",
+  "description": "Starter questions submit a conversation in the active empty note",
+  "evidence": {
+    "screenshots": [
+      "val-controls-001-before-send.png",
+      "val-controls-001-after-send.png"
+    ],
+    "networkRequests": "POST /api/chat/stream -> 200 (confirmed via performance entries)",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Clicked 'What was Dijkstra known for?' starter question",
+    "Prompt was immediately submitted, empty-state art replaced with conversation",
+    "Assistant response about Dijkstra rendered with model badge and Retry control",
+    "Composer and model picker remain usable after submission"
+  ]
+}

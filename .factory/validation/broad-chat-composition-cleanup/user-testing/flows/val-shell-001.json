@@ -1,0 +1,18 @@
+{
+  "assertionId": "VAL-SHELL-001",
+  "result": "passed",
+  "description": "Root workspace renders the notebook split shell",
+  "evidence": {
+    "screenshots": ["val-shell-001-root-shell.png"],
+    "consoleErrors": "none",
+    "networkRequests": "GET /api/chat/models -> 200 (confirmed via performance entries)"
+  },
+  "observations": [
+    "Fixed root notebook pane titled 'Sidequest' renders on the left",
+    "Root composer with 'Write something...' placeholder and gpt-4.1 model picker present",
+    "Right-hand notebook canvas with binder marks visible",
+    "'Add new note' control in the canvas header",
+    "GitHub link badge ('Open Sidequest on GitHub') in the canvas header",
+    "No floating-note chrome (Close note, resize handles) visible in root pane"
+  ]
+}

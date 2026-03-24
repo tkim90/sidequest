@@ -1,0 +1,24 @@
+{
+  "assertionId": "VAL-SHELL-004",
+  "result": "passed",
+  "description": "Floating notes remain draggable and resizable from window chrome",
+  "evidence": {
+    "screenshots": [
+      "val-shell-004-before-drag.png",
+      "val-shell-004-after-drag.png",
+      "val-shell-004-after-resize.png"
+    ],
+    "browserState": {
+      "beforeDrag": { "x": 677, "y": 56, "width": 500, "height": 607 },
+      "afterDrag": { "x": 649, "y": 92, "width": 500, "height": 607 },
+      "afterResize": { "x": 649, "y": 92, "width": 460, "height": 567 },
+      "afterComposerClick": { "x": 649, "y": 92, "width": 460, "height": 567 }
+    },
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Floating note repositioned from (677,56) to (649,92) via header drag",
+    "Floating note resized from 500x607 to 460x567 via bottom-right resize handle",
+    "Clicking inner controls (composer) did not change window bounds (460x567 unchanged)"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "assertionId": "VAL-CONTROLS-003",
+  "result": "passed",
+  "description": "Model and effort pickers preserve selection behavior",
+  "evidence": {
+    "screenshots": [
+      "val-controls-003-model-picker.png",
+      "val-controls-003-effort-picker.png",
+      "val-controls-003-model-without-effort.png"
+    ],
+    "networkRequests": "POST /api/chat/stream body includes {\"model\":\"gpt-5.4\",\"effort\":\"high\"}, GET /api/chat/models -> 200",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Model picker shows all available chat models (6 models listed)",
+    "Selecting gpt-5.4 updated visible model label and exposed effort picker (default: medium)",
+    "Changing effort to 'high' updated the visible effort label",
+    "Request body confirmed model=gpt-5.4 and effort=high via fetch interceptor",
+    "Switching to gpt-4.1 hid the effort picker completely"
+  ]
+}

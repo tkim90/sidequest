@@ -1,0 +1,18 @@
+{
+  "assertionId": "VAL-CROSS-001",
+  "result": "passed",
+  "description": "Root and floating notes support independent conversations in one workspace",
+  "evidence": {
+    "screenshots": [
+      "val-cross-001-root-conversation.png",
+      "val-cross-001-two-conversations.png"
+    ],
+    "networkRequests": "POST /api/chat/stream -> 200 (multiple requests for independent conversations)",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Root conversation about Dijkstra visible and unchanged in the fixed pane",
+    "Floating note 'Chat 1' opened with independent conversation ('Hello from the floating note')",
+    "Both conversations coexist, each with their own composer and model picker"
+  ]
+}

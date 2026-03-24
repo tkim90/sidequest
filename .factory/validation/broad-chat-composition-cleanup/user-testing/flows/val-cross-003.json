@@ -1,0 +1,20 @@
+{
+  "assertionId": "VAL-CROSS-003",
+  "result": "passed",
+  "description": "Closing a note tree requires confirmation and preserves the remaining workspace",
+  "evidence": {
+    "screenshots": [
+      "val-cross-003-close-modal.png",
+      "val-cross-003-after-cancel.png",
+      "val-cross-003-after-confirm.png"
+    ],
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Closing Sidequest.1 (which has descendant Sidequest.1.1) opened confirmation modal",
+    "Modal titled 'CLOSE BRANCH TREE' listing 'Sidequest.1.1' as affected descendant",
+    "Clicking 'Cancel' left both Sidequest.1 and Sidequest.1.1 intact",
+    "Clicking 'Close all' removed both Sidequest.1 and Sidequest.1.1",
+    "Fixed root notebook pane remains usable with composer, model picker, and GitHub badge"
+  ]
+}

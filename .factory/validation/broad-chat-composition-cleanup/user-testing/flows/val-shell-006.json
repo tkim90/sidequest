@@ -1,0 +1,22 @@
+{
+  "assertionId": "VAL-SHELL-006",
+  "result": "passed",
+  "description": "Overlapping floating notes come to the front when interacted with",
+  "evidence": {
+    "screenshots": [
+      "val-shell-006-overlap-before-focus.png",
+      "val-shell-006-overlap-after-focus.png"
+    ],
+    "browserState": {
+      "beforeInteraction": { "Chat2": { "zIndex": 2 }, "Chat1": { "zIndex": 1 } },
+      "afterInteraction": { "Chat1": { "zIndex": 2 }, "Chat2": { "zIndex": 1 } },
+      "rootPane": { "zIndex": 10, "position": "relative" }
+    },
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Before interaction: Chat 2 at z-index 2 (front), Chat 1 at z-index 1 (back)",
+    "After clicking Chat 1: Chat 1 at z-index 2 (front), Chat 2 at z-index 1 (back)",
+    "Root notebook pane stays pinned at z-index 10 in the left column"
+  ]
+}

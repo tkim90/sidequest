@@ -1,0 +1,23 @@
+{
+  "assertionId": "VAL-SHELL-005",
+  "result": "passed",
+  "description": "The split-pane divider resizes and persists the notebook width",
+  "evidence": {
+    "screenshots": [
+      "val-shell-005-before-divider-drag.png",
+      "val-shell-005-after-divider-drag.png",
+      "val-shell-005-after-reload.png"
+    ],
+    "browserState": {
+      "beforeDrag": "localStorage sidequest:left-pane-width = 563",
+      "afterDrag": "localStorage sidequest:left-pane-width = 441",
+      "afterReload": "localStorage sidequest:left-pane-width = 441"
+    },
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Dragging divider changed left-pane width from 563 to 441",
+    "Width within allowed clamp range",
+    "After page reload, localStorage value persisted at 441"
+  ]
+}

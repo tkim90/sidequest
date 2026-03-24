@@ -1,0 +1,19 @@
+{
+  "assertionId": "VAL-CONTROLS-004",
+  "result": "passed",
+  "description": "Conversation controls preserve message metadata and recovery affordances",
+  "evidence": {
+    "screenshots": [
+      "val-controls-004-messages.png",
+      "val-controls-004-reasoning-open.png",
+      "val-branch-001-history-after-expand.png"
+    ],
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Completed assistant messages show model badge (gpt-4.1, gpt-5.4) and Retry controls",
+    "Reasoning disclosure button visible for gpt-5.4 response, expanded to show 'Acknowledging the test request'",
+    "Branched notes with inherited context keep that content behind 'See previous history' disclosure",
+    "Expanding 'See previous history' reveals inherited parent messages with Retry controls"
+  ]
+}

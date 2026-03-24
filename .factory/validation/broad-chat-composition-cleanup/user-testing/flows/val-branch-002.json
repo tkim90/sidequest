@@ -1,0 +1,18 @@
+{
+  "assertionId": "VAL-BRANCH-002",
+  "result": "passed",
+  "description": "Child notes can navigate back to their source text",
+  "evidence": {
+    "screenshots": [
+      "val-branch-002-before-source-nav.png",
+      "val-branch-002-after-source-nav.png"
+    ],
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Clicking 'Dijkstra's Algorithm:' button in child note header navigated back to source",
+    "Source text 'Dijkstra's Algorithm:' in root pane scrolled into view and visibly highlighted",
+    "'See previous history' in child note expanded to show inherited history",
+    "Workspace remained interactive after source navigation"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "assertionId": "VAL-BRANCH-001",
+  "result": "passed",
+  "description": "Message text can branch into a child note",
+  "evidence": {
+    "screenshots": [
+      "val-branch-001-selection-cta.png",
+      "val-branch-001-branch-compose.png",
+      "val-branch-001-child-note.png",
+      "val-branch-001-history-before-expand.png",
+      "val-branch-001-history-after-expand.png"
+    ],
+    "networkRequests": "POST /api/chat/stream -> 200 (child note conversation started)",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Selected 'Dijkstra's Algorithm:' text span in assistant message",
+    "'Branch in new window' affordance appeared as popover",
+    "Expanding popover showed compose form with 'Ask a follow-up question...' and 'NEW CHAT' button",
+    "Submitting opened child note 'Sidequest.1' with branch-focus text in header",
+    "Parent history through selected message copied into child, initially collapsed behind 'See previous history'",
+    "Follow-up conversation started with prompt in child note"
+  ]
+}

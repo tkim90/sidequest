@@ -1,0 +1,19 @@
+{
+  "assertionId": "VAL-CROSS-002",
+  "result": "passed",
+  "description": "Branch-created child notes inherit the parent model and effort configuration",
+  "evidence": {
+    "screenshots": [
+      "val-cross-002-parent-configured.png",
+      "val-cross-002-child-inherited-config.png"
+    ],
+    "networkRequests": "POST /api/chat/stream body includes {\"model\":\"gpt-5.4\",\"effort\":\"high\"} in child note request",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Parent configured with gpt-5.4 model and high effort",
+    "Branching from 'Structured Programming' text created child note 'Sidequest.1'",
+    "Child note shows gpt-5.4 model picker and high effort picker (both inherited)",
+    "Fetch interceptor captured request body with model=gpt-5.4, effort=high for child's first send"
+  ]
+}

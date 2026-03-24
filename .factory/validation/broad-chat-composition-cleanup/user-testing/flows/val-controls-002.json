@@ -1,0 +1,21 @@
+{
+  "assertionId": "VAL-CONTROLS-002",
+  "result": "passed",
+  "description": "Composer send affordances behave correctly by input state",
+  "evidence": {
+    "screenshots": [
+      "val-controls-002-typed-message.png",
+      "val-controls-002-multiline-message.png",
+      "val-controls-002-after-submit-cleared.png"
+    ],
+    "networkRequests": "POST /api/chat/stream -> 200 (confirmed after Enter submit)",
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Whitespace-only input: no Send button appeared in accessibility snapshot",
+    "Non-whitespace input: 'Send message' button appeared",
+    "Shift+Enter inserted newline without submitting (multiline text verified)",
+    "Enter key submitted the message (POST /api/chat/stream confirmed)",
+    "Composer cleared after submit (empty textbox, no send button)"
+  ]
+}

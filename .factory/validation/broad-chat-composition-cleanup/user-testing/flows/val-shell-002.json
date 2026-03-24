@@ -1,0 +1,20 @@
+{
+  "assertionId": "VAL-SHELL-002",
+  "result": "passed",
+  "description": "Add new note opens and closes a floating note",
+  "evidence": {
+    "screenshots": [
+      "val-shell-002-before-open.png",
+      "val-shell-002-after-open.png",
+      "val-shell-002-after-close.png"
+    ],
+    "consoleErrors": "none"
+  },
+  "observations": [
+    "Clicking 'Add new note' created a floating note titled 'Chat 1'",
+    "Floating note appears fully inside the visible right-hand canvas",
+    "Floating note has its own follow-up composer and 'Close note' control",
+    "Closing the floating note removes only that note",
+    "Fixed root notebook pane remains intact after close"
+  ]
+}
