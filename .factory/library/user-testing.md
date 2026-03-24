@@ -40,3 +40,8 @@ Validation surface findings, tooling choices, and runtime testing guidance.
 - Flow validators on this surface are execution-only; do not stop at a plan or spec response.
 - If a flow-validator task does not execute and does not write its JSON report, the parent `user-testing-validator` must run the assigned browser checks directly and record the missing report as friction or blocking evidence.
 - Keep validators on unique, non-overlapping interactions and avoid mutating shared global configuration.
+
+## Mission Workaround Note
+
+- In mission `503639ee-5760-42ca-adb6-28b035f9af66`, the built-in `user-testing-validator` repeatedly exited after context setup without executing browser flows.
+- Browser assertion execution for that mission is therefore owned by a custom `browser-validation-worker` feature that runs `agent-browser` directly, writes `.factory/validation/<milestone>/user-testing/` artifacts, and updates the mission `validation-state.json`.

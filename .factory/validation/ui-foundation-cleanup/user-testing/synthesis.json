@@ -1,0 +1,39 @@
+{
+  "milestone": "ui-foundation-cleanup",
+  "round": 1,
+  "status": "overridden",
+  "assertionsSummary": {
+    "passed": [],
+    "failed": [],
+    "blocked": [
+      "VAL-SHELL-001",
+      "VAL-SHELL-002",
+      "VAL-SHELL-003",
+      "VAL-CONTROLS-001",
+      "VAL-CONTROLS-002",
+      "VAL-CONTROLS-003"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "source": "user-testing-validator-ui-foundation-cleanup",
+      "description": "Built-in user-testing-validator sessions repeatedly exited after context setup without executing browser assertions or writing synthesis."
+    }
+  ],
+  "override": {
+    "reason": "The built-in validator path remained non-functional after repeated retries and stronger mission guidance, so browser assertion execution was deferred to the custom feature `manual-browser-validation-all-chat-assertions` in the unsealed `broad-chat-composition-cleanup` milestone.",
+    "deferredAssertions": [
+      "VAL-SHELL-001",
+      "VAL-SHELL-002",
+      "VAL-SHELL-003",
+      "VAL-CONTROLS-001",
+      "VAL-CONTROLS-002",
+      "VAL-CONTROLS-003"
+    ],
+    "deferredToFeature": "manual-browser-validation-all-chat-assertions"
+  },
+  "appliedUpdates": [],
+  "notes": [
+    "validation-state.json intentionally remains pending for the deferred assertions until the custom browser-validation feature executes."
+  ]
+}
