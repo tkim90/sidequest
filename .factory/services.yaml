@@ -1,0 +1,21 @@
+commands:
+  install: npm --prefix apps/frontend install
+  test: npm --prefix apps/frontend run test -- --maxWorkers=7
+  typecheck: npm --prefix apps/frontend run typecheck
+  build: npm --prefix apps/frontend run build
+  lint: printf 'No lint script is configured for apps/frontend\n'
+
+services:
+  chat_api:
+    start: printf 'Using existing chat API on http://127.0.0.1:8000\n'
+    stop: printf 'Leaving existing chat API on http://127.0.0.1:8000 running\n'
+    healthcheck: curl -sf http://127.0.0.1:8000/api/chat/models
+    port: 8000
+    depends_on: []
+
+  web:
+    start: npm --prefix apps/frontend run dev -- --host 127.0.0.1 --port 5174
+    stop: pids=$(lsof -ti tcp:5174) && [ -n "$pids" ] && kill $pids || true
+    healthcheck: curl -sf http://127.0.0.1:5174
+    port: 5174
+    depends_on: [chat_api]
