@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -8,6 +7,7 @@ import {
   type RefObject,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import { useDeltaBatcher } from "./useDeltaBatcher";
 
 import type {
@@ -269,7 +269,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
-  const pendingBranchSendRef = useRef<{ windowId: string; prompt: string } | null>(null);
   const splitPaneRef = useRef<HTMLDivElement | null>(null);
   const leftPaneWidthRef = useRef<number | null>(null);
   const paneResizeRef = useRef<{
@@ -277,14 +276,8 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     startClientX: number;
     startLeftPaneWidth: number;
   } | null>(null);
-
-  useEffect(() => {
-    appStateRef.current = appState;
-  }, [appState]);
-
-  useEffect(() => {
-    leftPaneWidthRef.current = leftPaneWidthPx;
-  }, [leftPaneWidthPx]);
+  appStateRef.current = appState;
+  leftPaneWidthRef.current = leftPaneWidthPx;
 
   const persistLeftPaneWidth = useCallback((width: number) => {
     try {
@@ -292,82 +285,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     } catch {
       // Ignore storage failures and keep the in-memory width.
     }
-  }, []);
-
-  useEffect(() => {
-    const pending = pendingBranchSendRef.current;
-    if (!pending) return;
-
-    const windowData = appState.windows[pending.windowId];
-    if (!windowData) {
-      pendingBranchSendRef.current = null;
-      return;
-    }
-
-    pendingBranchSendRef.current = null;
-    void handleSend(pending.windowId, pending.prompt);
-  }, [appState]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void (async () => {
-      await useModelStore.getState().fetchModels(controller.signal);
-
-      const { defaultModel: fallbackModel, models, modelsById } = useModelStore.getState();
-      if (!fallbackModel && models.length === 0) {
-        return;
-      }
-
-      setAppState((current) => {
-        let changed = false;
-        const nextWindows = Object.fromEntries(
-          Object.entries(current.windows).map(([windowId, windowData]) => {
-            const modelOption = resolveModelOption(
-              modelsById,
-              windowData.selectedModel,
-              fallbackModel,
-              models,
-            );
-            const nextModel = windowData.selectedModel ?? modelOption?.id ?? null;
-            const nextEffort = resolveEffortForModel(
-              modelOption,
-              windowData.selectedEffort,
-            );
-
-            if (
-              windowData.selectedModel === nextModel &&
-              windowData.selectedEffort === nextEffort
-            ) {
-              return [windowId, windowData];
-            }
-
-            changed = true;
-            return [
-              windowId,
-              {
-                ...windowData,
-                selectedModel: nextModel,
-                selectedEffort: nextEffort,
-              },
-            ];
-          }),
-        );
-
-        if (!changed) {
-          return current;
-        }
-
-        return {
-          ...current,
-          windows: nextWindows,
-        };
-      });
-    })();
-
-    return () => {
-      controller.abort();
-    };
   }, []);
 
   const canvas = useCanvasInteractions({
@@ -412,7 +329,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     canvas.requestGeometryRefresh();
   }, [persistLeftPaneWidth, canvas.requestGeometryRefresh]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const frameId = window.requestAnimationFrame(syncLeftPaneWidth);
 
     function handleWindowResize(): void {
@@ -425,9 +342,9 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [syncLeftPaneWidth]);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     function handlePaneResizePointerMove(event: globalThis.PointerEvent): void {
       const interaction = paneResizeRef.current;
       if (!interaction) {
@@ -470,7 +387,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       window.removeEventListener("pointerup", finishPaneResize);
       window.removeEventListener("pointercancel", finishPaneResize);
     };
-  }, [persistLeftPaneWidth, canvas.requestGeometryRefresh]);
+  });
 
   function getCenteredRootX(windowWidth: number): number {
     const canvasWidth = canvas.canvasRef.current?.clientWidth;
@@ -970,7 +887,9 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onSelectionBranch: (prompt?: string) => {
       const childWindowId = selection.onSelectionBranch();
       if (childWindowId && prompt?.trim()) {
-        pendingBranchSendRef.current = { windowId: childWindowId, prompt: prompt.trim() };
+        window.requestAnimationFrame(() => {
+          void handleSend(childWindowId, prompt.trim());
+        });
       }
     },
     onSend: handleSend,

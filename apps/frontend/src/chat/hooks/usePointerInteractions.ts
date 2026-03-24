@@ -1,6 +1,6 @@
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useRef,
   type Dispatch,
   type PointerEvent as ReactPointerEvent,
@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type { AppState } from "../../types";
 import {
   MIN_WINDOW_HEIGHT,
@@ -428,7 +429,7 @@ export function usePointerInteractions({
     applyPendingInteraction();
   }, [applyPendingInteraction]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     function handlePointerMove(event: globalThis.PointerEvent): void {
       const interaction = interactionRef.current;
       if (!interaction) {
@@ -494,24 +495,18 @@ export function usePointerInteractions({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerCancel);
     };
-  }, [
-    flushPendingInteraction,
-    requestGeometryRefresh,
-    scheduleInteractionFrame,
-    startInertia,
-  ]);
+  });
 
-  useEffect(
+  useMountEffect(
     () => () => {
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }
       cancelInertia();
     },
-    [cancelInertia],
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     function handleWindowResize(): void {
       cancelInertia();
     }
@@ -520,9 +515,9 @@ export function usePointerInteractions({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [cancelInertia]);
+  });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     cancelInertia();
   }, [cancelInertia, viewport.scale, viewport.x, viewport.y, viewport.zoom]);
 

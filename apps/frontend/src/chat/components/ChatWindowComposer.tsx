@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type { ReasoningEffort } from "../../types";
 import { useModelStore } from "../../stores/modelStore";
 import { resolveEffortForModel, resolveModelOption } from "../lib/modelOptions";
@@ -56,9 +57,15 @@ function ChatWindowComposer({
   );
   const [openPicker, setOpenPicker] = useState<"model" | "effort" | null>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
+  const openPickerRef = useRef<"model" | "effort" | null>(openPicker);
+  openPickerRef.current = openPicker;
 
-  useEffect(() => {
+  useMountEffect(() => {
     function handleMouseDown(event: MouseEvent) {
+      if (openPickerRef.current === null) {
+        return;
+      }
+
       if (
         controlsRef.current &&
         !controlsRef.current.contains(event.target as Node)
@@ -69,28 +76,21 @@ function ChatWindowComposer({
 
     document.addEventListener("mousedown", handleMouseDown);
     return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, []);
+  });
 
-  useEffect(() => {
-    if (showEffortPicker) {
-      return;
-    }
-
-    setOpenPicker((current) => (current === "effort" ? null : current));
-  }, [showEffortPicker]);
-
-  useEffect(() => {
+  useMountEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && openPickerRef.current !== null) {
         setOpenPicker(null);
       }
     }
 
-    if (openPicker) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [openPicker]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  });
+
+  const visibleOpenPicker =
+    openPicker === "effort" && !showEffortPicker ? null : openPicker;
 
   const usesCompactControls = isChildPane || isFixedPane;
   const pickerMenuPositionClassName = isChildPane ? "right-0" : "left-0";
@@ -136,7 +136,7 @@ function ChatWindowComposer({
     >
       <ModelPicker
         compact={usesCompactControls}
-        isOpen={openPicker === "model"}
+        isOpen={visibleOpenPicker === "model"}
         models={models}
         onSelect={(modelId) => {
           onModelChange(modelId);
@@ -155,15 +155,13 @@ function ChatWindowComposer({
         <EffortPicker
           compact={usesCompactControls}
           efforts={resolvedModelOption.efforts}
-          isOpen={openPicker === "effort"}
+          isOpen={visibleOpenPicker === "effort"}
           onSelect={(effort) => {
             onEffortChange(effort);
             setOpenPicker(null);
           }}
           onToggle={() =>
-            setOpenPicker((current) =>
-              current === "effort" ? null : "effort",
-            )
+            setOpenPicker((current) => (current === "effort" ? null : "effort"))
           }
           positionClassName={pickerMenuPositionClassName}
           selectedEffort={resolvedSelectedEffort}

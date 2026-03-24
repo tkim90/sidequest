@@ -15,26 +15,48 @@ interface ModelState {
   fetchModels: (signal?: AbortSignal) => Promise<void>;
 }
 
-export const useModelStore = create<ModelState>((set) => ({
+let modelsFetchPromise: Promise<void> | null = null;
+
+export const useModelStore = create<ModelState>((set, get) => ({
   models: [],
   modelsById: {},
   defaultModel: null,
   isLoaded: false,
   fetchModels: async (signal?: AbortSignal) => {
-    try {
-      const config = await fetchChatModelConfig(signal);
-      const fallbackModel = config.defaultModel ?? config.models[0]?.id ?? null;
-
-      set({
-        models: config.models,
-        modelsById: indexModelOptions(config.models),
-        defaultModel: fallbackModel,
-        isLoaded: true,
-      });
-    } catch (error: unknown) {
-      if (!isAbortError(error)) {
-        useNoticeStore.getState().showNotice(getErrorMessage(error));
-      }
+    if (get().isLoaded) {
+      return;
     }
+
+    if (modelsFetchPromise) {
+      return modelsFetchPromise;
+    }
+
+    modelsFetchPromise = (async () => {
+      try {
+        const config = await fetchChatModelConfig(signal);
+        const fallbackModel = config.defaultModel ?? config.models[0]?.id ?? null;
+
+        set({
+          models: config.models,
+          modelsById: indexModelOptions(config.models),
+          defaultModel: fallbackModel,
+          isLoaded: true,
+        });
+      } catch (error: unknown) {
+        if (!isAbortError(error)) {
+          useNoticeStore.getState().showNotice(getErrorMessage(error));
+        }
+      } finally {
+        modelsFetchPromise = null;
+      }
+    })();
+
+    return modelsFetchPromise;
   },
 }));
+
+if (typeof window !== "undefined") {
+  queueMicrotask(() => {
+    void useModelStore.getState().fetchModels();
+  });
+}

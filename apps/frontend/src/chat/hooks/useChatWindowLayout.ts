@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 import type { MessageRecord, WindowScrollState } from "../../types";
 
@@ -95,6 +95,10 @@ export function useChatWindowLayout({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   savedScrollStateRef.current = savedScrollState;
 
+  if (!isStreaming) {
+    streamScrollLockRef.current = null;
+  }
+
   function computeShouldAutoScroll(node: HTMLDivElement): boolean {
     const distanceFromBottom =
       node.scrollHeight - node.scrollTop - node.clientHeight;
@@ -179,13 +183,7 @@ export function useChatWindowLayout({
     notifyGeometryIfChanged(node);
   }, [isFocused, isStreaming]);
 
-  useEffect(() => {
-    if (!isStreaming) {
-      streamScrollLockRef.current = null;
-    }
-  }, [isStreaming]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = scrollRef.current;
     if (!node) {
       return;
@@ -208,7 +206,7 @@ export function useChatWindowLayout({
     notifyGeometryIfChanged(node);
   }, [height, isStreaming, messages, onGeometryChange, width]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = scrollRef.current;
     if (!node) {
       return;
@@ -218,7 +216,7 @@ export function useChatWindowLayout({
     notifyGeometryIfChanged(node);
   }, [inheritedMessageCount, isHistoryExpanded, onGeometryChange, onWindowScrollStateChange, windowId]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
       return;

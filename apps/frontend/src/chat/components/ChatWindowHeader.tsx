@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
   type CSSProperties,
@@ -7,6 +6,7 @@ import {
 
 import type { BranchFocus } from "../../types";
 import { Button } from "../../components/ui/button";
+import { useMountEffect } from "../../hooks/useMountEffect";
 import { FLOATING_ROOT_WINDOW_WIDTH } from "../lib/constants";
 import BranchFocusButton from "./BranchFocusButton";
 import CloseIcon from "./CloseIcon";
@@ -109,7 +109,7 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
   const [isSettled, setIsSettled] = useState(false);
   const units = useMemo(() => getAnimatedTitleUnits(title), [title]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setIsSettled(true);
     });
@@ -117,7 +117,7 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, []);
+  });
 
   return (
     <h2

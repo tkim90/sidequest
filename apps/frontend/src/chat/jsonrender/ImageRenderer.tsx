@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
+import {
+  getImageRenderSnapshot,
+  getServerImageRenderSnapshot,
+  subscribeToImageRender,
+} from "./imageRenderStore";
 import type { JsonRenderSpec } from "./types";
 
 interface ImageRendererProps {
@@ -29,55 +34,14 @@ function DownloadIcon() {
 }
 
 export default function ImageRenderer({ spec, partial, rawJson }: ImageRendererProps) {
-  const [svgUrl, setSvgUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [showMetadata, setShowMetadata] = useState(false);
-  const prevUrlRef = useRef<string | null>(null);
   const specJson = JSON.stringify(spec);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const doRender = () => {
-      fetch("/api/image/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spec, format: "svg" }),
-        signal: controller.signal,
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.blob();
-        })
-        .then((blob) => {
-          const url = URL.createObjectURL(blob);
-          if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-          prevUrlRef.current = url;
-          setSvgUrl(url);
-          setError(null);
-        })
-        .catch((err) => {
-          if (err.name !== "AbortError") setError(err.message);
-        });
-    };
-
-    // Debounce during streaming to avoid excessive requests
-    const delay = partial ? 1500 : 0;
-    const timer = setTimeout(doRender, delay);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [specJson, partial]);
-
-  // Cleanup blob URL on unmount
-  useEffect(() => {
-    return () => {
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-    };
-  }, []);
+  const { error, svgUrl } = useSyncExternalStore(
+    (onStoreChange) =>
+      subscribeToImageRender(specJson, spec, Boolean(partial), onStoreChange),
+    () => getImageRenderSnapshot(specJson, spec, Boolean(partial)),
+    getServerImageRenderSnapshot,
+  );
 
   const handleDownload = () => {
     if (!svgUrl) {

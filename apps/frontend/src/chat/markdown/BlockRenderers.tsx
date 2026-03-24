@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { AnchorGroup } from "../../types";
 import ImageRenderer, { ImageRendererSkeleton } from "../jsonrender/ImageRenderer";
@@ -102,7 +102,7 @@ function StreamingJsonRenderBlock({
   );
   const prevKeyRef = useRef(streamKey);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (prevKeyRef.current !== streamKey) {
       prevKeyRef.current = streamKey;
       setStableSpec(partialJsonParse(code));

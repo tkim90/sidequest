@@ -1,9 +1,10 @@
 import {
-  useEffect,
+  useLayoutEffect,
   useState,
   type RefObject,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type {
   AnchorGroupsByMessageKey,
   MessageRecord,
@@ -63,38 +64,47 @@ function ChatWindowMessages({
       ? messages.slice(clampedHistoryPreviewCount)
       : messages;
 
-  useEffect(() => {
-    const activeNode = scrollRef.current;
-    if (!activeNode) {
+  function updateScrollbarMetrics() {
+    const node = scrollRef.current;
+    if (!node) {
       return;
     }
 
-    const node = activeNode;
-
-    function updateScrollbarMetrics() {
-      setScrollbarMetrics({
-        clientHeight: node.clientHeight,
-        scrollHeight: node.scrollHeight,
-        scrollTop: node.scrollTop,
-      });
-    }
-
-    updateScrollbarMetrics();
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateScrollbarMetrics();
+    setScrollbarMetrics({
+      clientHeight: node.clientHeight,
+      scrollHeight: node.scrollHeight,
+      scrollTop: node.scrollTop,
     });
-    resizeObserver.observe(node);
+  }
 
-    return () => {
-      resizeObserver.disconnect();
-    };
+  useLayoutEffect(() => {
+    updateScrollbarMetrics();
   }, [
     historyPreviewCount,
     isHistoryExpanded,
     messages,
     scrollRef,
   ]);
+
+  useMountEffect(() => {
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      setScrollbarMetrics({
+        clientHeight: node.clientHeight,
+        scrollHeight: node.scrollHeight,
+        scrollTop: node.scrollTop,
+      });
+    });
+    resizeObserver.observe(node);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  });
 
   function renderMessage(message: MessageRecord) {
     const messageKey = `${windowId}:${message.id}`;

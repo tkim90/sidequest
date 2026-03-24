@@ -1,4 +1,11 @@
-import { useEffect, useId, useState, type CSSProperties } from "react";
+import {
+  useId,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
+
+import { useMountEffect } from "../hooks/useMountEffect";
 
 export interface SidequestHandwritingProps {
   className?: string;
@@ -97,33 +104,33 @@ function formatSeconds(value: number) {
   return `${value.toFixed(3)}s`;
 }
 
+function subscribeToReducedMotion(onStoreChange: () => void) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return () => undefined;
+  }
+
+  const mediaQueryList = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mediaQueryList.addEventListener("change", onStoreChange);
+
+  return () => {
+    mediaQueryList.removeEventListener("change", onStoreChange);
+  };
+}
+
+function getReducedMotionSnapshot() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return false;
-    }
-
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
-    }
-
-    const mediaQueryList = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handleChange = () => {
-      setPrefersReducedMotion(mediaQueryList.matches);
-    };
-
-    handleChange();
-    mediaQueryList.addEventListener("change", handleChange);
-    return () => {
-      mediaQueryList.removeEventListener("change", handleChange);
-    };
-  }, []);
-
-  return prefersReducedMotion;
+  return useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotionSnapshot,
+    () => false,
+  );
 }
 
 function resolveInitialStrokeStyle(isAnimated: boolean, shouldReduceMotion: boolean): CSSProperties {
@@ -147,6 +154,80 @@ function resolveInitialStrokeStyle(isAnimated: boolean, shouldReduceMotion: bool
   };
 }
 
+function HandwritingStrokeGroup({
+  duration,
+  shouldReduceMotion,
+}: {
+  duration: number;
+  shouldReduceMotion: boolean;
+}) {
+  const [isAnimated, setIsAnimated] = useState(false);
+
+  useMountEffect(() => {
+    if (shouldReduceMotion) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setIsAnimated(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  });
+
+  return (
+    <g
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={0.7}
+      transform={GROUP_TRANSFORM}
+    >
+      {STROKES.map((stroke) => (
+        <path
+          key={stroke.key}
+          className="sidequest-handwriting__stroke"
+          d={stroke.d}
+          data-sidequest-handwriting-stroke={stroke.key}
+          pathLength={1}
+          strokeDasharray="1 1"
+          strokeDashoffset={1}
+          style={resolveInitialStrokeStyle(isAnimated, shouldReduceMotion)}
+          transform={stroke.transform}
+        >
+          {isAnimated && !shouldReduceMotion ? (
+            <>
+              <animate
+                attributeName="opacity"
+                begin={formatSeconds(duration * stroke.start)}
+                dur="0.001s"
+                fill="freeze"
+                from="0"
+                to="1"
+              />
+              <animate
+                attributeName="stroke-dashoffset"
+                begin={formatSeconds(duration * stroke.start)}
+                calcMode="spline"
+                dur={formatSeconds(duration * stroke.span)}
+                fill="freeze"
+                from="1"
+                keySplines="0.65 0 0.35 1"
+                keyTimes="0;1"
+                to="0"
+              />
+            </>
+          ) : null}
+        </path>
+      ))}
+    </g>
+  );
+}
+
 /**
  * Usage:
  * <SidequestHandwriting className="text-stone-600" width={320} duration={2.1} />
@@ -162,23 +243,6 @@ export default function SidequestHandwriting({
   const scopeId = `sidequest-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const prefersReducedMotion = usePrefersReducedMotion();
   const shouldReduceMotion = respectReducedMotion && prefersReducedMotion;
-  const [isAnimated, setIsAnimated] = useState(false);
-
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setIsAnimated(false);
-      return;
-    }
-
-    setIsAnimated(false);
-    const frameId = window.requestAnimationFrame(() => {
-      setIsAnimated(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [shouldReduceMotion]);
 
   const svgStyle: CSSProperties = {
     color,
@@ -210,53 +274,11 @@ ${respectReducedMotion ? `
       viewBox={VIEW_BOX}
     >
       <style>{css}</style>
-      <g
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={0.7}
-        transform={GROUP_TRANSFORM}
-      >
-        {STROKES.map((stroke) => (
-          <path
-            key={stroke.key}
-            className="sidequest-handwriting__stroke"
-            d={stroke.d}
-            data-sidequest-handwriting-stroke={stroke.key}
-            pathLength={1}
-            strokeDasharray="1 1"
-            strokeDashoffset={1}
-            style={resolveInitialStrokeStyle(isAnimated, shouldReduceMotion)}
-            transform={stroke.transform}
-          >
-            {isAnimated && !shouldReduceMotion ? (
-              <>
-                <animate
-                  attributeName="opacity"
-                  begin={formatSeconds(duration * stroke.start)}
-                  dur="0.001s"
-                  fill="freeze"
-                  from="0"
-                  to="1"
-                />
-                <animate
-                  attributeName="stroke-dashoffset"
-                  begin={formatSeconds(duration * stroke.start)}
-                  calcMode="spline"
-                  dur={formatSeconds(duration * stroke.span)}
-                  fill="freeze"
-                  from="1"
-                  keySplines="0.65 0 0.35 1"
-                  keyTimes="0;1"
-                  to="0"
-                />
-              </>
-            ) : null}
-          </path>
-        ))}
-      </g>
+      <HandwritingStrokeGroup
+        key={shouldReduceMotion ? "reduced-motion" : "animated"}
+        duration={duration}
+        shouldReduceMotion={shouldReduceMotion}
+      />
     </svg>
   );
 }

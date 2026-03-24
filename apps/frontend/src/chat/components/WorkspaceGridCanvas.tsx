@@ -1,5 +1,6 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type { Viewport } from "../../types";
 import { getViewportEffectiveScale } from "../hooks/canvasUtils";
 
@@ -117,27 +118,38 @@ export default function WorkspaceGridCanvas({
   viewport,
 }: WorkspaceGridCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportRef = useRef(viewport);
+  viewportRef.current = viewport;
 
-  useEffect(() => {
+  function renderGrid(): void {
     const host = hostRef.current;
     const canvas = canvasRef.current;
     if (!host || !canvas) {
       return;
     }
 
-    const render = () => {
-      drawGrid(canvas, host, viewport);
-    };
+    drawGrid(canvas, host, viewportRef.current);
+  }
 
-    render();
+  useLayoutEffect(() => {
+    renderGrid();
+  }, [hostRef, viewport]);
+
+  useMountEffect(() => {
+    renderGrid();
+
+    const host = hostRef.current;
+    if (!host) {
+      return;
+    }
 
     const observer = new ResizeObserver(() => {
-      render();
+      renderGrid();
     });
 
     observer.observe(host);
     return () => observer.disconnect();
-  }, [hostRef, viewport]);
+  });
 
   return (
     <canvas

@@ -3,10 +3,11 @@ import {
   type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
-  useEffect,
   useMemo,
   useState,
 } from "react";
+
+import { useMountEffect } from "../hooks/useMountEffect";
 
 type MotionStyle = {
   opacity?: number;
@@ -45,7 +46,7 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
 ) {
   const [hasMounted, setHasMounted] = useState(false);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setHasMounted(true);
     });
@@ -53,7 +54,7 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, []);
+  });
 
   const composedStyle = useMemo<CSSProperties>(() => {
     const easing = transition?.ease === "easeOut" ? "cubic-bezier(0.16, 1, 0.3, 1)" : "ease";

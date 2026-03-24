@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type Dispatch,
@@ -9,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type { AppState, MessageRecord, SelectionState, WindowRecord } from "../../types";
 import { useNoticeStore } from "../../stores/noticeStore";
 import { checkAnchorOverlap } from "../lib/anchors";
@@ -123,10 +123,12 @@ export function useBranchSelection({
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const mouseDownRef = useRef<MouseDownContext | null>(null);
+  const selectionStateRef = useRef(selectionState);
+  selectionStateRef.current = selectionState;
 
-  useEffect(() => {
+  useMountEffect(() => {
     function clearSelectionOnOutsideClick(event: globalThis.MouseEvent): void {
-      if (!selectionState) {
+      if (!selectionStateRef.current) {
         return;
       }
 
@@ -147,11 +149,11 @@ export function useBranchSelection({
     return () => {
       document.removeEventListener("mousedown", clearSelectionOnOutsideClick);
     };
-  }, [selectionState]);
+  });
 
   // Document-level mouseup listener to detect selection even when mouse
   // is released outside the message div.
-  useEffect(() => {
+  useMountEffect(() => {
     function handleDocumentMouseUp(): void {
       const ctx = mouseDownRef.current;
       if (!ctx) {
@@ -208,7 +210,7 @@ export function useBranchSelection({
     return () => {
       document.removeEventListener("mouseup", handleDocumentMouseUp);
     };
-  }, []);
+  });
 
   function dismissSelection(): void {
     setSelectionState(null);

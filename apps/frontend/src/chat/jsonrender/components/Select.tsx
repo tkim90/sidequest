@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState } from "react";
+
+import { useMountEffect } from "../../../hooks/useMountEffect";
 import { labelTextClass, insetSurfaceClass } from "../theme";
 
 interface OptionObj {
@@ -31,17 +33,23 @@ export default function Select({
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(defaultValue ?? null);
   const ref = useRef<HTMLDivElement>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  useEffect(() => {
-    if (!open) return;
+  useMountEffect(() => {
     function handleClick(e: MouseEvent) {
+      if (!openRef.current) {
+        return;
+      }
+
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  });
 
   const selectedLabel =
     normalized.find((o) => o.value === selected)?.label ?? null;

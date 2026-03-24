@@ -1,10 +1,10 @@
 import {
-  useEffect,
   type Dispatch,
   type RefObject,
   type SetStateAction,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type { AppState } from "../../types";
 import {
   MAX_VIEWPORT_ZOOM,
@@ -37,7 +37,7 @@ export function useViewportWheel({
   canvasRef,
   setAppState,
 }: UseViewportWheelOptions): void {
-  useEffect(() => {
+  useMountEffect(() => {
     const canvasNode = canvasRef.current;
     if (!canvasNode) {
       return;
@@ -82,5 +82,5 @@ export function useViewportWheel({
     return () => {
       sceneNode.removeEventListener("wheel", handleCanvasWheel);
     };
-  }, [appStateRef, canvasRef, setAppState]);
+  });
 }

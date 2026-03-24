@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -8,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import { resolveFocusTooltipPosition } from "./ChatWindowHeader";
 
 const FOCUS_TOOLTIP_SHOW_DELAY_MS = 550;
@@ -54,6 +54,10 @@ function BranchFocusButton({
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const showTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const isMountedRef = useRef(isMounted);
+  const pointerPositionRef = useRef(pointerPosition);
+  isMountedRef.current = isMounted;
+  pointerPositionRef.current = pointerPosition;
 
   function clearShowTimeout(): void {
     if (showTimeoutRef.current === null) return;
@@ -127,21 +131,20 @@ function BranchFocusButton({
   }, [isMounted, pointerPosition, label]);
 
   // Re-resolve position on window resize.
-  useEffect(() => {
-    if (!isMounted) {
-      return;
-    }
-
+  useMountEffect(() => {
     function handleWindowResize(): void {
-      if (!pointerPosition) return;
+      if (!isMountedRef.current) return;
+
+      const pointer = pointerPositionRef.current;
+      if (!pointer) return;
       const node = tooltipRef.current;
       if (!node) return;
 
       const rect = node.getBoundingClientRect();
       setPosition(
         resolveFocusTooltipPosition({
-          pointerX: pointerPosition.x,
-          pointerY: pointerPosition.y,
+          pointerX: pointer.x,
+          pointerY: pointer.y,
           tooltipHeight: rect.height,
           tooltipWidth: rect.width,
           viewportHeight: window.innerHeight,
@@ -154,15 +157,15 @@ function BranchFocusButton({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [isMounted, pointerPosition]);
+  });
 
   // Clean up timers on unmount.
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       clearShowTimeout();
       clearHideTimeout();
     };
-  }, []);
+  });
 
   const tooltip =
     isMounted && typeof document !== "undefined"

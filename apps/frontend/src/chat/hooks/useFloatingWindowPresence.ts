@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type {
   MessageRecord,
   MessagesByWindowId,
@@ -57,7 +58,7 @@ export function useFloatingWindowPresence({
     })),
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setFloatingWindowEntries((current) => {
       const currentById = new Map(
         current.map((entry) => [entry.windowData.id, entry] as const),
@@ -99,7 +100,7 @@ export function useFloatingWindowPresence({
     });
   }, [windows, messagesByWindowId, windowScrollStates]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     floatingWindowEntries.forEach((entry) => {
       const windowId = entry.windowData.id;
 
@@ -127,14 +128,14 @@ export function useFloatingWindowPresence({
     });
   }, [floatingWindowEntries]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       Object.values(exitTimeoutsRef.current).forEach((timeoutId) => {
         window.clearTimeout(timeoutId);
       });
       exitTimeoutsRef.current = {};
     };
-  }, []);
+  });
 
   return floatingWindowEntries;
 }

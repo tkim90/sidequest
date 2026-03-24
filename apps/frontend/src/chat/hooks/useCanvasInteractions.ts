@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -9,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 
+import { useMountEffect } from "../../hooks/useMountEffect";
 import type {
   AnchorGroupsByMessageKey,
   AppState,
@@ -75,17 +75,16 @@ export function useCanvasInteractions({
     });
   }, []);
 
-  useEffect(
+  useMountEffect(
     () => () => {
       if (geometryRefreshFrameRef.current !== null) {
         window.cancelAnimationFrame(geometryRefreshFrameRef.current);
         geometryRefreshFrameRef.current = null;
       }
     },
-    [],
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     function handleWindowResize(): void {
       requestGeometryRefresh();
     }
@@ -94,7 +93,7 @@ export function useCanvasInteractions({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [requestGeometryRefresh]);
+  });
 
   useViewportWheel({
     appStateRef,
