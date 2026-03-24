@@ -119,7 +119,7 @@ export default function EmptyNoteBackground({
             <Button
               variant="ghost"
               className={[
-                "block h-auto cursor-pointer rounded-lg bg-transparent px-3 py-2 text-center font-serif text-[24px] leading-[1.35] text-foreground transition-colors duration-500 ease-out hover:-translate-y-0 hover:bg-transparent hover:text-paper-ink-soft",
+                "block h-auto w-full cursor-pointer justify-start whitespace-normal rounded-lg bg-transparent px-3 py-2 text-left font-serif text-[24px] leading-[1.35] text-foreground transition-colors duration-500 ease-out hover:-translate-y-0 hover:bg-transparent hover:text-paper-ink-soft",
                 index > 0 ? "mt-2" : "",
                 isFixedPane ? "max-w-[28ch]" : "max-w-[24ch]",
               ].join(" ")}
