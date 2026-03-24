@@ -30,5 +30,9 @@
   "evidenceArtifacts": {
     "screenshotsDir": "flows/",
     "totalScreenshots": 30
+  },
+  "override": {
+    "reason": "The built-in user-testing-validator feature for this milestone was not needed after `manual-browser-validation-all-chat-assertions` executed all 15 assertions directly, wrote the flow reports and synthesis, and updated mission `validation-state.json` to passed for every assertion.",
+    "replacedFeatureId": "manual-browser-validation-all-chat-assertions"
   }
 }
