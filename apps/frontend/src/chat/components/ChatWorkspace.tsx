@@ -25,7 +25,6 @@ function ChatWorkspace() {
         <ChatCanvas
           anchorGroupsByMessageKey={workspace.anchorGroupsByMessageKey}
           canvasRef={workspace.canvasRef}
-          connectorPaths={workspace.connectorPaths}
           isPaneResizing={workspace.isPaneResizing}
           leftPaneWidthPx={workspace.leftPaneWidthPx}
           mainWindow={workspace.mainWindow}

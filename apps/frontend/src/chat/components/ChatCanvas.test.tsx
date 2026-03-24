@@ -19,7 +19,7 @@ const VIEWPORT: Viewport = {
 
 const ROOT_WINDOW: WindowRecord = {
   id: "root",
-  title: "Chat 1",
+  title: "Sidequest",
   x: 0,
   y: 0,
   width: 720,
@@ -77,7 +77,6 @@ describe("ChatCanvas", () => {
       <ChatCanvas
         anchorGroupsByMessageKey={{} as AnchorGroupsByMessageKey}
         canvasRef={{ current: null }}
-        connectorPaths={[]}
         isPaneResizing={false}
         leftPaneWidthPx={null}
         mainWindow={ROOT_WINDOW}
@@ -121,5 +120,8 @@ describe("ChatCanvas", () => {
     expect(markup).toContain('left-0 top-0 z-40 h-5 w-5 cursor-nwse-resize');
     expect(markup).toContain('right-0 top-0 z-40 h-5 w-5 cursor-nesw-resize');
     expect(markup.match(/data-resize-handle=/g)?.length).toBe(8);
+    expect(markup).toContain('data-sidequest-handwriting=');
+    expect(markup).toContain('absolute right-10 top-8 z-30');
+    expect(markup).toContain('max-w-[120px]');
   });
 });

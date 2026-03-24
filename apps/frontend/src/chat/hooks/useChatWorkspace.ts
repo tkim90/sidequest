@@ -74,7 +74,6 @@ export interface ChatWorkspaceViewModel {
   >["anchorGroupsByMessageKey"];
   canvasRef: RefObject<HTMLDivElement | null>;
   closePrompt: ClosePrompt | null;
-  connectorPaths: ReturnType<typeof useCanvasInteractions>["connectorPaths"];
   hasChildWindows: boolean;
   isPaneResizing: boolean;
   leftPaneWidthPx: number | null;
@@ -939,7 +938,6 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
-    connectorPaths: canvas.connectorPaths,
     hasChildWindows,
     isPaneResizing,
     leftPaneWidthPx,

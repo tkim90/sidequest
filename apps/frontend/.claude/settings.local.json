@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(browser-use)",
+      "Bash(browser-use click:*)",
+      "Bash(browser-use state:*)",
+      "Bash(browser-use back:*)",
+      "Bash(browser-use open:*)",
+      "Bash(browser-use eval:*)",
+      "Bash(browser-use close:*)",
+      "Bash(browser-use screenshot:*)",
+      "Bash(browser-use:*)"
+    ]
+  }
+}

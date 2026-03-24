@@ -22,8 +22,3 @@ export interface WindowScrollState {
   scrollTop: number | null;
   shouldAutoScroll: boolean;
 }
-
-export interface ConnectorPath {
-  id: string;
-  path: string;
-}

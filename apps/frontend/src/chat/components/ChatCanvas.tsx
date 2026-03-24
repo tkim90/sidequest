@@ -8,7 +8,6 @@ import { motion } from "motion/react";
 
 import type {
   AnchorGroupsByMessageKey,
-  ConnectorPath,
   MessageRecord,
   MessagesByWindowId,
   Viewport,
@@ -16,13 +15,16 @@ import type {
   WindowRecord,
 } from "../../types";
 import type { ResizeEdges } from "../hooks/useCanvasInteractions";
-import { PANE_SEPARATOR_WIDTH } from "../lib/constants";
+import SidequestHandwriting from "../../components/SidequestHandwriting";
+import {
+  PANE_SEPARATOR_WIDTH,
+  ROOT_WINDOW_TITLE,
+} from "../lib/constants";
 import {
   getViewportEffectiveScale,
   snapToDevicePixel,
 } from "../hooks/canvasUtils";
 import ChatWindow from "./ChatWindow";
-import ConnectionLayer from "./ConnectionLayer";
 import PaperSurface from "./PaperSurface";
 import WorkspaceGridCanvas from "./WorkspaceGridCanvas";
 
@@ -55,7 +57,6 @@ interface FloatingWindowPresenceEntry {
 interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: React.RefObject<HTMLDivElement | null>;
-  connectorPaths: ConnectorPath[];
   isPaneResizing: boolean;
   leftPaneWidthPx: number | null;
   mainWindow: WindowRecord | null;
@@ -108,7 +109,6 @@ interface ChatCanvasProps {
 function ChatCanvas({
   anchorGroupsByMessageKey,
   canvasRef,
-  connectorPaths,
   isPaneResizing,
   leftPaneWidthPx,
   mainWindow,
@@ -238,10 +238,6 @@ function ChatCanvas({
       ref={splitPaneRef}
       style={splitPaneStyle}
     >
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <ConnectionLayer paths={connectorPaths} />
-      </div>
-
       <aside className="notebook-pane group/notebook relative z-10 min-h-0 min-w-0 overflow-hidden border-b border-border lg:border-b-0">
         <PaperSurface
           className="h-full min-h-0 min-w-0"
@@ -303,6 +299,15 @@ function ChatCanvas({
 
       <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
         <div className="paper-texture relative h-full overflow-hidden bg-paper-sheet">
+          {mainWindow?.title === ROOT_WINDOW_TITLE ? (
+            <div className="pointer-events-none absolute right-10 top-8 z-30">
+              <SidequestHandwriting
+                className="w-full max-w-[120px] text-paper-ink-soft/85"
+                duration={2.2}
+                respectReducedMotion={false}
+              />
+            </div>
+          ) : null}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-y-0 left-0 z-20 flex flex-col justify-between py-8"

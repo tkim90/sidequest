@@ -12,11 +12,9 @@ import {
 import type {
   AnchorGroupsByMessageKey,
   AppState,
-  ConnectorPath,
 } from "../../types";
 import { groupAnchorsByMessage } from "../lib/anchors";
 import type { ResizeEdges } from "./canvasTypes";
-import { useConnectorPaths } from "./useConnectorPaths";
 import { usePointerInteractions } from "./usePointerInteractions";
 import { useViewportWheel } from "./useViewportWheel";
 
@@ -29,7 +27,6 @@ interface UseCanvasInteractionsOptions {
 interface UseCanvasInteractionsResult {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: RefObject<HTMLDivElement | null>;
-  connectorPaths: ConnectorPath[];
   getAnchorNode: (groupKey: string) => HTMLSpanElement | null;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onHeaderPointerDown: (
@@ -118,17 +115,6 @@ export function useCanvasInteractions({
     [appState.anchors],
   );
 
-  const connectorPaths = useConnectorPaths({
-    anchorRefs,
-    anchors: appState.anchors,
-    canvasRef,
-    geometryVersion,
-    viewport: appState.viewport,
-    windowRefs,
-    windows: appState.windows,
-    zOrder: appState.zOrder,
-  });
-
   function registerWindowRef(windowId: string, node: HTMLElement | null): void {
     if (node) {
       windowRefs.current[windowId] = node;
@@ -153,7 +139,6 @@ export function useCanvasInteractions({
   return {
     anchorGroupsByMessageKey,
     canvasRef,
-    connectorPaths,
     getAnchorNode: (groupKey) => anchorRefs.current[groupKey] ?? null,
     onCanvasPointerDown: pointerInteractions.onCanvasPointerDown,
     onHeaderPointerDown: pointerInteractions.onHeaderPointerDown,
