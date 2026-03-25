@@ -3,6 +3,7 @@ import { cn } from "../../../lib/utils";
 import ChevronIcon from "../shared/ChevronIcon";
 
 interface PickerButtonProps {
+  afterLabel?: React.ReactNode;
   compact: boolean;
   isOpen: boolean;
   label: string;
@@ -11,6 +12,7 @@ interface PickerButtonProps {
 }
 
 function PickerButton({
+  afterLabel,
   compact,
   isOpen,
   label,
@@ -30,6 +32,9 @@ function PickerButton({
       <span className={cn("truncate", maxLabelWidth)}>
         {label}
       </span>
+      {afterLabel ? (
+        <span className="flex shrink-0 items-center">{afterLabel}</span>
+      ) : null}
       <ChevronIcon
         className={cn(
           "transition-transform",

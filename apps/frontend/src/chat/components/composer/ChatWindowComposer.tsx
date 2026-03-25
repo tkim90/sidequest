@@ -5,7 +5,6 @@ import type { ReasoningEffort } from "../../../types";
 import { useModelStore } from "../../../stores/modelStore";
 import { resolveEffortForModel, resolveModelOption } from "../../lib/modelOptions";
 import ComposerSendButton from "./ComposerSendButton";
-import EffortPicker from "./EffortPicker";
 import ModelPicker from "./ModelPicker";
 
 interface ChatWindowComposerProps {
@@ -51,14 +50,8 @@ function ChatWindowComposer({
     resolvedModelOption,
     selectedEffort,
   );
-  const showEffortPicker = Boolean(
-    resolvedModelOption && resolvedModelOption.efforts.length > 0,
-  );
-  const [openPicker, setOpenPicker] = useState<"model" | "effort" | null>(null);
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const controlsRef = useRef<HTMLDivElement>(null);
-
-  const visibleOpenPicker =
-    openPicker === "effort" && !showEffortPicker ? null : openPicker;
 
   const usesCompactControls = isChildPane || isFixedPane;
   const pickerMenuPositionClassName = isChildPane ? "right-0" : "left-0";
@@ -101,15 +94,21 @@ function ChatWindowComposer({
     ) {
       return;
     }
+    if (
+      nextFocusedNode instanceof Element &&
+      nextFocusedNode.closest("[data-model-picker-effort-submenu]")
+    ) {
+      return;
+    }
 
-    setOpenPicker(null);
+    setIsModelMenuOpen(false);
   }
 
   const controls = (
     <div
       ref={controlsRef}
       className={[
-        "flex shrink-0 items-center gap-2",
+        "flex shrink-0 items-center gap-1.5",
         isChildPane ? "flex-nowrap" : "flex-wrap",
       ].join(" ")}
       onBlurCapture={handleControlsBlur}
@@ -117,37 +116,24 @@ function ChatWindowComposer({
     >
       <ModelPicker
         compact={usesCompactControls}
-        isOpen={visibleOpenPicker === "model"}
+        isOpen={isModelMenuOpen}
         models={models}
-        onSelect={(modelId) => {
+        onModelEffortSelect={(modelId, effort) => {
           onModelChange(modelId);
-          setOpenPicker(null);
+          onEffortChange(effort);
+          setIsModelMenuOpen(false);
+        }}
+        onModelRowSelect={(modelId) => {
+          onModelChange(modelId);
+          setIsModelMenuOpen(false);
         }}
         onToggle={() =>
-          setOpenPicker((current) =>
-            current === "model" ? null : "model",
-          )
+          setIsModelMenuOpen((current) => !current)
         }
         positionClassName={pickerMenuPositionClassName}
+        selectedEffort={resolvedSelectedEffort}
         selectedModelId={resolvedSelectedModel}
       />
-
-      {showEffortPicker && resolvedModelOption && resolvedSelectedEffort ? (
-        <EffortPicker
-          compact={usesCompactControls}
-          efforts={resolvedModelOption.efforts}
-          isOpen={visibleOpenPicker === "effort"}
-          onSelect={(effort) => {
-            onEffortChange(effort);
-            setOpenPicker(null);
-          }}
-          onToggle={() =>
-            setOpenPicker((current) => (current === "effort" ? null : "effort"))
-          }
-          positionClassName={pickerMenuPositionClassName}
-          selectedEffort={resolvedSelectedEffort}
-        />
-      ) : null}
     </div>
   );
 
@@ -162,10 +148,10 @@ function ChatWindowComposer({
 
   return (
     <footer
-      className="relative z-10"
+      className="relative z-10 overflow-visible"
       onKeyDownCapture={(event) => {
-        if (event.key === "Escape" && visibleOpenPicker !== null) {
-          setOpenPicker(null);
+        if (event.key === "Escape" && isModelMenuOpen) {
+          setIsModelMenuOpen(false);
         }
       }}
     >
@@ -201,7 +187,7 @@ function ChatWindowComposer({
             />
             <div
               className={[
-                "flex items-center justify-between gap-3",
+                "flex items-center justify-between gap-2.5",
                 isFixedPane ? "px-3 py-2" : "px-0 py-2",
               ].join(" ")}
             >

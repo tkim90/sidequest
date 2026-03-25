@@ -1,13 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import type { ChatModelOption } from "../../../types";
 import ChevronIcon from "../shared/ChevronIcon";
 import SendIcon from "../shared/SendIcon";
 import ComposerSendButton from "./ComposerSendButton";
 import PickerButton from "./PickerButton";
 import PickerMenu from "./PickerMenu";
-import ModelPicker from "./ModelPicker";
-import EffortPicker from "./EffortPicker";
+import ModelPicker, { getEffortLabel } from "./ModelPicker";
 
 describe("ChevronIcon", () => {
   it("renders an aria-hidden SVG", () => {
@@ -154,15 +154,25 @@ describe("ModelPicker", () => {
     { id: "claude-3", efforts: [], defaultEffort: null },
   ];
 
+  const modelsWithEfforts: ChatModelOption[] = [
+    {
+      id: "gpt-5",
+      efforts: ["low", "medium", "high"],
+      defaultEffort: "medium",
+    },
+  ];
+
   it("renders nothing when models is empty", () => {
     const markup = renderToStaticMarkup(
       <ModelPicker
         compact={false}
         isOpen={false}
         models={[]}
-        onSelect={() => {}}
+        onModelEffortSelect={() => {}}
+        onModelRowSelect={() => {}}
         onToggle={() => {}}
         positionClassName="left-0"
+        selectedEffort={null}
         selectedModelId=""
       />,
     );
@@ -176,9 +186,11 @@ describe("ModelPicker", () => {
         compact={false}
         isOpen={false}
         models={models}
-        onSelect={() => {}}
+        onModelEffortSelect={() => {}}
+        onModelRowSelect={() => {}}
         onToggle={() => {}}
         positionClassName="left-0"
+        selectedEffort={null}
         selectedModelId="gpt-4o"
       />,
     );
@@ -193,9 +205,11 @@ describe("ModelPicker", () => {
         compact={false}
         isOpen={true}
         models={models}
-        onSelect={() => {}}
+        onModelEffortSelect={() => {}}
+        onModelRowSelect={() => {}}
         onToggle={() => {}}
         positionClassName="left-0"
+        selectedEffort={null}
         selectedModelId="gpt-4o"
       />,
     );
@@ -203,40 +217,33 @@ describe("ModelPicker", () => {
     expect(markup).toContain("gpt-4o");
     expect(markup).toContain("claude-3");
   });
+
+  it("shows a submenu affordance for models that support effort", () => {
+    const markup = renderToStaticMarkup(
+      <ModelPicker
+        compact={false}
+        isOpen={true}
+        models={modelsWithEfforts}
+        onModelEffortSelect={() => {}}
+        onModelRowSelect={() => {}}
+        onToggle={() => {}}
+        positionClassName="left-0"
+        selectedEffort="medium"
+        selectedModelId="gpt-5"
+      />,
+    );
+
+    expect(markup).toContain("gpt-5");
+    expect(markup).toContain("rotate-[-90deg]");
+  });
 });
 
-describe("EffortPicker", () => {
-  it("shows the trigger button with the selected effort label", () => {
-    const markup = renderToStaticMarkup(
-      <EffortPicker
-        compact={false}
-        efforts={["low", "medium", "high"]}
-        isOpen={false}
-        onSelect={() => {}}
-        onToggle={() => {}}
-        positionClassName="left-0"
-        selectedEffort="medium"
-      />,
-    );
-
-    expect(markup).toContain("medium");
+describe("getEffortLabel", () => {
+  it("returns a visible label for none so the effort menu does not list a blank row", () => {
+    expect(getEffortLabel("none")).toBe("None");
   });
 
-  it("shows effort options in the dropdown when open", () => {
-    const markup = renderToStaticMarkup(
-      <EffortPicker
-        compact={false}
-        efforts={["low", "medium", "high"]}
-        isOpen={true}
-        onSelect={() => {}}
-        onToggle={() => {}}
-        positionClassName="left-0"
-        selectedEffort="medium"
-      />,
-    );
-
-    expect(markup).toContain("low");
-    expect(markup).toContain("medium");
-    expect(markup).toContain("high");
+  it("returns the effort id for other levels", () => {
+    expect(getEffortLabel("medium")).toBe("medium");
   });
 });
