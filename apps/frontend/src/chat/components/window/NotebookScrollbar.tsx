@@ -2,6 +2,7 @@ import { useMemo, useRef, type RefObject } from "react";
 
 const SCROLLBAR_TOP_INSET = 20;
 const SCROLLBAR_BOTTOM_INSET = 40;
+const SCROLLBAR_END_PADDING = 16;
 const SCROLLBAR_MIN_THUMB_HEIGHT = 40;
 
 interface ScrollbarMetrics {
@@ -11,6 +12,7 @@ interface ScrollbarMetrics {
 }
 
 interface ScrollbarState {
+  dragTrackHeight: number;
   maxScrollTop: number;
   thumbHeight: number;
   thumbOffset: number;
@@ -29,20 +31,29 @@ function computeScrollbarState(
     0,
     clientHeight - SCROLLBAR_TOP_INSET - SCROLLBAR_BOTTOM_INSET,
   );
-  if (trackHeight <= 0) {
+  const dragTrackHeight = Math.max(
+    0,
+    trackHeight - SCROLLBAR_END_PADDING * 2,
+  );
+  if (dragTrackHeight <= 0) {
     return null;
   }
 
   const thumbHeight = Math.max(
     SCROLLBAR_MIN_THUMB_HEIGHT,
-    Math.min(trackHeight, (clientHeight / scrollHeight) * trackHeight),
+    Math.min(
+      dragTrackHeight,
+      (clientHeight / scrollHeight) * dragTrackHeight,
+    ),
   );
-  const maxThumbOffset = trackHeight - thumbHeight;
+  const maxThumbOffset = dragTrackHeight - thumbHeight;
   const maxScrollTop = scrollHeight - clientHeight;
   const thumbOffset =
-    maxScrollTop > 0 ? (scrollTop / maxScrollTop) * maxThumbOffset : 0;
+    SCROLLBAR_END_PADDING +
+    (maxScrollTop > 0 ? (scrollTop / maxScrollTop) * maxThumbOffset : 0);
 
   return {
+    dragTrackHeight,
     maxScrollTop,
     thumbHeight,
     thumbOffset,
@@ -95,19 +106,23 @@ export default function NotebookScrollbar({
     const state = scrollbarState;
 
     const trackTop =
-      node.getBoundingClientRect().top + SCROLLBAR_TOP_INSET;
+      node.getBoundingClientRect().top +
+      SCROLLBAR_TOP_INSET +
+      SCROLLBAR_END_PADDING;
     dragOffsetRef.current =
       mode === "thumb"
-        ? event.clientY - trackTop - state.thumbOffset
+        ? event.clientY -
+          trackTop -
+          (state.thumbOffset - SCROLLBAR_END_PADDING)
         : state.thumbHeight / 2;
 
     const nextThumbOffset = Math.min(
       Math.max(0, event.clientY - trackTop - dragOffsetRef.current),
-      state.trackHeight - state.thumbHeight,
+      state.dragTrackHeight - state.thumbHeight,
     );
     const scrollRatio =
-      state.trackHeight > state.thumbHeight
-        ? nextThumbOffset / (state.trackHeight - state.thumbHeight)
+      state.dragTrackHeight > state.thumbHeight
+        ? nextThumbOffset / (state.dragTrackHeight - state.thumbHeight)
         : 0;
     node.scrollTop = scrollRatio * state.maxScrollTop;
     onScrollbarMetricsChange({
@@ -124,17 +139,19 @@ export default function NotebookScrollbar({
       }
 
       const activeTrackTop =
-        activeNode.getBoundingClientRect().top + SCROLLBAR_TOP_INSET;
+        activeNode.getBoundingClientRect().top +
+        SCROLLBAR_TOP_INSET +
+        SCROLLBAR_END_PADDING;
       const activeThumbOffset = Math.min(
         Math.max(
           0,
           moveEvent.clientY - activeTrackTop - dragOffsetRef.current,
         ),
-        state.trackHeight - state.thumbHeight,
+        state.dragTrackHeight - state.thumbHeight,
       );
       const activeRatio =
-        state.trackHeight > state.thumbHeight
-          ? activeThumbOffset / (state.trackHeight - state.thumbHeight)
+        state.dragTrackHeight > state.thumbHeight
+          ? activeThumbOffset / (state.dragTrackHeight - state.thumbHeight)
           : 0;
 
       activeNode.scrollTop = activeRatio * state.maxScrollTop;
@@ -165,7 +182,13 @@ export default function NotebookScrollbar({
       ].join(" ")}
       onPointerDown={(event) => startScrollbarDrag(event, "track")}
     >
-      <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 rounded-full bg-paper-raised/70" />
+      <div
+        className="absolute left-1/2 w-1.5 -translate-x-1/2 rounded-full bg-paper-raised/70"
+        style={{
+          bottom: SCROLLBAR_END_PADDING,
+          top: SCROLLBAR_END_PADDING,
+        }}
+      />
       <div
         className="absolute left-1/2 w-1.5 -translate-x-1/2 cursor-ns-resize rounded-full bg-scrollbar-thumb shadow-[0_0_0_1px_rgb(205_188_163_/_0.18)] transition-colors duration-300"
         style={{

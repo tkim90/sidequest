@@ -33,8 +33,9 @@ describe("computeScrollbarState", () => {
     expect(result).not.toBeNull();
     expect(result!.maxScrollTop).toBe(600);
     expect(result!.trackHeight).toBe(540); // 600 - 20 - 40
+    expect(result!.dragTrackHeight).toBe(536); // 540 - (2 * 2)
     expect(result!.thumbHeight).toBeGreaterThanOrEqual(40);
-    expect(result!.thumbOffset).toBe(0);
+    expect(result!.thumbOffset).toBe(2);
   });
 
   it("positions the thumb proportionally to scroll position", () => {
@@ -56,11 +57,11 @@ describe("computeScrollbarState", () => {
       scrollTop: 600,
     });
 
-    expect(atTop!.thumbOffset).toBe(0);
+    expect(atTop!.thumbOffset).toBe(2);
     expect(atMiddle!.thumbOffset).toBeGreaterThan(0);
     expect(atMiddle!.thumbOffset).toBeLessThan(atBottom!.thumbOffset);
-    expect(atBottom!.thumbOffset).toBe(
-      atBottom!.trackHeight - atBottom!.thumbHeight,
+    expect(atBottom!.thumbOffset + atBottom!.thumbHeight).toBe(
+      atBottom!.trackHeight - 2,
     );
   });
 
