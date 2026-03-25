@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import type { AppState } from "../../types";
 import {
+  clampResizeDimension,
+  clampResizeToCanvasViewport,
   computeReleaseVelocity,
   ensureMinimumGlideVelocity,
+  getCanvasViewportEdges,
   stepMomentumFrame,
 } from "./usePointerInteractions";
 
@@ -213,5 +217,112 @@ describe("stepMomentumFrame", () => {
       x: 120,
       y: 120,
     });
+  });
+});
+
+describe("clampResizeDimension", () => {
+  it("returns maxDim when the viewport cannot fit minDim", () => {
+    expect(clampResizeDimension(900, 420, 100)).toBe(100);
+  });
+
+  it("clamps between min and max when both are satisfiable", () => {
+    expect(clampResizeDimension(500, 420, 800)).toBe(500);
+    expect(clampResizeDimension(300, 420, 800)).toBe(420);
+    expect(clampResizeDimension(900, 420, 800)).toBe(800);
+  });
+});
+
+describe("getCanvasViewportEdges", () => {
+  it("returns null when canvas node is missing", () => {
+    const appState = { viewport: { scale: 1, x: 0, y: 0, zoom: 1 } } as AppState;
+    expect(getCanvasViewportEdges(appState, null)).toBeNull();
+  });
+
+  it("maps client rect into canvas space with viewport offset", () => {
+    const appState = { viewport: { scale: 1, x: 100, y: 50, zoom: 1 } } as AppState;
+    const canvas = {
+      clientHeight: 600,
+      clientWidth: 800,
+    } as HTMLDivElement;
+
+    expect(getCanvasViewportEdges(appState, canvas)).toEqual({
+      bottom: 550,
+      left: -100,
+      right: 700,
+      top: -50,
+    });
+  });
+
+  it("uses viewport effective scale for zoom times scale", () => {
+    const appState = { viewport: { scale: 2, x: 0, y: 0, zoom: 1 } } as AppState;
+    const canvas = {
+      clientHeight: 400,
+      clientWidth: 400,
+    } as HTMLDivElement;
+
+    const edges = getCanvasViewportEdges(appState, canvas);
+    expect(edges).not.toBeNull();
+    expect(edges!.bottom).toBe(200);
+    expect(edges!.right).toBe(200);
+    expect(edges!.left + 0).toBe(0);
+    expect(edges!.top + 0).toBe(0);
+  });
+});
+
+describe("clampResizeToCanvasViewport", () => {
+  const canvas800x600 = {
+    bottom: 600,
+    left: 0,
+    right: 800,
+    top: 0,
+  };
+
+  it("caps east resize width to the canvas right edge", () => {
+    const clamped = clampResizeToCanvasViewport(
+      { height: 400, width: 900, x: 100, y: 100 },
+      { east: true, north: false, south: false, west: false },
+      { height: 400, width: 400, x: 100, y: 100 },
+      canvas800x600,
+    );
+
+    expect(clamped.width).toBe(700);
+    expect(clamped.x).toBe(100);
+    expect(clamped.height).toBe(400);
+  });
+
+  it("when west resize crosses the left border, pins x and preserves the right edge", () => {
+    const clamped = clampResizeToCanvasViewport(
+      { height: 400, width: 500, x: 0, y: 100 },
+      { east: false, north: false, south: false, west: true },
+      { height: 400, width: 400, x: 100, y: 100 },
+      { bottom: 600, left: 50, right: 800, top: 0 },
+    );
+
+    expect(clamped.x).toBe(50);
+    expect(clamped.width).toBe(450);
+  });
+
+  it("caps south-east corner resize on both axes", () => {
+    const clamped = clampResizeToCanvasViewport(
+      { height: 700, width: 900, x: 100, y: 100 },
+      { east: true, north: false, south: true, west: false },
+      { height: 400, width: 400, x: 100, y: 100 },
+      canvas800x600,
+    );
+
+    expect(clamped.width).toBe(700);
+    expect(clamped.height).toBe(500);
+  });
+
+  it("caps north resize height and adjusts y when needed", () => {
+    const clamped = clampResizeToCanvasViewport(
+      { height: 500, width: 400, x: 100, y: 0 },
+      { east: false, north: true, south: false, west: false },
+      { height: 400, width: 400, x: 100, y: 100 },
+      { bottom: 600, left: 0, right: 800, top: 50 },
+    );
+
+    expect(clamped.y).toBe(50);
+    expect(clamped.height).toBe(450);
   });
 });

@@ -107,6 +107,86 @@ function getWindowBounds(
   };
 }
 
+export interface CanvasViewportEdges {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
+export function getCanvasViewportEdges(
+  appState: AppState,
+  canvasNode: HTMLDivElement | null,
+): CanvasViewportEdges | null {
+  if (!canvasNode) {
+    return null;
+  }
+
+  const effectiveScale = getViewportEffectiveScale(appState.viewport) || 1;
+  const left = -appState.viewport.x / effectiveScale;
+  const top = -appState.viewport.y / effectiveScale;
+  const right =
+    (-appState.viewport.x + canvasNode.clientWidth) / effectiveScale;
+  const bottom =
+    (-appState.viewport.y + canvasNode.clientHeight) / effectiveScale;
+
+  return { bottom, left, right, top };
+}
+
+export function clampResizeDimension(
+  desired: number,
+  minDim: number,
+  maxDim: number,
+): number {
+  if (maxDim < minDim) {
+    return maxDim;
+  }
+
+  return Math.max(minDim, Math.min(desired, maxDim));
+}
+
+export function clampResizeToCanvasViewport(
+  rect: { height: number; width: number; x: number; y: number },
+  edges: ResizeEdges,
+  start: { height: number; width: number; x: number; y: number },
+  canvas: CanvasViewportEdges,
+): { height: number; width: number; x: number; y: number } {
+  let x = rect.x;
+  let y = rect.y;
+  let w = rect.width;
+  let h = rect.height;
+
+  w = clampResizeDimension(w, MIN_WINDOW_WIDTH, canvas.right - x);
+  h = clampResizeDimension(h, MIN_WINDOW_HEIGHT, canvas.bottom - y);
+
+  if (edges.west) {
+    x = start.x + start.width - w;
+  }
+  if (edges.north) {
+    y = start.y + start.height - h;
+  }
+
+  if (edges.west && x < canvas.left) {
+    x = canvas.left;
+    w = start.x + start.width - x;
+  }
+  if (edges.north && y < canvas.top) {
+    y = canvas.top;
+    h = start.y + start.height - y;
+  }
+
+  w = clampResizeDimension(w, MIN_WINDOW_WIDTH, canvas.right - x);
+  h = clampResizeDimension(h, MIN_WINDOW_HEIGHT, canvas.bottom - y);
+  if (edges.west) {
+    x = start.x + start.width - w;
+  }
+  if (edges.north) {
+    y = start.y + start.height - h;
+  }
+
+  return { height: h, width: w, x, y };
+}
+
 export function computeReleaseVelocity(
   samples: PointerSample[],
   scale: number,
@@ -302,6 +382,30 @@ export function usePointerInteractions({
       if (interaction.edges.north) {
         nextHeight = Math.max(MIN_WINDOW_HEIGHT, interaction.startHeight - dy);
         nextY = interaction.startY + (interaction.startHeight - nextHeight);
+      }
+
+      const canvasEdges = getCanvasViewportEdges(current, canvasRef.current);
+      if (canvasEdges) {
+        const clamped = clampResizeToCanvasViewport(
+          {
+            height: nextHeight,
+            width: nextWidth,
+            x: nextX,
+            y: nextY,
+          },
+          interaction.edges,
+          {
+            height: interaction.startHeight,
+            width: interaction.startWidth,
+            x: interaction.startX,
+            y: interaction.startY,
+          },
+          canvasEdges,
+        );
+        nextX = clamped.x;
+        nextY = clamped.y;
+        nextWidth = clamped.width;
+        nextHeight = clamped.height;
       }
 
       return {
