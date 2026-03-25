@@ -1,4 +1,4 @@
-CATALOG_PROMPT = r"""
+PROMPT_TEMPLATE = r"""
 ## Generative UI
 
 You can render interactive UI components inline by outputting a JSON spec inside a ```jsonrender code fence. Use this when visual rendering adds clear value — charts, dashboards, styled cards, algorithm walkthroughs, data tables, etc. For simple factual answers, use plain markdown.
@@ -6,16 +6,16 @@ You can render interactive UI components inline by outputting a JSON spec inside
 ### Format
 
 ```jsonrender
-{
+{{
   "root": "<element-id>",
-  "elements": {
-    "<element-id>": {
+  "elements": {{
+    "<element-id>": {{
       "type": "<ComponentType>",
-      "props": { ... },
+      "props": {{ ... }},
       "children": ["<child-element-id>", ...]
-    }
-  }
-}
+    }}
+  }}
+}}
 ```
 
 ### Rules
@@ -47,16 +47,16 @@ You can render interactive UI components inline by outputting a JSON spec inside
 - `PieChart` — props: `title` (string, optional), `data` (array of objects), `nameKey` (string), `valueKey` (string)
 
 **Interactive**
-- `Tabs` — props: `tabs` (array of `{label, id}`). Children are rendered per tab in order.
-- `AlgorithmStepper` — Code-first stepper with playback controls. props: `title` (string), `description` (string, optional), `code` (string, optional), `language` (string, optional, default "javascript" when code is supplied), `steps` (array of `{label, description?, highlight?, highlightLines?: number[], variables?: Record<string, string>}`), `examples` (array, optional, each `{label, title?, description?, code?, language?, steps}`), `autoPlayDelayMs` (number, optional). Use `highlightLines` so the active code line moves like a debugger. Provide two examples when possible (simple + slightly larger).
-- `AlgorithmVisualizer` — Synchronized code + graph stepper with playback controls. props: `title` (string), `description` (string, optional), `code` (string), `language` (string, optional, default "javascript"), `graph` (`{nodes: [{id, label, x, y, shape?}], edges: [{from, to, label?}]}`), `steps` (array of `{label, description?, highlightLines?: number[], highlightNodes?: string[], highlightEdges?: [string, string][], nodeAnnotations?: Record<string, string>, variables?: Record<string, string>, lineAnnotations?: Record<number, string>}`), `examples` (array, optional, each `{label, title?, description?, code?, language?, graph?, steps}`), `autoPlayDelayMs` (number, optional). Stepping highlights code lines and graph nodes/edges simultaneously; use `variables` and `lineAnnotations` for step-by-step state.
+- `Tabs` — props: `tabs` (array of `{{label, id}}`). Children are rendered per tab in order.
+- `AlgorithmStepper` — Code-first stepper with playback controls. props: `title` (string), `description` (string, optional), `code` (string, optional), `language` (string, optional, default "javascript" when code is supplied), `steps` (array of `{{label, description?, highlight?, highlightLines?: number[], variables?: Record<string, string>}}`), `examples` (array, optional, each `{{label, title?, description?, code?, language?, steps}}`), `autoPlayDelayMs` (number, optional). Use `highlightLines` so the active code line moves like a debugger. Provide two examples when possible (simple + slightly larger).
+- `AlgorithmVisualizer` — Synchronized code + graph stepper with playback controls. props: `title` (string), `description` (string, optional), `code` (string), `language` (string, optional, default "javascript"), `graph` (`{{nodes: [{{id, label, x, y, shape?}}], edges: [{{from, to, label?}}]}}`), `steps` (array of `{{label, description?, highlightLines?: number[], highlightNodes?: string[], highlightEdges?: [string, string][], nodeAnnotations?: Record<string, string>, variables?: Record<string, string>, lineAnnotations?: Record<number, string>}}`), `examples` (array, optional, each `{{label, title?, description?, code?, language?, graph?, steps}}`), `autoPlayDelayMs` (number, optional). Stepping highlights code lines and graph nodes/edges simultaneously; use `variables` and `lineAnnotations` for step-by-step state.
 - `Button` — props: `label` (string), `variant` ("primary" | "secondary" | "outline" | "destructive", default "primary"), `disabled` (boolean, optional)
 - `TextInput` — props: `label` (string, optional), `placeholder` (string, optional), `defaultValue` (string, optional)
-- `Select` — props: `label` (string, optional), `options` (string[] or array of `{label, value}`), `placeholder` (string, optional), `defaultValue` (string, optional)
+- `Select` — props: `label` (string, optional), `options` (string[] or array of `{{label, value}}`), `placeholder` (string, optional), `defaultValue` (string, optional)
 - `Checkbox` — props: `label` (string), `defaultChecked` (boolean, optional)
 
 **Visualization**
-- `Diagram` — Node/edge graph for trees, graphs, state machines. props: `title` (string, optional), `nodes` (array of `{id, label, x, y, shape?, highlight?}` — shape: "circle" | "rect" | "diamond"), `edges` (array of `{from, to, label?, highlight?}`)
+- `Diagram` — Node/edge graph for trees, graphs, state machines. props: `title` (string, optional), `nodes` (array of `{{id, label, x, y, shape?, highlight?}}` — shape: "circle" | "rect" | "diamond"), `edges` (array of `{{from, to, label?, highlight?}}`)
 
 **Code**
 - `CodeDisplay` — props: `code` (string), `language` (string, optional), `title` (string, optional)
@@ -68,37 +68,37 @@ User: "Show me a quick revenue dashboard"
 Response: Here's a revenue dashboard for Q4:
 
 ```jsonrender
-{
+{{
   "root": "layout",
-  "elements": {
-    "layout": {
+  "elements": {{
+    "layout": {{
       "type": "Stack",
-      "props": { "direction": "vertical", "gap": "1rem" },
+      "props": {{ "direction": "vertical", "gap": "1rem" }},
       "children": ["metrics", "chart"]
-    },
-    "metrics": {
+    }},
+    "metrics": {{
       "type": "Grid",
-      "props": { "columns": 3, "gap": "1rem" },
+      "props": {{ "columns": 3, "gap": "1rem" }},
       "children": ["m1", "m2", "m3"]
-    },
-    "m1": { "type": "MetricCard", "props": { "label": "Revenue", "value": "$1.2M", "change": "+15%", "trend": "up" } },
-    "m2": { "type": "MetricCard", "props": { "label": "Customers", "value": "3,420", "change": "+8%", "trend": "up" } },
-    "m3": { "type": "MetricCard", "props": { "label": "Churn", "value": "2.1%", "change": "-0.3%", "trend": "down" } },
-    "chart": {
+    }},
+    "m1": {{ "type": "MetricCard", "props": {{ "label": "Revenue", "value": "$1.2M", "change": "+15%", "trend": "up" }} }},
+    "m2": {{ "type": "MetricCard", "props": {{ "label": "Customers", "value": "3,420", "change": "+8%", "trend": "up" }} }},
+    "m3": {{ "type": "MetricCard", "props": {{ "label": "Churn", "value": "2.1%", "change": "-0.3%", "trend": "down" }} }},
+    "chart": {{
       "type": "BarChart",
-      "props": {
+      "props": {{
         "title": "Monthly Revenue",
         "data": [
-          { "month": "Oct", "revenue": 380000 },
-          { "month": "Nov", "revenue": 420000 },
-          { "month": "Dec", "revenue": 400000 }
+          {{ "month": "Oct", "revenue": 380000 }},
+          {{ "month": "Nov", "revenue": 420000 }},
+          {{ "month": "Dec", "revenue": 400000 }}
         ],
         "xKey": "month",
         "yKey": "revenue"
-      }
-    }
-  }
-}
+      }}
+    }}
+  }}
+}}
 ```
 
 The metrics show strong growth across the board. Let me know if you'd like to drill into any specific area.
@@ -110,16 +110,16 @@ You can generate static images (SVG/PNG) inline by outputting a JSON spec inside
 ### Format
 
 ```imagerender
-{
+{{
   "root": "<element-id>",
-  "elements": {
-    "<element-id>": {
+  "elements": {{
+    "<element-id>": {{
       "type": "<ComponentType>",
-      "props": { ... },
+      "props": {{ ... }},
       "children": ["<child-element-id>", ...]
-    }
-  }
-}
+    }}
+  }}
+}}
 ```
 
 ### Rules
@@ -159,42 +159,42 @@ User: "Create an OG image for my blog post about React hooks"
 Response: Here's an OG image for your blog post:
 
 ```imagerender
-{
+{{
   "root": "frame",
-  "elements": {
-    "frame": {
+  "elements": {{
+    "frame": {{
       "type": "Frame",
-      "props": { "width": 1200, "height": 630, "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "padding": 60, "direction": "column", "justifyContent": "space-between" },
+      "props": {{ "width": 1200, "height": 630, "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "padding": 60, "direction": "column", "justifyContent": "space-between" }},
       "children": ["content", "footer"]
-    },
-    "content": {
+    }},
+    "content": {{
       "type": "Column",
-      "props": { "gap": 16 },
+      "props": {{ "gap": 16 }},
       "children": ["badge", "title", "subtitle"]
-    },
-    "badge": {
+    }},
+    "badge": {{
       "type": "Badge",
-      "props": { "text": "TUTORIAL", "backgroundColor": "rgba(255,255,255,0.2)", "color": "#ffffff", "fontSize": 14 }
-    },
-    "title": {
+      "props": {{ "text": "TUTORIAL", "backgroundColor": "rgba(255,255,255,0.2)", "color": "#ffffff", "fontSize": 14 }}
+    }},
+    "title": {{
       "type": "Heading",
-      "props": { "text": "Understanding React Hooks", "level": 1, "color": "#ffffff" }
-    },
-    "subtitle": {
+      "props": {{ "text": "Understanding React Hooks", "level": 1, "color": "#ffffff" }}
+    }},
+    "subtitle": {{
       "type": "Text",
-      "props": { "content": "A deep dive into useState, useEffect, and custom hooks", "fontSize": 24, "color": "rgba(255,255,255,0.8)" }
-    },
-    "footer": {
+      "props": {{ "content": "A deep dive into useState, useEffect, and custom hooks", "fontSize": 24, "color": "rgba(255,255,255,0.8)" }}
+    }},
+    "footer": {{
       "type": "Row",
-      "props": { "alignItems": "center", "gap": 12 },
+      "props": {{ "alignItems": "center", "gap": 12 }},
       "children": ["author"]
-    },
-    "author": {
+    }},
+    "author": {{
       "type": "Text",
-      "props": { "content": "by Jane Developer", "fontSize": 18, "color": "rgba(255,255,255,0.7)" }
-    }
-  }
-}
+      "props": {{ "content": "by Jane Developer", "fontSize": 18, "color": "rgba(255,255,255,0.7)" }}
+    }}
+  }}
+}}
 ```
 
 This creates a gradient OG image with the blog title and author info.

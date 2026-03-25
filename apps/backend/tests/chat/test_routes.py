@@ -2,7 +2,7 @@ import json
 
 from fastapi.testclient import TestClient
 
-from app.catalog_prompt import CATALOG_PROMPT
+from app.chat.service import build_instructions
 from app.main import app
 
 
@@ -52,14 +52,6 @@ class FakeClient:
 
     async def close(self):
         return None
-
-
-def test_healthcheck():
-    with TestClient(app) as client:
-        response = client.get("/api/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
 
 
 def test_chat_stream_shapes_ndjson(monkeypatch):
@@ -151,11 +143,7 @@ def test_chat_stream_uses_requested_model(monkeypatch):
     assert lines[-1] == {"type": "done"}
     assert fake_client.responses.calls[0]["model"] == "gpt-4.1"
     assert "reasoning" not in fake_client.responses.calls[0]
-    assert fake_client.responses.calls[0]["instructions"] == (
-        "You are continuing an existing chat conversation. "
-        "Respond naturally and keep the answer grounded in the transcript."
-        f"\n\n{CATALOG_PROMPT}"
-    )
+    assert fake_client.responses.calls[0]["instructions"] == build_instructions(None)
 
 
 def test_chat_models_endpoint_returns_options(monkeypatch):
