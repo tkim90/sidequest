@@ -170,9 +170,11 @@ function AnimatedTitleText({ className, title }: AnimatedTitleTextProps) {
 }
 
 interface ChatWindowHeaderProps {
+  alwaysShowCloseButton?: boolean;
   branchAnchorId?: string | null;
   branchFocus: BranchFocus | null;
   isFixedPane?: boolean;
+  onMobileDragPointerDown?: React.ComponentProps<"header">["onPointerDown"];
   onNavigateToBranchSource?: () => void;
   onClose: () => void;
   showCloseButton?: boolean;
@@ -180,9 +182,11 @@ interface ChatWindowHeaderProps {
 }
 
 function ChatWindowHeader({
+  alwaysShowCloseButton = false,
   branchAnchorId = null,
   branchFocus,
   isFixedPane = false,
+  onMobileDragPointerDown,
   onNavigateToBranchSource,
   onClose,
   showCloseButton = true,
@@ -210,8 +214,12 @@ function ChatWindowHeader({
     ? undefined
     : { maxWidth: `${floatingHeaderContentMaxWidth}px` };
 
-  const closeButtonClassName =
-    "h-10 w-10 shrink-0 self-start rounded-full bg-transparent text-foreground opacity-0 transition-[opacity,background-color] duration-200 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100 hover:bg-paper-raised/60";
+  const closeButtonClassName = [
+    "h-10 w-10 shrink-0 self-start rounded-full bg-transparent text-foreground transition-[opacity,background-color] duration-200 hover:bg-paper-raised/60",
+    alwaysShowCloseButton
+      ? "pointer-events-auto opacity-100"
+      : "opacity-0 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100",
+  ].join(" ");
 
   function handleFocusClick(): void {
     if (!branchAnchorId || !onNavigateToBranchSource) {
@@ -222,7 +230,11 @@ function ChatWindowHeader({
   }
 
   return (
-    <header className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4">
+    <header
+      className="relative z-30 flex justify-between gap-3 bg-transparent px-4 pb-3 pt-4"
+      data-mobile-card-header="true"
+      onPointerDown={onMobileDragPointerDown}
+    >
       <div
         className="flex-1 min-w-0 overflow-hidden"
         style={headerContentStyle}

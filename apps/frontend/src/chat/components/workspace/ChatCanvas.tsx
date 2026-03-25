@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { AnimatePresence } from "motion/react";
 
 import type {
   AnchorGroupsByMessageKey,
@@ -52,7 +53,7 @@ interface ChatCanvasProps {
     edges: ResizeEdges,
   ) => void;
   onMessageMouseDown: (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.PointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -63,6 +64,7 @@ interface ChatCanvasProps {
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onMobileNotesClose: () => void;
+  onMobilePreferredNoteHandled: () => void;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -72,6 +74,7 @@ interface ChatCanvasProps {
   ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
+  preferredMobileNoteWindowId: string | null;
   splitPaneRef: React.RefObject<HTMLDivElement | null>;
   viewport: Viewport;
   windowScrollStates: Record<string, WindowScrollState>;
@@ -102,12 +105,14 @@ function ChatCanvas({
   onRetry,
   onSend,
   onMobileNotesClose,
+  onMobilePreferredNoteHandled,
   onToggleHistoryExpanded,
   onWindowClose,
   onWindowFocus,
   onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
+  preferredMobileNoteWindowId,
   splitPaneRef,
   viewport,
   windowScrollStates,
@@ -200,30 +205,33 @@ function ChatCanvas({
         </>
       )}
 
-      {isMobileView && isMobileNotesOpen ? (
-        <MobileNotesOverlay
-          anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-          entries={floatingWindowEntries}
-          onCloseOverlay={onMobileNotesClose}
-          onCloseWindow={onWindowClose}
-          onComposerChange={onComposerChange}
-          onEffortChange={onEffortChange}
-          onGeometryChange={onGeometryChange}
-          onHeaderPointerDown={onHeaderPointerDown}
-          onMessageMouseDown={onMessageMouseDown}
-          onModelChange={onModelChange}
-          onNavigateToBranchSource={onNavigateToBranchSource}
-          onOpenFreshRootWindow={onOpenFreshRootWindow}
-          onResizePointerDown={onResizePointerDown}
-          onRetry={onRetry}
-          onSend={onSend}
-          onToggleHistoryExpanded={onToggleHistoryExpanded}
-          onWindowFocus={onWindowFocus}
-          onWindowScrollStateChange={onWindowScrollStateChange}
-          registerAnchorRef={registerAnchorRef}
-          registerWindowRef={registerWindowRef}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {isMobileView && isMobileNotesOpen ? (
+          <MobileNotesOverlay
+            anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+            entries={floatingWindowEntries}
+            onCloseOverlay={onMobileNotesClose}
+            onCloseWindow={onWindowClose}
+            onComposerChange={onComposerChange}
+            onEffortChange={onEffortChange}
+            onGeometryChange={onGeometryChange}
+            onHeaderPointerDown={onHeaderPointerDown}
+            onMessageMouseDown={onMessageMouseDown}
+            onModelChange={onModelChange}
+            onNavigateToBranchSource={onNavigateToBranchSource}
+            onResizePointerDown={onResizePointerDown}
+            onRetry={onRetry}
+            onSend={onSend}
+            onToggleHistoryExpanded={onToggleHistoryExpanded}
+            onWindowFocus={onWindowFocus}
+            onWindowScrollStateChange={onWindowScrollStateChange}
+            onPreferredActiveWindowIdConsumed={onMobilePreferredNoteHandled}
+            preferredActiveWindowId={preferredMobileNoteWindowId}
+            registerAnchorRef={registerAnchorRef}
+            registerWindowRef={registerWindowRef}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

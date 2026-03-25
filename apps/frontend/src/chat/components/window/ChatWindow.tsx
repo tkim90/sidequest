@@ -16,7 +16,11 @@ import ChatWindowResizeHandles from "./ChatWindowResizeHandles";
 
 interface ChatWindowProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
+  alwaysShowCloseButton?: boolean;
   isFocused: boolean;
+  mobileInteractionMode?: "scroll" | "scroll-first-swipe";
+  onMobileBodyPointerDown?: React.ComponentProps<"div">["onPointerDown"];
+  onMobileHeaderPointerDown?: React.ComponentProps<"header">["onPointerDown"];
   onClose: (windowId: string) => void;
   onComposerChange: (windowId: string, composer: string) => void;
   onGeometryChange: () => void;
@@ -56,7 +60,11 @@ interface ChatWindowProps {
 
 const ChatWindow = memo(function ChatWindow({
   anchorGroupsByMessageKey,
+  alwaysShowCloseButton = false,
   isFocused,
+  mobileInteractionMode,
+  onMobileBodyPointerDown,
+  onMobileHeaderPointerDown,
   onClose,
   onComposerChange,
   onGeometryChange,
@@ -153,9 +161,11 @@ const ChatWindow = memo(function ChatWindow({
       )}
 
       <ChatWindowHeader
+        alwaysShowCloseButton={alwaysShowCloseButton}
         branchAnchorId={windowData.branchAnchorId}
         branchFocus={windowData.branchFocus}
         isFixedPane={isFixedPane}
+        onMobileDragPointerDown={onMobileHeaderPointerDown}
         onNavigateToBranchSource={() =>
           onNavigateToBranchSource(windowData.id, windowData.branchAnchorId)
         }
@@ -171,6 +181,8 @@ const ChatWindow = memo(function ChatWindow({
         isFixedPane={isFixedPane}
         isHistoryExpanded={windowData.isHistoryExpanded}
         messages={messages}
+        mobileInteractionMode={mobileInteractionMode}
+        onMobileBodyPointerDown={onMobileBodyPointerDown}
         onMessageMouseDown={onMessageMouseDown}
         onStarterQuestionClick={(question) => onSend(windowData.id, question)}
         onRetry={(messageId) => onRetry(windowData.id, messageId)}
@@ -211,7 +223,11 @@ function areChatWindowPropsEqual(
     previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
     previous.savedScrollState === next.savedScrollState &&
     previous.isFixedPane === next.isFixedPane &&
-    previous.showFixedPaneCloseButton === next.showFixedPaneCloseButton
+    previous.showFixedPaneCloseButton === next.showFixedPaneCloseButton &&
+    previous.alwaysShowCloseButton === next.alwaysShowCloseButton &&
+    previous.mobileInteractionMode === next.mobileInteractionMode &&
+    previous.onMobileBodyPointerDown === next.onMobileBodyPointerDown &&
+    previous.onMobileHeaderPointerDown === next.onMobileHeaderPointerDown
   );
 }
 

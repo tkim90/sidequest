@@ -62,15 +62,24 @@ function computeScrollbarState(
 }
 
 interface NotebookScrollbarProps {
-  isFixedPane: boolean;
+  isVisible: boolean;
   scrollbarMetrics: ScrollbarMetrics;
   scrollRef: RefObject<HTMLDivElement | null>;
   onScroll: () => void;
   onScrollbarMetricsChange: (metrics: ScrollbarMetrics) => void;
 }
 
+export function getNotebookScrollbarClassName(isVisible: boolean): string {
+  return [
+    "absolute bottom-10 right-1 top-5 z-20 block w-4 overflow-hidden transition-opacity duration-300 ease-out",
+    isVisible
+      ? "pointer-events-auto opacity-100"
+      : "pointer-events-none opacity-0",
+  ].join(" ");
+}
+
 export default function NotebookScrollbar({
-  isFixedPane,
+  isVisible,
   scrollbarMetrics,
   scrollRef,
   onScroll,
@@ -174,12 +183,9 @@ export default function NotebookScrollbar({
 
   return (
     <div
-      className={[
-        "absolute bottom-10 right-1 top-5 z-20 hidden w-4 overflow-hidden transition-opacity duration-300 ease-out lg:block",
-        isFixedPane
-          ? "opacity-0 group-hover/notebook:opacity-100 group-focus-within/notebook:opacity-100"
-          : "opacity-100",
-      ].join(" ")}
+      className={getNotebookScrollbarClassName(isVisible)}
+      data-notebook-scrollbar="true"
+      data-scrollbar-visible={isVisible ? "true" : "false"}
       onPointerDown={(event) => startScrollbarDrag(event, "track")}
     >
       <div

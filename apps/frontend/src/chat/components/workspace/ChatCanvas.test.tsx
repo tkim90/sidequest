@@ -71,14 +71,21 @@ const SCROLL_STATE: Record<string, WindowScrollState> = {
   },
 };
 
-function renderChatCanvas(mainWindow: WindowRecord | null) {
+function renderChatCanvas(
+  mainWindow: WindowRecord | null,
+  options: {
+    isMobileNotesOpen?: boolean;
+    isMobileView?: boolean;
+    preferredMobileNoteWindowId?: string | null;
+  } = {},
+) {
   return renderToStaticMarkup(
     <ChatCanvas
       anchorGroupsByMessageKey={{} as AnchorGroupsByMessageKey}
       canvasRef={{ current: null }}
       isPaneResizing={false}
-      isMobileNotesOpen={false}
-      isMobileView={false}
+      isMobileNotesOpen={options.isMobileNotesOpen ?? false}
+      isMobileView={options.isMobileView ?? false}
       leftPaneWidthPx={null}
       mainWindow={mainWindow}
       messagesByWindowId={MESSAGES}
@@ -93,7 +100,9 @@ function renderChatCanvas(mainWindow: WindowRecord | null) {
       onNavigateToBranchSource={() => {}}
       onOpenFreshRootWindow={() => {}}
       onMobileNotesClose={() => {}}
+      onMobilePreferredNoteHandled={() => {}}
       onPaneResizePointerDown={() => {}}
+      preferredMobileNoteWindowId={options.preferredMobileNoteWindowId ?? null}
       onResizePointerDown={() => {}}
       onRetry={() => {}}
       onSend={() => {}}
@@ -171,5 +180,27 @@ describe("ChatCanvas", () => {
     // The close button in the floating child window uses the Button primitive
     const closeNoteMatch = markup.match(/aria-label="Close note"/g);
     expect(closeNoteMatch?.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders the mobile notes overlay with the fixed-pane close button and no overlay-local add button", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW, {
+      isMobileNotesOpen: true,
+      isMobileView: true,
+    });
+
+    expect(markup).toContain('data-mobile-notes-overlay="true"');
+    expect(markup).toContain('data-mobile-drag-surface="true"');
+    expect(markup).toContain('data-mobile-scroll-surface="true"');
+    expect(markup).toContain('pointer-events-auto opacity-100');
+    expect(markup).not.toContain('src="/new-note.png"');
+  });
+
+  it("marks the main mobile notebook pane as a scroll surface without a drag surface", () => {
+    const markup = renderChatCanvas(ROOT_WINDOW, {
+      isMobileView: true,
+    });
+
+    expect(markup).toContain('data-mobile-scroll-surface="true"');
+    expect(markup).not.toContain('data-mobile-drag-surface="true"');
   });
 });

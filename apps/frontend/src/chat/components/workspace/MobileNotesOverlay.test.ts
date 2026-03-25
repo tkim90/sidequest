@@ -5,6 +5,7 @@ import {
   resolveNextSwipeCycle,
   resolveStackCardPose,
   resolveStackCycleTargetIndex,
+  resolveNewestWindowId,
   resolveSwipeShouldAdvance,
 } from "./MobileNotesOverlay";
 
@@ -81,6 +82,20 @@ describe("MobileNotesOverlay helpers", () => {
       clearOffsetX: -644,
     });
     expect(transition?.clearOffsetY ?? 0).toBeCloseTo(4.32, 6);
+  });
+
+  it("returns no swipe cycle when there is only one visible card", () => {
+    expect(resolveNextSwipeCycle([createEntry("A")], "left", -320, 24, 620)).toBeNull();
+    expect(resolveNextSwipeCycle([createEntry("A")], "right", 320, -24, 620)).toBeNull();
+  });
+
+  it("uses the last unseen window id when multiple new cards appear", () => {
+    expect(
+      resolveNewestWindowId(
+        ["A", "B", "C", "D"],
+        ["A", "B"],
+      ),
+    ).toBe("D");
   });
 
   it("maps a three-card cycle from front to back and promotes the following cards", () => {

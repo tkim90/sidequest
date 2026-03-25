@@ -9,6 +9,7 @@ import {
 } from "../lib/state";
 import {
   mergeActiveSourceAnchorGroup,
+  resolveMobileBranchOverlayState,
   mergeSelectionPreviewAnchorGroup,
   resolveBranchSourceNavigation,
 } from "./useChatWorkspace";
@@ -294,5 +295,25 @@ describe("resolveBranchSourceNavigation", () => {
     };
 
     expect(resolveBranchSourceNavigation(appState, branchWindow.id, anchor.id)).toBeNull();
+  });
+});
+
+describe("resolveMobileBranchOverlayState", () => {
+  it("opens the mobile notes overlay and prefers the new child note in mobile view", () => {
+    expect(resolveMobileBranchOverlayState("child-1", true)).toEqual({
+      preferredMobileNoteWindowId: "child-1",
+      shouldOpenMobileNotes: true,
+    });
+  });
+
+  it("does nothing for non-mobile branching or missing child ids", () => {
+    expect(resolveMobileBranchOverlayState("child-1", false)).toEqual({
+      preferredMobileNoteWindowId: null,
+      shouldOpenMobileNotes: false,
+    });
+    expect(resolveMobileBranchOverlayState(null, true)).toEqual({
+      preferredMobileNoteWindowId: null,
+      shouldOpenMobileNotes: false,
+    });
   });
 });

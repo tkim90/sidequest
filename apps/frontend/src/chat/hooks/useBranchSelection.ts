@@ -3,7 +3,7 @@ import {
   useRef,
   useState,
   type Dispatch,
-  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
   type SetStateAction,
 } from "react";
@@ -44,7 +44,7 @@ interface UseBranchSelectionOptions {
   windowRefs: RefObject<Record<string, HTMLElement>>;
 }
 
-interface MouseDownContext {
+interface PointerDownContext {
   windowId: string;
   messageId: string;
   node: HTMLElement;
@@ -54,7 +54,7 @@ interface UseBranchSelectionResult {
   dismissSelection: () => void;
   expandSelectionComposer: () => void;
   onMessageMouseDown: (
-    event: ReactMouseEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -122,12 +122,12 @@ export function useBranchSelection({
 }: UseBranchSelectionOptions): UseBranchSelectionResult {
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
-  const mouseDownRef = useRef<MouseDownContext | null>(null);
+  const pointerDownRef = useRef<PointerDownContext | null>(null);
   const selectionStateRef = useRef(selectionState);
   selectionStateRef.current = selectionState;
 
   useMountEffect(() => {
-    function clearSelectionOnOutsideClick(event: globalThis.MouseEvent): void {
+    function clearSelectionOnOutsidePress(event: PointerEvent): void {
       if (!selectionStateRef.current) {
         return;
       }
@@ -137,29 +137,29 @@ export function useBranchSelection({
         return;
       }
 
-      // Don't clear selection on mousedown within message text. If we clear
+      // Don't clear selection on pointerdown within message text. If we clear
       // selectionState here, React unmounts the preview highlight <span>s,
       // which can destroy the browser's selection anchor mid-drag. Instead,
-      // let handleDocumentMouseUp manage the transition.
+      // let handleDocumentPointerUp manage the transition.
       if (target instanceof Element && target.closest('[data-message-id]')) return;
       setSelectionState(null);
     }
 
-    document.addEventListener("mousedown", clearSelectionOnOutsideClick);
+    document.addEventListener("pointerdown", clearSelectionOnOutsidePress);
     return () => {
-      document.removeEventListener("mousedown", clearSelectionOnOutsideClick);
+      document.removeEventListener("pointerdown", clearSelectionOnOutsidePress);
     };
   });
 
-  // Document-level mouseup listener to detect selection even when mouse
+  // Document-level pointerup listener to detect selection even when the pointer
   // is released outside the message div.
   useMountEffect(() => {
-    function handleDocumentMouseUp(): void {
-      const ctx = mouseDownRef.current;
+    function handleDocumentPointerUp(): void {
+      const ctx = pointerDownRef.current;
       if (!ctx) {
         return;
       }
-      mouseDownRef.current = null;
+      pointerDownRef.current = null;
 
       const { windowId, messageId, node } = ctx;
 
@@ -206,9 +206,9 @@ export function useBranchSelection({
       });
     }
 
-    document.addEventListener("mouseup", handleDocumentMouseUp);
+    document.addEventListener("pointerup", handleDocumentPointerUp);
     return () => {
-      document.removeEventListener("mouseup", handleDocumentMouseUp);
+      document.removeEventListener("pointerup", handleDocumentPointerUp);
     };
   });
 
@@ -232,11 +232,11 @@ export function useBranchSelection({
 
   const handleMessageMouseDown = useCallback(
     (
-      event: ReactMouseEvent<HTMLDivElement>,
+      event: ReactPointerEvent<HTMLDivElement>,
       windowId: string,
       messageId: string,
     ): void => {
-      mouseDownRef.current = {
+      pointerDownRef.current = {
         windowId,
         messageId,
         node: event.currentTarget,

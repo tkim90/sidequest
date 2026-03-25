@@ -40,6 +40,8 @@ const headingSizeClassByLevel: Record<HeadingLevel, string> = {
   5: "text-sm",
   6: "text-sm",
 };
+const UNORDERED_LIST_CLASS_NAME = "list-disc space-y-1 pl-6";
+const ORDERED_LIST_CLASS_NAME = "list-decimal space-y-1 pl-6";
 
 export interface BlockRenderContext {
   anchorGroups: AnchorGroup[];
@@ -393,7 +395,7 @@ export function RenderFinalizedBlock({
   if (block.type === "unordered_list") {
     return (
       <div className="my-3">
-        <ul className="list-disc space-y-1">
+        <ul className={UNORDERED_LIST_CLASS_NAME}>
           {renderListItems(
             block.items,
             anchors,
@@ -409,7 +411,7 @@ export function RenderFinalizedBlock({
   if (block.type === "ordered_list") {
     return (
       <div className="my-3">
-        <ol className="list-decimal space-y-1">
+        <ol className={ORDERED_LIST_CLASS_NAME}>
           {renderOrderedListItems(
             block.items,
             anchors,
@@ -534,7 +536,7 @@ export function RenderActiveBlock({
   if (block.type === "unordered_list") {
     return (
       <div className="my-3">
-        <ul className="list-disc space-y-1">
+        <ul className={UNORDERED_LIST_CLASS_NAME}>
           {block.items.map((item, index) => (
             <li key={index} className="leading-7">
               {index === block.items.length - 1 ? (
@@ -555,7 +557,7 @@ export function RenderActiveBlock({
   if (block.type === "ordered_list") {
     return (
       <div className="my-3">
-        <ol className="list-decimal space-y-1">
+        <ol className={ORDERED_LIST_CLASS_NAME}>
           {block.items.map((item, index) => (
             <li key={index} value={item.index} className="leading-7">
               {index === block.items.length - 1 ? (

@@ -4,18 +4,18 @@ import {
   motion,
   useMotionValue,
   type AnimationPlaybackControls,
-  type PanInfo,
   type TargetAndTransition,
   type Transition,
 } from "motion/react";
 
 import type { AnchorGroupsByMessageKey, WindowRecord, WindowScrollState } from "../../../types";
+import { useMountEffect } from "../../../hooks/useMountEffect";
 import type { ResizeEdges } from "../../hooks/canvasTypes";
 import type { FloatingWindowPresenceEntry } from "../../hooks/useFloatingWindowPresence";
-import AddNewNoteButton from "./AddNewNoteButton";
 import ChatWindow from "../window/ChatWindow";
 
 const MAX_VISIBLE_STACK_CARDS = 3;
+const BODY_SWIPE_CAPTURE_THRESHOLD_PX = 10;
 const SWIPE_PROGRESS_THRESHOLD = 0.5;
 const OUTGOING_CLEARANCE_PX = 24;
 const STACK_ENTRY_TRANSITION: Transition = {
@@ -76,7 +76,7 @@ interface MobileNotesOverlayProps {
     windowId: string,
   ) => void;
   onMessageMouseDown: (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.PointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -85,7 +85,6 @@ interface MobileNotesOverlayProps {
     windowId: string,
     branchAnchorId: string | null,
   ) => void;
-  onOpenFreshRootWindow: () => void;
   onResizePointerDown: (
     event: React.PointerEvent<HTMLElement>,
     windowId: string,
@@ -94,11 +93,13 @@ interface MobileNotesOverlayProps {
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
+  onPreferredActiveWindowIdConsumed: () => void;
   onWindowFocus: (windowId: string) => void;
   onWindowScrollStateChange: (
     windowId: string,
     nextState: WindowScrollState,
   ) => void;
+  preferredActiveWindowId: string | null;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
 }
@@ -115,6 +116,16 @@ interface SwipeCycleState {
   phase: SwipeCyclePhase;
   releaseOffsetX: number;
   releaseOffsetY: number;
+}
+
+interface DragGestureState {
+  captureNode: HTMLElement;
+  isDragging: boolean;
+  originX: number;
+  originY: number;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
 }
 
 function rotateEntries(
@@ -136,6 +147,14 @@ export function resolveSwipeShouldAdvance(options: {
 }): boolean {
   const width = Math.max(options.stageWidth, 1);
   return Math.abs(options.offsetX) >= width * SWIPE_PROGRESS_THRESHOLD;
+}
+
+export function resolveNewestWindowId(
+  nextIds: string[],
+  previousIds: string[],
+): string | null {
+  const unseenIds = nextIds.filter((id) => !previousIds.includes(id));
+  return unseenIds.at(-1) ?? null;
 }
 
 function resolveVisibleCardCount(entryCount: number): number {
@@ -296,13 +315,14 @@ function MobileNotesOverlay({
   onMessageMouseDown,
   onModelChange,
   onNavigateToBranchSource,
-  onOpenFreshRootWindow,
   onResizePointerDown,
   onRetry,
   onSend,
   onToggleHistoryExpanded,
+  onPreferredActiveWindowIdConsumed,
   onWindowFocus,
   onWindowScrollStateChange,
+  preferredActiveWindowId,
   registerAnchorRef,
   registerWindowRef,
 }: MobileNotesOverlayProps) {
@@ -312,10 +332,11 @@ function MobileNotesOverlay({
   );
   const previousWindowIdsRef = useRef<string[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(
-    liveEntries.at(-1)?.windowData.id ?? null,
+    preferredActiveWindowId ?? liveEntries.at(-1)?.windowData.id ?? null,
   );
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>("left");
   const [swipeCycle, setSwipeCycle] = useState<SwipeCycleState | null>(null);
+  const activeDragGestureRef = useRef<DragGestureState | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
@@ -350,6 +371,49 @@ function MobileNotesOverlay({
     };
   }
 
+  function releaseDragGesture(state: DragGestureState): void {
+    if (state.captureNode.hasPointerCapture(state.pointerId)) {
+      state.captureNode.releasePointerCapture(state.pointerId);
+    }
+  }
+
+  function clearDragGesture(): void {
+    const current = activeDragGestureRef.current;
+    if (!current) {
+      return;
+    }
+
+    releaseDragGesture(current);
+    activeDragGestureRef.current = null;
+  }
+
+  function isInteractiveGestureTarget(target: HTMLElement | null): boolean {
+    if (!target) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        "a, button, input, select, textarea, [data-notebook-scrollbar]",
+      ),
+    );
+  }
+
+  function handleGestureRelease(offsetX: number, offsetY: number): void {
+    const stageWidth = stageRef.current?.clientWidth ?? 620;
+    if (
+      !resolveSwipeShouldAdvance({
+        offsetX,
+        stageWidth,
+      })
+    ) {
+      animateCardBackToOrigin();
+      return;
+    }
+
+    moveToNextCard(offsetX < 0 ? "left" : "right", offsetX, offsetY);
+  }
+
   useLayoutEffect(() => {
     const nextIds = liveEntries.map((entry) => entry.windowData.id);
     const previousIds = previousWindowIdsRef.current;
@@ -362,7 +426,15 @@ function MobileNotesOverlay({
       return;
     }
 
-    const newestId = nextIds.find((id) => !previousIds.includes(id));
+    if (preferredActiveWindowId && nextIds.includes(preferredActiveWindowId)) {
+      if (activeWindowId !== preferredActiveWindowId) {
+        setActiveWindowId(preferredActiveWindowId);
+      }
+      onPreferredActiveWindowIdConsumed();
+      return;
+    }
+
+    const newestId = resolveNewestWindowId(nextIds, previousIds);
     if (newestId) {
       setActiveWindowId(newestId);
       return;
@@ -371,11 +443,105 @@ function MobileNotesOverlay({
     if (!activeWindowId || !nextIds.includes(activeWindowId)) {
       setActiveWindowId(nextIds[nextIds.length - 1] ?? null);
     }
-  }, [activeWindowId, liveEntries]);
+  }, [
+    activeWindowId,
+    liveEntries,
+    onPreferredActiveWindowIdConsumed,
+    preferredActiveWindowId,
+  ]);
 
   useLayoutEffect(() => {
     resetDragOffsets();
   }, [activeWindowId]);
+
+  useLayoutEffect(() => {
+    function handleDocumentPointerMove(event: PointerEvent): void {
+      const gesture = activeDragGestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId || swipeCycle) {
+        return;
+      }
+
+      const deltaX = event.clientX - gesture.startClientX;
+      const deltaY = event.clientY - gesture.startClientY;
+
+      if (!gesture.isDragging) {
+        if (
+          Math.abs(deltaX) < BODY_SWIPE_CAPTURE_THRESHOLD_PX &&
+          Math.abs(deltaY) < BODY_SWIPE_CAPTURE_THRESHOLD_PX
+        ) {
+          return;
+        }
+
+        if (Math.abs(deltaX) <= Math.abs(deltaY)) {
+          activeDragGestureRef.current = null;
+          return;
+        }
+
+        event.preventDefault();
+        gesture.captureNode.setPointerCapture(event.pointerId);
+        activeDragGestureRef.current = {
+          ...gesture,
+          isDragging: true,
+        };
+      }
+
+      const activeGesture = activeDragGestureRef.current;
+      if (!activeGesture?.isDragging) {
+        return;
+      }
+
+      event.preventDefault();
+      dragX.set(activeGesture.originX + deltaX);
+      dragY.set(activeGesture.originY + deltaY);
+    }
+
+    function finalizeDocumentPointer(event: PointerEvent, snapBack: boolean): void {
+      const gesture = activeDragGestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const offsetX = gesture.originX + (event.clientX - gesture.startClientX);
+      const offsetY = gesture.originY + (event.clientY - gesture.startClientY);
+      releaseDragGesture(gesture);
+      activeDragGestureRef.current = null;
+
+      if (!gesture.isDragging) {
+        return;
+      }
+
+      if (snapBack) {
+        animateCardBackToOrigin();
+        return;
+      }
+
+      handleGestureRelease(offsetX, offsetY);
+    }
+
+    function handleDocumentPointerUp(event: PointerEvent): void {
+      finalizeDocumentPointer(event, false);
+    }
+
+    function handleDocumentPointerCancel(event: PointerEvent): void {
+      finalizeDocumentPointer(event, true);
+    }
+
+    window.addEventListener("pointermove", handleDocumentPointerMove);
+    window.addEventListener("pointerup", handleDocumentPointerUp);
+    window.addEventListener("pointercancel", handleDocumentPointerCancel);
+
+    return () => {
+      window.removeEventListener("pointermove", handleDocumentPointerMove);
+      window.removeEventListener("pointerup", handleDocumentPointerUp);
+      window.removeEventListener("pointercancel", handleDocumentPointerCancel);
+    };
+  });
+
+  useMountEffect(() => {
+    return () => {
+      clearDragGesture();
+    };
+  });
 
   const orderedEntries = useMemo(() => {
     if (!activeWindowId || liveEntries.length === 0) {
@@ -396,7 +562,6 @@ function MobileNotesOverlay({
 
     const stageWidth = stageRef.current?.clientWidth ?? 620;
     setSwipeDirection(direction);
-    resetDragOffsets();
     const nextCycle = resolveNextSwipeCycle(
       orderedEntries,
       direction,
@@ -405,35 +570,12 @@ function MobileNotesOverlay({
       stageWidth,
     );
     if (!nextCycle) {
-      return;
-    }
-
-    setSwipeCycle(nextCycle);
-  }
-
-  function handleDragEnd(_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void {
-    const stageWidth = stageRef.current?.clientWidth ?? 620;
-    if (
-      !resolveSwipeShouldAdvance({
-        offsetX: info.offset.x,
-        stageWidth,
-        velocityX: info.velocity.x,
-      })
-    ) {
       animateCardBackToOrigin();
       return;
     }
 
-    const direction =
-      info.offset.x === 0
-        ? info.velocity.x < 0
-          ? "left"
-          : "right"
-        : info.offset.x < 0
-          ? "left"
-          : "right";
-
-    moveToNextCard(direction, info.offset.x, info.offset.y);
+    resetDragOffsets();
+    setSwipeCycle(nextCycle);
   }
 
   function handleSwipeCycleComplete(windowId: string): void {
@@ -466,18 +608,78 @@ function MobileNotesOverlay({
   const visibleCardCount = visibleEntries.length;
   const isCycling = swipeCycle !== null;
 
+  function handleHeaderDragPointerDown(
+    event: React.PointerEvent<HTMLElement>,
+    windowId: string,
+  ): void {
+    if (swipeCycle || activeDragGestureRef.current) {
+      return;
+    }
+
+    if (isInteractiveGestureTarget(event.target as HTMLElement | null)) {
+      return;
+    }
+
+    stopDragAnimations();
+    onWindowFocus(windowId);
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    activeDragGestureRef.current = {
+      captureNode: event.currentTarget,
+      isDragging: true,
+      originX: dragX.get(),
+      originY: dragY.get(),
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+    };
+  }
+
+  function handleBodyPointerDown(
+    event: React.PointerEvent<HTMLDivElement>,
+    windowId: string,
+  ): void {
+    if (swipeCycle || activeDragGestureRef.current) {
+      return;
+    }
+
+    if (isInteractiveGestureTarget(event.target as HTMLElement | null)) {
+      return;
+    }
+
+    stopDragAnimations();
+    onWindowFocus(windowId);
+    activeDragGestureRef.current = {
+      captureNode: event.currentTarget,
+      isDragging: false,
+      originX: dragX.get(),
+      originY: dragY.get(),
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+    };
+  }
+
   return (
-    <div
+    <motion.div
+      animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 bg-background/55 backdrop-blur-[2px]"
+      data-mobile-notes-overlay="true"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
       onClick={onCloseOverlay}
     >
       <div className="grid h-full w-full place-items-center px-4 py-6">
-        <div
-          className="relative h-[min(78vh,780px)] w-[min(94vw,620px)]"
+        <motion.div
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="relative h-[min(78vh,780px)] w-[min(88vw,560px)]"
+          exit={{ opacity: 0, scale: 0.98, y: 14 }}
+          initial={{ opacity: 0, scale: 0.98, y: 18 }}
           onClick={(event) => event.stopPropagation()}
           ref={stageRef}
+          transition={{ duration: 0.2, ease: "easeOut" }}
         >
-          <AddNewNoteButton onClick={onOpenFreshRootWindow} />
           {visibleEntries.map((entry, stackIndex) => {
             const isTopCard = stackIndex === 0;
             const isOutgoing = Boolean(
@@ -524,20 +726,27 @@ function MobileNotesOverlay({
               >
                 <motion.div
                   className="h-full"
-                  drag={isTopCard && !isCycling ? true : false}
-                  dragElastic={0}
-                  dragMomentum={false}
                   style={isTopCard && !isCycling ? { x: dragX, y: dragY } : undefined}
-                  onDragEnd={isTopCard ? handleDragEnd : undefined}
-                  onDragStart={isTopCard ? stopDragAnimations : undefined}
                   onPointerDown={() => onWindowFocus(entry.windowData.id)}
                 >
                   <div className="paper-texture-window h-full overflow-hidden rounded-[24px] border border-paper-stroke/40 bg-paper-window shadow-[var(--paper-window-shadow)]">
                     <ChatWindow
                       anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+                      alwaysShowCloseButton={isTopCard}
                       isFixedPane
                       isFocused={isCycling ? targetStackIndex === 0 : isTopCard}
                       messages={entry.messages}
+                      mobileInteractionMode={isTopCard && !isCycling ? "scroll-first-swipe" : undefined}
+                      onMobileBodyPointerDown={
+                        isTopCard && !isCycling
+                          ? (event) => handleBodyPointerDown(event, entry.windowData.id)
+                          : undefined
+                      }
+                      onMobileHeaderPointerDown={
+                        isTopCard && !isCycling
+                          ? (event) => handleHeaderDragPointerDown(event, entry.windowData.id)
+                          : undefined
+                      }
                       onClose={onCloseWindow}
                       onComposerChange={onComposerChange}
                       onEffortChange={onEffortChange}
@@ -555,7 +764,7 @@ function MobileNotesOverlay({
                       registerAnchorRef={registerAnchorRef}
                       registerWindowRef={registerWindowRef}
                       savedScrollState={entry.savedScrollState}
-                      showFixedPaneCloseButton
+                      showFixedPaneCloseButton={isTopCard}
                       windowData={entry.windowData}
                       zIndex={targetStackIndex + 1}
                     />
@@ -564,9 +773,9 @@ function MobileNotesOverlay({
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

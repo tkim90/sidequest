@@ -120,18 +120,40 @@ export interface ChatWorkspaceViewModel {
     nextState: WindowScrollState,
   ) => void;
   popoverRef: RefObject<HTMLDivElement | null>;
+  preferredMobileNoteWindowId: string | null;
   registerAnchorRef: ReturnType<
     typeof useCanvasInteractions
   >["registerAnchorRef"];
   registerWindowRef: ReturnType<
     typeof useCanvasInteractions
   >["registerWindowRef"];
+  onMobilePreferredNoteHandled: () => void;
   selectionState: SelectionState | null;
   splitPaneRef: RefObject<HTMLDivElement | null>;
   viewport: AppState["viewport"];
   windowScrollStates: Record<string, WindowScrollState>;
   windows: WindowRecord[];
   mainWindow: WindowRecord | null;
+}
+
+export function resolveMobileBranchOverlayState(
+  childWindowId: string | null,
+  isMobileView: boolean,
+): {
+  preferredMobileNoteWindowId: string | null;
+  shouldOpenMobileNotes: boolean;
+} {
+  if (!childWindowId || !isMobileView) {
+    return {
+      preferredMobileNoteWindowId: null,
+      shouldOpenMobileNotes: false,
+    };
+  }
+
+  return {
+    preferredMobileNoteWindowId: childWindowId,
+    shouldOpenMobileNotes: true,
+  };
 }
 
 export function mergeSelectionPreviewAnchorGroup(
@@ -304,6 +326,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [leftPaneWidthPx, setLeftPaneWidthPx] = useState<number | null>(null);
   const [isPaneResizing, setIsPaneResizing] = useState(false);
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false);
+  const [preferredMobileNoteWindowId, setPreferredMobileNoteWindowId] = useState<string | null>(null);
   const [activeSourceGroupKey, setActiveSourceGroupKey] = useState<string | null>(null);
   const isMobileView = useIsMobileView();
   const appStateRef = useRef(appState);
@@ -687,6 +710,9 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     });
 
     setAppState((current) => removeWindowsFromState(current, windowIds));
+    setPreferredMobileNoteWindowId((current) =>
+      current && windowIds.includes(current) ? null : current,
+    );
 
     selection.dismissSelection();
     setClosePrompt(null);
@@ -933,6 +959,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onMessageMouseDown: selection.onMessageMouseDown,
     onMobileNotesClose: () => {
       setIsMobileNotesOpen(false);
+      setPreferredMobileNoteWindowId(null);
     },
     onMobileNotesOpen: () => {
       setIsMobileNotesOpen(true);
@@ -944,6 +971,18 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onSelectionExpand: selection.expandSelectionComposer,
     onSelectionBranch: (prompt?: string) => {
       const childWindowId = selection.onSelectionBranch();
+      const nextMobileBranchOverlayState = resolveMobileBranchOverlayState(
+        childWindowId,
+        isMobileView,
+      );
+
+      setPreferredMobileNoteWindowId(
+        nextMobileBranchOverlayState.preferredMobileNoteWindowId,
+      );
+      if (nextMobileBranchOverlayState.shouldOpenMobileNotes) {
+        setIsMobileNotesOpen(true);
+      }
+
       if (childWindowId && prompt?.trim()) {
         window.requestAnimationFrame(() => {
           void handleSend(childWindowId, prompt.trim());
@@ -955,7 +994,11 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onWindowClose: handleClose,
     onWindowFocus: canvas.onWindowFocus,
     onWindowScrollStateChange: handleWindowScrollStateChange,
+    onMobilePreferredNoteHandled: () => {
+      setPreferredMobileNoteWindowId(null);
+    },
     popoverRef: selection.popoverRef,
+    preferredMobileNoteWindowId,
     registerAnchorRef: canvas.registerAnchorRef,
     registerWindowRef: canvas.registerWindowRef,
     selectionState: selection.selectionState,

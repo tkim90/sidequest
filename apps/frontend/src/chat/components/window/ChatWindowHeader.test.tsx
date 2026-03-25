@@ -140,6 +140,24 @@ describe("ChatWindowHeader", () => {
     expect(floatingMarkup).toContain('aria-label="Close note"');
     expect(floatingMarkup).toContain("<svg");
     expect(floatingMarkup).not.toContain(">X<");
+    expect(floatingMarkup).toContain('opacity-0 group-hover/chat-window:pointer-events-auto group-hover/chat-window:opacity-100');
+  });
+
+  it("shows the fixed-pane close button without hover gating when requested", () => {
+    const fixedMarkup = renderToStaticMarkup(
+      <ChatWindowHeader
+        alwaysShowCloseButton
+        branchFocus={null}
+        isFixedPane
+        onClose={() => {}}
+        showCloseButton
+        title="Chat 2"
+      />,
+    );
+
+    expect(fixedMarkup).toContain('aria-label="Close note"');
+    expect(fixedMarkup).toContain('pointer-events-auto opacity-100');
+    expect(fixedMarkup).not.toContain('group-hover/chat-window:opacity-100');
   });
 });
 

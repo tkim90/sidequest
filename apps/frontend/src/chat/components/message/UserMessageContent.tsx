@@ -2,7 +2,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
@@ -20,7 +20,7 @@ export interface UserMessageContentProps {
   isFocused: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   onMessageMouseDown: (
-    event: ReactMouseEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -306,7 +306,7 @@ function UserMessageContent({
     <div
       className={`cursor-text whitespace-pre-wrap break-words text-[20px] leading-7 ${className ?? ""}`.trim()}
       data-message-id={message.id}
-      onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
+      onPointerDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
       {chunkNodes}
       {message.status === "streaming" ? (

@@ -1,9 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MessageRecord } from "../../../types";
 import { getDisclosureContentShellStyle } from "../message/CollapsibleDisclosure";
 import ChatWindowMessages, {
+  SCROLLBAR_INACTIVITY_DELAY_MS,
+  createScrollbarVisibilityController,
   getReasoningDisclosureData,
 } from "./ChatWindowMessages";
 
@@ -19,7 +21,10 @@ function createMessage(overrides: Partial<MessageRecord> = {}): MessageRecord {
   };
 }
 
-function renderMessages(messages: MessageRecord[]): string {
+function renderMessages(
+  messages: MessageRecord[],
+  options: { mobileInteractionMode?: "scroll" | "scroll-first-swipe" } = {},
+): string {
   return renderToStaticMarkup(
     <ChatWindowMessages
       anchorGroupsByMessageKey={{}}
@@ -27,6 +32,7 @@ function renderMessages(messages: MessageRecord[]): string {
       isFocused
       isHistoryExpanded
       messages={messages}
+      mobileInteractionMode={options.mobileInteractionMode}
       onMessageMouseDown={() => {}}
       onStarterQuestionClick={() => {}}
       onRetry={() => {}}
@@ -38,6 +44,10 @@ function renderMessages(messages: MessageRecord[]): string {
     />,
   );
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("getDisclosureContentShellStyle", () => {
   it("returns an expanded shell style with height and opacity", () => {
@@ -117,5 +127,100 @@ describe("ChatWindowMessages reasoning disclosure", () => {
     const markup = renderMessages([createMessage()]);
 
     expect(markup).not.toContain(">Reasoning<");
+  });
+
+  it("marks the scroll body as a swipe surface only in scroll-first-swipe mode", () => {
+    const swipeMarkup = renderMessages([], {
+      mobileInteractionMode: "scroll-first-swipe",
+    });
+    const scrollMarkup = renderMessages([], {
+      mobileInteractionMode: "scroll",
+    });
+    const defaultMarkup = renderMessages([]);
+
+    expect(swipeMarkup).toContain('data-mobile-drag-surface="true"');
+    expect(swipeMarkup).toContain('data-mobile-scroll-surface="true"');
+    expect(swipeMarkup).toContain('style="touch-action:pan-y"');
+    expect(scrollMarkup).not.toContain('data-mobile-drag-surface=');
+    expect(scrollMarkup).toContain('data-mobile-scroll-surface="true"');
+    expect(scrollMarkup).toContain('style="touch-action:pan-y"');
+    expect(defaultMarkup).not.toContain('data-mobile-drag-surface=');
+    expect(defaultMarkup).not.toContain('data-mobile-scroll-surface=');
+  });
+});
+
+describe("createScrollbarVisibilityController", () => {
+  it("reveals on activity and hides after the inactivity timeout", () => {
+    vi.useFakeTimers();
+
+    let isVisible = false;
+    const hoverRef = { current: false };
+    const timeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const controller = createScrollbarVisibilityController({
+      isHoveringRef: hoverRef,
+      setVisible: (nextVisible) => {
+        isVisible = nextVisible;
+      },
+      timeoutRef,
+    });
+
+    controller.revealFromActivity();
+
+    expect(isVisible).toBe(true);
+    vi.advanceTimersByTime(SCROLLBAR_INACTIVITY_DELAY_MS - 1);
+    expect(isVisible).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(isVisible).toBe(false);
+  });
+
+  it("resets the hide timer when activity happens again before timeout", () => {
+    vi.useFakeTimers();
+
+    let isVisible = false;
+    const hoverRef = { current: false };
+    const timeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const controller = createScrollbarVisibilityController({
+      isHoveringRef: hoverRef,
+      setVisible: (nextVisible) => {
+        isVisible = nextVisible;
+      },
+      timeoutRef,
+    });
+
+    controller.revealFromActivity();
+    vi.advanceTimersByTime(1200);
+    controller.revealFromActivity();
+
+    vi.advanceTimersByTime(1200);
+    expect(isVisible).toBe(true);
+    vi.advanceTimersByTime(800);
+    expect(isVisible).toBe(false);
+  });
+
+  it("keeps the scrollbar visible while hovered and starts hiding after mouse leave", () => {
+    vi.useFakeTimers();
+
+    let isVisible = false;
+    const hoverRef = { current: false };
+    const timeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const controller = createScrollbarVisibilityController({
+      isHoveringRef: hoverRef,
+      setVisible: (nextVisible) => {
+        isVisible = nextVisible;
+      },
+      timeoutRef,
+    });
+
+    controller.handleMouseEnter();
+
+    expect(isVisible).toBe(true);
+    vi.advanceTimersByTime(SCROLLBAR_INACTIVITY_DELAY_MS * 2);
+    expect(isVisible).toBe(true);
+
+    controller.handleMouseLeave();
+    vi.advanceTimersByTime(SCROLLBAR_INACTIVITY_DELAY_MS - 1);
+    expect(isVisible).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(isVisible).toBe(false);
   });
 });

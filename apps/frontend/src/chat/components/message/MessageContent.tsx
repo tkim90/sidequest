@@ -1,4 +1,4 @@
-import { memo, type MouseEvent as ReactMouseEvent } from "react";
+import { memo, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { AnchorGroup, MessageRecord } from "../../../types";
 import MarkdownContent from "../../markdown/MarkdownContent";
@@ -12,7 +12,7 @@ interface MessageContentProps {
   isFocused: boolean;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   onMessageMouseDown: (
-    event: ReactMouseEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;

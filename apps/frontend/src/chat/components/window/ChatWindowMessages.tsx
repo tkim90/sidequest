@@ -1,5 +1,6 @@
 import {
   useLayoutEffect,
+  useRef,
   useState,
   type RefObject,
 } from "react";
@@ -14,6 +15,8 @@ import EmptyNoteBackground from "../message/EmptyNoteBackground";
 import ChatMessageCard from "../message/ChatMessageCard";
 import NotebookScrollbar, { type ScrollbarMetrics } from "./NotebookScrollbar";
 
+const SCROLLBAR_INACTIVITY_DELAY_MS = 2000;
+
 interface ChatWindowMessagesProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   historyPreviewCount: number;
@@ -21,6 +24,8 @@ interface ChatWindowMessagesProps {
   isFixedPane?: boolean;
   isHistoryExpanded: boolean;
   messages: MessageRecord[];
+  mobileInteractionMode?: "scroll" | "scroll-first-swipe";
+  onMobileBodyPointerDown?: React.ComponentProps<"div">["onPointerDown"];
   onMessageMouseDown: React.ComponentProps<typeof ChatMessageCard>["onMessageMouseDown"];
   onStarterQuestionClick: (question: string) => void | Promise<void>;
   onRetry: (messageId: string) => void;
@@ -35,6 +40,70 @@ interface ChatWindowMessagesProps {
 export { getReasoningDisclosureData } from "../message/ChatMessageCard";
 export type { ReasoningDisclosureData } from "../message/ChatMessageCard";
 
+type ScrollbarHideTimer = ReturnType<typeof globalThis.setTimeout>;
+
+interface ScrollbarVisibilityControllerOptions {
+  clearTimeoutFn?: typeof globalThis.clearTimeout;
+  hideDelayMs?: number;
+  isHoveringRef: { current: boolean };
+  setTimeoutFn?: typeof globalThis.setTimeout;
+  setVisible: (isVisible: boolean) => void;
+  timeoutRef: { current: ScrollbarHideTimer | null };
+}
+
+export function createScrollbarVisibilityController({
+  clearTimeoutFn = globalThis.clearTimeout,
+  hideDelayMs = SCROLLBAR_INACTIVITY_DELAY_MS,
+  isHoveringRef,
+  setTimeoutFn = globalThis.setTimeout,
+  setVisible,
+  timeoutRef,
+}: ScrollbarVisibilityControllerOptions) {
+  function clearHideTimer(): void {
+    if (timeoutRef.current === null) {
+      return;
+    }
+
+    clearTimeoutFn(timeoutRef.current);
+    timeoutRef.current = null;
+  }
+
+  function scheduleHide(): void {
+    clearHideTimer();
+
+    if (isHoveringRef.current) {
+      return;
+    }
+
+    timeoutRef.current = setTimeoutFn(() => {
+      timeoutRef.current = null;
+      if (isHoveringRef.current) {
+        return;
+      }
+
+      setVisible(false);
+    }, hideDelayMs);
+  }
+
+  return {
+    clearHideTimer,
+    dispose: clearHideTimer,
+    handleMouseEnter(): void {
+      isHoveringRef.current = true;
+      clearHideTimer();
+      setVisible(true);
+    },
+    handleMouseLeave(): void {
+      isHoveringRef.current = false;
+      scheduleHide();
+    },
+    revealFromActivity(): void {
+      setVisible(true);
+      scheduleHide();
+    },
+  };
+}
+
 function ChatWindowMessages({
   anchorGroupsByMessageKey,
   historyPreviewCount,
@@ -42,6 +111,8 @@ function ChatWindowMessages({
   isFixedPane = false,
   isHistoryExpanded,
   messages,
+  mobileInteractionMode,
+  onMobileBodyPointerDown,
   onMessageMouseDown,
   onStarterQuestionClick,
   onRetry,
@@ -56,6 +127,9 @@ function ChatWindowMessages({
     scrollHeight: 0,
     scrollTop: 0,
   });
+  const [isScrollbarVisible, setIsScrollbarVisible] = useState(false);
+  const isScrollbarHoveringRef = useRef(false);
+  const scrollbarHideTimerRef = useRef<ScrollbarHideTimer | null>(null);
 
   const clampedHistoryPreviewCount = Math.min(historyPreviewCount, messages.length);
   const historyMessages = messages.slice(0, clampedHistoryPreviewCount);
@@ -63,6 +137,14 @@ function ChatWindowMessages({
     clampedHistoryPreviewCount > 0
       ? messages.slice(clampedHistoryPreviewCount)
       : messages;
+  const scrollbarVisibilityControllerRef = useRef(
+    createScrollbarVisibilityController({
+      isHoveringRef: isScrollbarHoveringRef,
+      setVisible: setIsScrollbarVisible,
+      timeoutRef: scrollbarHideTimerRef,
+    }),
+  );
+  const scrollbarVisibilityController = scrollbarVisibilityControllerRef.current;
 
   function updateScrollbarMetrics() {
     const node = scrollRef.current;
@@ -106,6 +188,12 @@ function ChatWindowMessages({
     };
   });
 
+  useMountEffect(() => {
+    return () => {
+      scrollbarVisibilityController.dispose();
+    };
+  });
+
   function renderMessage(message: MessageRecord) {
     const messageKey = `${windowId}:${message.id}`;
     const anchorGroups = anchorGroupsByMessageKey[messageKey] || [];
@@ -125,14 +213,38 @@ function ChatWindowMessages({
     );
   }
 
+  const isMobileScrollSurface = mobileInteractionMode === "scroll";
+  const isMobileSwipeSurface = mobileInteractionMode === "scroll-first-swipe";
+  const canShowScrollbar =
+    scrollbarMetrics.clientHeight > 0 &&
+    scrollbarMetrics.scrollHeight > scrollbarMetrics.clientHeight;
+
+  function revealScrollbarFromActivity(): void {
+    scrollbarVisibilityController.revealFromActivity();
+  }
+
   return (
-    <div className="relative z-10 h-full min-h-0 min-w-0">
+    <div
+      className="relative z-10 h-full min-h-0 min-w-0"
+      onMouseEnter={() => scrollbarVisibilityController.handleMouseEnter()}
+      onMouseLeave={() => scrollbarVisibilityController.handleMouseLeave()}
+    >
       <div
         className={[
           "flex h-full min-w-0 flex-col gap-2 overflow-auto",
-          "notebook-scrollbar-hidden px-4 sm:px-8"
+          "notebook-scrollbar-hidden px-4 sm:px-8",
         ].join(" ")}
+        data-mobile-drag-surface={isMobileSwipeSurface ? "true" : undefined}
+        data-mobile-scroll-surface={
+          isMobileScrollSurface || isMobileSwipeSurface ? "true" : undefined
+        }
         ref={scrollRef}
+        style={
+          isMobileScrollSurface || isMobileSwipeSurface
+            ? { touchAction: "pan-y" }
+            : undefined
+        }
+        onPointerDown={onMobileBodyPointerDown}
         onScroll={() => {
           const node = scrollRef.current;
           if (node) {
@@ -142,6 +254,7 @@ function ChatWindowMessages({
               scrollTop: node.scrollTop,
             });
           }
+          revealScrollbarFromActivity();
           onScroll();
         }}
       >
@@ -173,10 +286,13 @@ function ChatWindowMessages({
       </div>
 
       <NotebookScrollbar
-        isFixedPane={isFixedPane}
+        isVisible={canShowScrollbar && isScrollbarVisible}
         scrollbarMetrics={scrollbarMetrics}
         scrollRef={scrollRef}
-        onScroll={onScroll}
+        onScroll={() => {
+          revealScrollbarFromActivity();
+          onScroll();
+        }}
         onScrollbarMetricsChange={setScrollbarMetrics}
       />
     </div>
@@ -184,3 +300,4 @@ function ChatWindowMessages({
 }
 
 export default ChatWindowMessages;
+export { SCROLLBAR_INACTIVITY_DELAY_MS };

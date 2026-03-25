@@ -50,7 +50,7 @@ export interface ChatMessageCardProps {
   isFixedPane: boolean;
   message: MessageRecord;
   onMessageMouseDown: (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.PointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;

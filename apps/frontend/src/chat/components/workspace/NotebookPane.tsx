@@ -23,7 +23,7 @@ interface NotebookPaneProps {
     windowId: string,
   ) => void;
   onMessageMouseDown: (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.PointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -96,6 +96,7 @@ function NotebookPane({
               isFixedPane
               isFocused
               messages={messages}
+              mobileInteractionMode={removeVerticalPadding ? "scroll" : undefined}
               onClose={onWindowClose}
               onComposerChange={onComposerChange}
               onEffortChange={onEffortChange}

@@ -186,8 +186,8 @@ function SelectionPopover({
     <div
       className={
         selectionState.stage === "compose"
-          ? "fixed z-40 flex min-w-[420px] flex-col gap-2 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
-          : "fixed z-40"
+          ? "fixed z-[60] flex min-w-[420px] flex-col gap-2 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
+          : "fixed z-[60]"
       }
       ref={popoverRef}
       style={{

@@ -1,4 +1,4 @@
-import { memo, type MouseEvent as ReactMouseEvent } from "react";
+import { memo, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { AnchorGroup, MessageRecord, MessageStatus } from "../../types";
 import { computeBlockOffsets } from "./offsetMap";
@@ -19,7 +19,7 @@ interface MarkdownContentProps {
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   renderStatus?: MessageStatus;
   onMessageMouseDown: (
-    event: ReactMouseEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
@@ -117,7 +117,7 @@ const MarkdownContent = memo(function MarkdownContent({
     <div
       className={`cursor-text break-words text-[20px] leading-7 ${className ?? ""}`.trim()}
       data-message-id={message.id}
-      onMouseDown={(event) => onMessageMouseDown(event, windowId, message.id)}
+      onPointerDown={(event) => onMessageMouseDown(event, windowId, message.id)}
     >
       <FinalizedBlocksList
         allBlocks={allBlocks}

@@ -1,10 +1,10 @@
 import { motion } from "motion/react";
 
-import { Button } from "../../../components/ui/button";
 import { useNoticeStore } from "../../../stores/noticeStore";
 import { useChatWorkspace } from "../../hooks/useChatWorkspace";
 import ChatCanvas from "./ChatCanvas";
 import CloseTreeModal from "./CloseTreeModal";
+import MobileNotesToolbar from "./MobileNotesToolbar";
 import NoticeToast from "./NoticeToast";
 import PaperTextureDefs from "./PaperTextureDefs";
 import SelectionPopover, { getSelectionIdentityKey } from "./SelectionPopover";
@@ -23,33 +23,17 @@ function ChatWorkspace() {
         initial={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       >
-        {workspace.isMobileView && !workspace.isMobileNotesOpen ? (
-          <div className="absolute right-4 top-4 z-40 flex items-center gap-2">
-            <Button
-              className="rounded-sm border border-border bg-paper-sheet/90 text-[10px] uppercase tracking-[0.14em] text-foreground backdrop-blur-sm"
-              size="sm"
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                workspace.onOpenFreshRootWindow();
-                workspace.onMobileNotesOpen();
-              }}
-            >
-              Add Note
-            </Button>
-
-            {workspace.hasChildWindows ? (
-              <Button
-                className="rounded-sm border border-border bg-paper-sheet/90 text-[10px] uppercase tracking-[0.14em] text-foreground backdrop-blur-sm"
-                size="sm"
-                type="button"
-                variant="secondary"
-                onClick={workspace.onMobileNotesOpen}
-              >
-                View Notes
-              </Button>
-            ) : null}
-          </div>
+        {workspace.isMobileView ? (
+          <MobileNotesToolbar
+            hasNotes={workspace.hasChildWindows}
+            isNotesOpen={workspace.isMobileNotesOpen}
+            onAddNote={() => {
+              workspace.onOpenFreshRootWindow();
+              workspace.onMobileNotesOpen();
+            }}
+            onCloseNotes={workspace.onMobileNotesClose}
+            onOpenNotes={workspace.onMobileNotesOpen}
+          />
         ) : null}
 
         <ChatCanvas
@@ -72,9 +56,11 @@ function ChatWorkspace() {
           onModelChange={workspace.onModelChange}
           onOpenFreshRootWindow={workspace.onOpenFreshRootWindow}
           onMobileNotesClose={workspace.onMobileNotesClose}
+          onMobilePreferredNoteHandled={workspace.onMobilePreferredNoteHandled}
           onPaneResizePointerDown={workspace.onPaneResizePointerDown}
           onResizePointerDown={workspace.onResizePointerDown}
           onRetry={workspace.onRetry}
+          preferredMobileNoteWindowId={workspace.preferredMobileNoteWindowId}
           onSend={workspace.onSend}
           onToggleHistoryExpanded={workspace.onToggleHistoryExpanded}
           onWindowClose={workspace.onWindowClose}

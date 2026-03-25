@@ -114,6 +114,7 @@ describe("SelectionPopover", () => {
 
     expect(markup).toContain("Branch in new window");
     expect(markup).not.toContain("Ask a follow-up question...");
+    expect(markup).toContain("z-[60]");
   });
 
   it("renders the composer UI when expanded", () => {

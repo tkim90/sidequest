@@ -40,7 +40,7 @@ interface CanvasPaneProps {
     windowId: string,
   ) => void;
   onMessageMouseDown: (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.PointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
