@@ -103,23 +103,32 @@ export async function streamChat({
   onContentDelta,
   onReasoningDelta,
 }: StreamChatOptions): Promise<void> {
+  const payload: Record<string, unknown> = {
+    messages,
+    model,
+    effort: effort ?? null,
+  };
+
+  if (branchFocus) {
+    const latestUserQuery = branchFocus.latestUserQuery?.trim();
+    if (!latestUserQuery) {
+      throw new Error("Branched chat requests require the latest user query.");
+    }
+
+    payload.branch_focus = {
+      selected_text: branchFocus.selectedText,
+      parent_window_title: branchFocus.parentWindowTitle,
+      parent_message_role: branchFocus.parentMessageRole,
+      latest_user_query: latestUserQuery,
+    };
+  }
+
   const response = await fetch("/api/chat/stream", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      messages,
-      branch_focus: branchFocus
-        ? {
-            selected_text: branchFocus.selectedText,
-            parent_window_title: branchFocus.parentWindowTitle,
-            parent_message_role: branchFocus.parentMessageRole,
-          }
-        : null,
-      model,
-      effort: effort ?? null,
-    }),
+    body: JSON.stringify(payload),
     signal,
   });
 

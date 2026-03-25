@@ -146,6 +146,10 @@ export function bringWindowToFront(
     return state;
   }
 
+  if (state.zOrder[state.zOrder.length - 1] === windowId) {
+    return state;
+  }
+
   return {
     ...state,
     zOrder: [

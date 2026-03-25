@@ -22,6 +22,7 @@ class BranchFocus(BaseModel):
     selected_text: str = Field(min_length=1)
     parent_window_title: str = Field(min_length=1)
     parent_message_role: Literal["user", "assistant"]
+    latest_user_query: str = Field(min_length=1)
 
 
 class ChatRequest(BaseModel):
@@ -49,9 +50,15 @@ def build_instructions(branch_focus: BranchFocus | None) -> str:
         f"{instructions}\n\n"
         "This chat was branched from a selected phrase in another window. "
         f"The selected phrase came from a {branch_focus.parent_message_role} message in "
-        f"{branch_focus.parent_window_title}. "
-        f"Treat the following excerpt as the branch focus while answering follow-up prompts:\n"
-        f"{json.dumps(branch_focus.selected_text)}"
+        f"{branch_focus.parent_window_title}.\n\n"
+        f"Branch subject: {json.dumps(branch_focus.selected_text)}\n"
+        f"Current question about the branch subject: {json.dumps(branch_focus.latest_user_query)}\n"
+        "How to use the transcript:\n"
+        "- Treat the selected phrase as the subject of this branch.\n"
+        "- Answer the current question about that selected phrase.\n"
+        '- If the question uses words like "this" or "that", resolve them to the selected phrase first.\n'
+        "- Use the inherited transcript as background history and supporting context.\n"
+        "- Do not let the transcript change the subject away from the selected phrase."
     )
 
 

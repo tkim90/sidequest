@@ -252,6 +252,37 @@ export function resolveBranchSourceNavigation(
   };
 }
 
+export function resolveLatestUserQuery(messages: ChatMessage[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.role !== "user") {
+      continue;
+    }
+
+    const content = message.content.trim();
+    if (content) {
+      return content;
+    }
+  }
+
+  return null;
+}
+
+export function buildRequestBranchFocus(
+  branchFocus: WindowRecord["branchFocus"],
+  latestUserQuery: string,
+): WindowRecord["branchFocus"] {
+  const trimmedLatestUserQuery = latestUserQuery.trim();
+  if (!branchFocus || !trimmedLatestUserQuery) {
+    return null;
+  }
+
+  return {
+    ...branchFocus,
+    latestUserQuery: trimmedLatestUserQuery,
+  };
+}
+
 function getViewportCenteredRootX(windowWidth: number): number {
   if (typeof window === "undefined") {
     return ROOT_WINDOW_X;
@@ -490,6 +521,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       "streaming",
       resolvedModel,
     );
+    const requestBranchFocus = buildRequestBranchFocus(
+      windowData.branchFocus,
+      composer,
+    );
     const requestMessages: ChatMessage[] = [
       ...getCanvasMessages(snapshot.messagesByWindowId, windowId),
       { role: "user", content: composer },
@@ -507,7 +542,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
       await streamChat({
         messages: requestMessages,
-        branchFocus: windowData.branchFocus,
+        branchFocus: requestBranchFocus,
         model: resolvedModel,
         effort: resolvedEffort,
         signal: controller.signal,
@@ -580,6 +615,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       .slice(0, messageIndex)
       .filter((m) => m.status !== "streaming")
       .map((m) => ({ role: m.role, content: m.content }));
+    const requestBranchFocus = buildRequestBranchFocus(
+      windowData.branchFocus,
+      resolveLatestUserQuery(requestMessages) ?? "",
+    );
 
     setAppState((current) =>
       retryAssistantMessage(current, windowId, messageId, assistantMessage),
@@ -593,7 +632,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
 
       await streamChat({
         messages: requestMessages,
-        branchFocus: windowData.branchFocus,
+        branchFocus: requestBranchFocus,
         model: resolvedModel,
         effort: resolvedEffort,
         signal: controller.signal,

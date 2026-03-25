@@ -245,6 +245,9 @@ describe("workspaceActions", () => {
       childB.id,
       childA.id,
     ]);
+    expect(bringWindowToFront(stateWithChildren, childB.id)).toBe(
+      stateWithChildren,
+    );
     expect(bringWindowToFront(stateWithChildren, rootWindowId)).toBe(
       stateWithChildren,
     );

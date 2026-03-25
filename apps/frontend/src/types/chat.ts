@@ -23,6 +23,7 @@ export interface BranchFocus {
   selectedText: string;
   parentWindowTitle: string;
   parentMessageRole: ChatRole;
+  latestUserQuery?: string;
 }
 
 export interface Viewport {

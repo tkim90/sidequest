@@ -3,8 +3,11 @@ import {
   type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
+  useCallback,
   useId,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 
 type MotionStyle = {
@@ -45,6 +48,32 @@ function resolveAnimatedStyle(style?: MotionStyle): CSSProperties {
   };
 }
 
+export function sanitizeMotionId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+export function resolveStableMotionId(
+  stableId: string | null,
+  nextReactId: string,
+): string {
+  return stableId ?? sanitizeMotionId(nextReactId);
+}
+
+interface ResolveMotionRenderStateOptions {
+  animate?: MotionStyle;
+  animationName: string;
+  enterAnimationCompleted: boolean;
+  initial?: MotionStyle;
+  style?: CSSProperties;
+  transition?: MotionTransition;
+}
+
+interface MotionRenderState {
+  composedStyle: CSSProperties;
+  enterAnimationCss: string | null;
+  shouldRunEnterAnimation: boolean;
+}
+
 function createEnterAnimationCss(
   animationName: string,
   fromStyle: MotionStyle,
@@ -67,18 +96,25 @@ function createEnterAnimationCss(
 }`;
 }
 
-const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
-  { animate, children, initial, style, transition, ...props },
-  ref,
-) {
-  const animationName = `motion-enter-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const shouldRunEnterAnimation = Boolean(initial && animate);
+export function resolveMotionRenderState({
+  animate,
+  animationName,
+  enterAnimationCompleted,
+  initial,
+  style,
+  transition,
+}: ResolveMotionRenderStateOptions): MotionRenderState {
+  const shouldRunEnterAnimation = Boolean(
+    initial && animate && !enterAnimationCompleted,
+  );
+  const easing =
+    transition?.ease === "easeOut"
+      ? "cubic-bezier(0.16, 1, 0.3, 1)"
+      : "ease";
+  const targetStyle = animate ?? initial;
 
-  const composedStyle = useMemo<CSSProperties>(() => {
-    const easing = transition?.ease === "easeOut" ? "cubic-bezier(0.16, 1, 0.3, 1)" : "ease";
-    const targetStyle = animate ?? initial;
-
-    return {
+  return {
+    composedStyle: {
       opacity: targetStyle?.opacity,
       transform: toTransform(targetStyle),
       animationDelay:
@@ -93,16 +129,71 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
       transitionTimingFunction: easing,
       transitionProperty: "opacity, transform",
       ...style,
-    };
-  }, [animate, animationName, initial, shouldRunEnterAnimation, style, transition]);
+    },
+    enterAnimationCss:
+      shouldRunEnterAnimation && animate && initial
+        ? createEnterAnimationCss(animationName, initial, animate)
+        : null,
+    shouldRunEnterAnimation,
+  };
+}
 
-  const enterAnimationCss =
-    shouldRunEnterAnimation && animate && initial
-      ? createEnterAnimationCss(animationName, initial, animate)
-      : null;
+const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(function MotionDiv(
+  { animate, children, initial, onAnimationEnd, style, transition, ...props },
+  ref,
+) {
+  const reactId = useId();
+  const stableMotionIdRef = useRef<string | null>(null);
+  const [enterAnimationCompleted, setEnterAnimationCompleted] = useState(false);
+  const stableMotionId = resolveStableMotionId(
+    stableMotionIdRef.current,
+    reactId,
+  );
+  stableMotionIdRef.current = stableMotionId;
+  const animationName = `motion-enter-${stableMotionId}`;
+  const { composedStyle, enterAnimationCss, shouldRunEnterAnimation } =
+    useMemo(
+      () =>
+        resolveMotionRenderState({
+          animate,
+          animationName,
+          enterAnimationCompleted,
+          initial,
+          style,
+          transition,
+        }),
+      [
+        animate,
+        animationName,
+        enterAnimationCompleted,
+        initial,
+        style,
+        transition,
+      ],
+    );
+
+  const handleAnimationEnd = useCallback<NonNullable<MotionProps["onAnimationEnd"]>>(
+    (event) => {
+      if (
+        shouldRunEnterAnimation &&
+        event.currentTarget === event.target &&
+        event.animationName === animationName
+      ) {
+        setEnterAnimationCompleted(true);
+      }
+
+      onAnimationEnd?.(event);
+    },
+    [animationName, onAnimationEnd, shouldRunEnterAnimation],
+  );
 
   return (
-    <div ref={ref} style={composedStyle} {...props}>
+    <div
+      ref={ref}
+      style={composedStyle}
+      onAnimationEnd={handleAnimationEnd}
+      {...props}
+    >
       {enterAnimationCss ? <style>{enterAnimationCss}</style> : null}
       {children}
     </div>

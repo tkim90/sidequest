@@ -2,6 +2,7 @@ import json
 
 from fastapi.testclient import TestClient
 
+from app.catalog_prompt import CATALOG_PROMPT
 from app.main import app
 
 
@@ -79,14 +80,18 @@ def test_chat_stream_shapes_ndjson(monkeypatch):
             "/api/chat/stream",
             json={
                 "messages": [
-                    {"role": "user", "content": "Hello"},
-                    {"role": "assistant", "content": "Hi there"},
-                    {"role": "user", "content": "Follow up"},
+                    {"role": "user", "content": "Tell me about Claude Shannon"},
+                    {
+                        "role": "assistant",
+                        "content": "Claude Shannon pioneered information theory.",
+                    },
+                    {"role": "user", "content": "Who is this?"},
                 ],
                 "branch_focus": {
-                    "selected_text": "Hello",
+                    "selected_text": "Claude Shannon",
                     "parent_window_title": "Chat 1",
-                    "parent_message_role": "user",
+                    "parent_message_role": "assistant",
+                    "latest_user_query": "Who is this?",
                 },
                 "effort": "medium",
             },
@@ -103,10 +108,19 @@ def test_chat_stream_shapes_ndjson(monkeypatch):
         {"type": "done"},
     ]
     assert fake_client.responses.calls[0]["input"] == [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi there"},
-        {"role": "user", "content": "Follow up"},
+        {"role": "user", "content": "Tell me about Claude Shannon"},
+        {
+            "role": "assistant",
+            "content": "Claude Shannon pioneered information theory.",
+        },
+        {"role": "user", "content": "Who is this?"},
     ]
+    instructions = fake_client.responses.calls[0]["instructions"]
+    assert 'Branch subject: "Claude Shannon"' in instructions
+    assert 'Current question about the branch subject: "Who is this?"' in instructions
+    assert "background history and supporting context" in instructions
+    assert 'If the question uses words like "this" or "that"' in instructions
+    assert "Do not let the transcript change the subject away from the selected phrase." in instructions
     assert fake_client.responses.calls[0]["reasoning"] == {
         "effort": "medium",
         "summary": "auto",
@@ -137,6 +151,11 @@ def test_chat_stream_uses_requested_model(monkeypatch):
     assert lines[-1] == {"type": "done"}
     assert fake_client.responses.calls[0]["model"] == "gpt-4.1"
     assert "reasoning" not in fake_client.responses.calls[0]
+    assert fake_client.responses.calls[0]["instructions"] == (
+        "You are continuing an existing chat conversation. "
+        "Respond naturally and keep the answer grounded in the transcript."
+        f"\n\n{CATALOG_PROMPT}"
+    )
 
 
 def test_chat_models_endpoint_returns_options(monkeypatch):
