@@ -104,7 +104,7 @@ function CanvasPane({
     <div className="relative z-10 min-h-0 overflow-hidden bg-paper-raised/45">
       <div className="paper-texture relative h-full overflow-hidden bg-paper-sheet">
         {mainWindowTitle === ROOT_WINDOW_TITLE ? (
-          <GithubLogo className="absolute right-10 top-8 z-30" />
+          <GithubLogo className="absolute right-10 top-6 z-30" />
         ) : null}
         <NotebookBinderMarks gutterWidthPx={NOTEBOOK_GUTTER_WIDTH_PX} />
 
