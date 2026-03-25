@@ -68,6 +68,7 @@ import {
 } from "../lib/workspaceActions";
 import { useBranchSelection } from "./useBranchSelection";
 import { useCanvasInteractions } from "./useCanvasInteractions";
+import { useIsMobileView } from "./useIsMobileView";
 
 export interface ChatWorkspaceViewModel {
   anchorGroupsByMessageKey: ReturnType<
@@ -76,6 +77,8 @@ export interface ChatWorkspaceViewModel {
   canvasRef: RefObject<HTMLDivElement | null>;
   closePrompt: ClosePrompt | null;
   hasChildWindows: boolean;
+  isMobileNotesOpen: boolean;
+  isMobileView: boolean;
   isPaneResizing: boolean;
   leftPaneWidthPx: number | null;
   messagesByWindowId: MessagesByWindowId;
@@ -97,6 +100,8 @@ export interface ChatWorkspaceViewModel {
   onMessageMouseDown: ReturnType<
     typeof useBranchSelection
   >["onMessageMouseDown"];
+  onMobileNotesClose: () => void;
+  onMobileNotesOpen: () => void;
   onNavigateToBranchSource: (
     windowId: string,
     branchAnchorId: string | null,
@@ -298,7 +303,9 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const [closePrompt, setClosePrompt] = useState<ClosePrompt | null>(null);
   const [leftPaneWidthPx, setLeftPaneWidthPx] = useState<number | null>(null);
   const [isPaneResizing, setIsPaneResizing] = useState(false);
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false);
   const [activeSourceGroupKey, setActiveSourceGroupKey] = useState<string | null>(null);
+  const isMobileView = useIsMobileView();
   const appStateRef = useRef(appState);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const windowScrollStatesRef = useRef<Record<string, WindowScrollState>>({});
@@ -891,12 +898,15 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   const mainWindow = orderedWindows.find((windowData) => windowData.parentId === null) ?? null;
   const windows = orderedWindows.filter((windowData) => windowData.id !== mainWindow?.id);
   const hasChildWindows = windows.length > 0;
+  const isMobileNotesOverlayOpen = isMobileView && hasChildWindows && isMobileNotesOpen;
 
   return {
     anchorGroupsByMessageKey,
     canvasRef: canvas.canvasRef,
     closePrompt,
     hasChildWindows,
+    isMobileNotesOpen: isMobileNotesOverlayOpen,
+    isMobileView,
     isPaneResizing,
     leftPaneWidthPx,
     messagesByWindowId: appState.messagesByWindowId,
@@ -921,6 +931,12 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
       canvas.onResizePointerDown(event, windowId, edges);
     },
     onMessageMouseDown: selection.onMessageMouseDown,
+    onMobileNotesClose: () => {
+      setIsMobileNotesOpen(false);
+    },
+    onMobileNotesOpen: () => {
+      setIsMobileNotesOpen(true);
+    },
     onNavigateToBranchSource: handleNavigateToBranchSource,
     onOpenFreshRootWindow: openFreshRootWindow,
     onPaneResizePointerDown: handlePaneResizePointerDown,

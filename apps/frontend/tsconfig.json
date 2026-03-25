@@ -17,12 +17,7 @@
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "motion/react": [
-        "src/motion/react.tsx"
-      ]
-    }
+    "baseUrl": "."
   },
   "include": [
     "src",

@@ -77,6 +77,8 @@ function renderChatCanvas(mainWindow: WindowRecord | null) {
       anchorGroupsByMessageKey={{} as AnchorGroupsByMessageKey}
       canvasRef={{ current: null }}
       isPaneResizing={false}
+      isMobileNotesOpen={false}
+      isMobileView={false}
       leftPaneWidthPx={null}
       mainWindow={mainWindow}
       messagesByWindowId={MESSAGES}
@@ -90,6 +92,7 @@ function renderChatCanvas(mainWindow: WindowRecord | null) {
       onModelChange={() => {}}
       onNavigateToBranchSource={() => {}}
       onOpenFreshRootWindow={() => {}}
+      onMobileNotesClose={() => {}}
       onPaneResizePointerDown={() => {}}
       onResizePointerDown={() => {}}
       onRetry={() => {}}
@@ -125,7 +128,7 @@ describe("ChatCanvas", () => {
     expect(markup).toContain('left-0 top-0 z-40 h-5 w-5 cursor-nwse-resize');
     expect(markup).toContain('right-0 top-0 z-40 h-5 w-5 cursor-nesw-resize');
     expect(markup.match(/data-resize-handle=/g)?.length).toBe(8);
-    expect(markup).toContain('absolute right-10 top-8 z-30');
+    expect(markup).toContain('absolute right-10 top-6 z-30');
     expect(markup).toContain('aria-label="Open Sidequest on GitHub"');
     expect(markup).toContain('href="https://github.com/tkim90/sidequest"');
     expect(markup).toContain('target="_blank"');

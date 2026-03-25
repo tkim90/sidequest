@@ -12,6 +12,7 @@ import type { ResizeEdges } from "../../hooks/canvasTypes";
 import { PANE_SEPARATOR_WIDTH } from "../../lib/constants";
 import { useFloatingWindowPresence } from "../../hooks/useFloatingWindowPresence";
 import CanvasPane from "./CanvasPane";
+import MobileNotesOverlay from "./MobileNotesOverlay";
 import NotebookPane from "./NotebookPane";
 import SplitPaneDivider from "./SplitPaneDivider";
 
@@ -25,6 +26,8 @@ interface ChatCanvasProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   isPaneResizing: boolean;
+  isMobileNotesOpen: boolean;
+  isMobileView: boolean;
   leftPaneWidthPx: number | null;
   mainWindow: WindowRecord | null;
   messagesByWindowId: MessagesByWindowId;
@@ -59,6 +62,7 @@ interface ChatCanvasProps {
   ) => void;
   onRetry: (windowId: string, messageId: string) => void | Promise<void>;
   onSend: (windowId: string, promptOverride?: string) => void | Promise<void>;
+  onMobileNotesClose: () => void;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
   onWindowFocus: (windowId: string) => void;
@@ -78,6 +82,8 @@ function ChatCanvas({
   anchorGroupsByMessageKey,
   canvasRef,
   isPaneResizing,
+  isMobileNotesOpen,
+  isMobileView,
   leftPaneWidthPx,
   mainWindow,
   messagesByWindowId,
@@ -95,6 +101,7 @@ function ChatCanvas({
   onNavigateToBranchSource,
   onRetry,
   onSend,
+  onMobileNotesClose,
   onToggleHistoryExpanded,
   onWindowClose,
   onWindowFocus,
@@ -153,40 +160,70 @@ function ChatCanvas({
             ? windowScrollStates[mainWindow.id] ?? DEFAULT_SCROLL_STATE
             : DEFAULT_SCROLL_STATE
         }
+        removeVerticalPadding={isMobileView}
       />
 
-      <SplitPaneDivider
-        isResizing={isPaneResizing}
-        onPointerDown={onPaneResizePointerDown}
-      />
+      {isMobileView ? null : (
+        <>
+          <SplitPaneDivider
+            isResizing={isPaneResizing}
+            onPointerDown={onPaneResizePointerDown}
+          />
 
-      <CanvasPane
-        anchorGroupsByMessageKey={anchorGroupsByMessageKey}
-        canvasRef={canvasRef}
-        floatingWindowEntries={floatingWindowEntries}
-        liveWindowCount={windows.length}
-        mainWindowTitle={mainWindow?.title ?? null}
-        onCanvasPointerDown={onCanvasPointerDown}
-        onCanvasWheel={onCanvasWheel}
-        onComposerChange={onComposerChange}
-        onEffortChange={onEffortChange}
-        onGeometryChange={onGeometryChange}
-        onHeaderPointerDown={onHeaderPointerDown}
-        onMessageMouseDown={onMessageMouseDown}
-        onModelChange={onModelChange}
-        onNavigateToBranchSource={onNavigateToBranchSource}
-        onOpenFreshRootWindow={onOpenFreshRootWindow}
-        onResizePointerDown={onResizePointerDown}
-        onRetry={onRetry}
-        onSend={onSend}
-        onToggleHistoryExpanded={onToggleHistoryExpanded}
-        onWindowClose={onWindowClose}
-        onWindowFocus={onWindowFocus}
-        onWindowScrollStateChange={onWindowScrollStateChange}
-        registerAnchorRef={registerAnchorRef}
-        registerWindowRef={registerWindowRef}
-        viewport={viewport}
-      />
+          <CanvasPane
+            anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+            canvasRef={canvasRef}
+            floatingWindowEntries={floatingWindowEntries}
+            liveWindowCount={windows.length}
+            mainWindowTitle={mainWindow?.title ?? null}
+            onCanvasPointerDown={onCanvasPointerDown}
+            onCanvasWheel={onCanvasWheel}
+            onComposerChange={onComposerChange}
+            onEffortChange={onEffortChange}
+            onGeometryChange={onGeometryChange}
+            onHeaderPointerDown={onHeaderPointerDown}
+            onMessageMouseDown={onMessageMouseDown}
+            onModelChange={onModelChange}
+            onNavigateToBranchSource={onNavigateToBranchSource}
+            onOpenFreshRootWindow={onOpenFreshRootWindow}
+            onResizePointerDown={onResizePointerDown}
+            onRetry={onRetry}
+            onSend={onSend}
+            onToggleHistoryExpanded={onToggleHistoryExpanded}
+            onWindowClose={onWindowClose}
+            onWindowFocus={onWindowFocus}
+            onWindowScrollStateChange={onWindowScrollStateChange}
+            registerAnchorRef={registerAnchorRef}
+            registerWindowRef={registerWindowRef}
+            viewport={viewport}
+          />
+        </>
+      )}
+
+      {isMobileView && isMobileNotesOpen ? (
+        <MobileNotesOverlay
+          anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+          entries={floatingWindowEntries}
+          onCloseOverlay={onMobileNotesClose}
+          onCloseWindow={onWindowClose}
+          onComposerChange={onComposerChange}
+          onEffortChange={onEffortChange}
+          onGeometryChange={onGeometryChange}
+          onHeaderPointerDown={onHeaderPointerDown}
+          onMessageMouseDown={onMessageMouseDown}
+          onModelChange={onModelChange}
+          onNavigateToBranchSource={onNavigateToBranchSource}
+          onOpenFreshRootWindow={onOpenFreshRootWindow}
+          onResizePointerDown={onResizePointerDown}
+          onRetry={onRetry}
+          onSend={onSend}
+          onToggleHistoryExpanded={onToggleHistoryExpanded}
+          onWindowFocus={onWindowFocus}
+          onWindowScrollStateChange={onWindowScrollStateChange}
+          registerAnchorRef={registerAnchorRef}
+          registerWindowRef={registerWindowRef}
+        />
+      ) : null}
     </div>
   );
 }

@@ -51,6 +51,7 @@ interface ChatWindowProps {
   messages: MessageRecord[];
   zIndex: number;
   isFixedPane?: boolean;
+  showFixedPaneCloseButton?: boolean;
 }
 
 const ChatWindow = memo(function ChatWindow({
@@ -77,6 +78,7 @@ const ChatWindow = memo(function ChatWindow({
   messages,
   zIndex,
   isFixedPane = false,
+  showFixedPaneCloseButton = false,
 }: ChatWindowProps) {
   const isCompactPane = !isFixedPane;
   const { scrollRef, textareaRef, onMessagesScroll } = useChatWindowLayout({
@@ -158,7 +160,7 @@ const ChatWindow = memo(function ChatWindow({
           onNavigateToBranchSource(windowData.id, windowData.branchAnchorId)
         }
         onClose={() => onClose(windowData.id)}
-        showCloseButton={!isFixedPane}
+        showCloseButton={isFixedPane ? showFixedPaneCloseButton : true}
         title={windowData.title}
       />
 
@@ -208,7 +210,8 @@ function areChatWindowPropsEqual(
     previous.zIndex === next.zIndex &&
     previous.anchorGroupsByMessageKey === next.anchorGroupsByMessageKey &&
     previous.savedScrollState === next.savedScrollState &&
-    previous.isFixedPane === next.isFixedPane
+    previous.isFixedPane === next.isFixedPane &&
+    previous.showFixedPaneCloseButton === next.showFixedPaneCloseButton
   );
 }
 

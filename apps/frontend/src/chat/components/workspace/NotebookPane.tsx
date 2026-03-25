@@ -48,6 +48,7 @@ interface NotebookPaneProps {
   ) => void;
   registerAnchorRef: (groupKey: string, node: HTMLSpanElement | null) => void;
   registerWindowRef: (windowId: string, node: HTMLElement | null) => void;
+  removeVerticalPadding?: boolean;
   savedScrollState: WindowScrollState;
 }
 
@@ -71,6 +72,7 @@ function NotebookPane({
   onWindowScrollStateChange,
   registerAnchorRef,
   registerWindowRef,
+  removeVerticalPadding = false,
   savedScrollState,
 }: NotebookPaneProps) {
   return (
@@ -81,7 +83,14 @@ function NotebookPane({
         intensity="default"
       >
         {mainWindow ? (
-          <div className="min-h-0 min-w-0 flex-1 py-4">
+          <div
+            className={[
+              "min-h-0 min-w-0 flex-1",
+              removeVerticalPadding ? null : "py-4",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             <ChatWindow
               anchorGroupsByMessageKey={anchorGroupsByMessageKey}
               isFixedPane
