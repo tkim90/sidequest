@@ -4,9 +4,9 @@ import { motion } from "motion/react";
 import { Button } from "../../../components/ui/button";
 
 const STARTER_QUESTIONS = [
-  "Write a poem about history and science.",
-  "What was Dijkstra known for?",
-  "Give me a random Jean Sartre quote.",
+  "Why did the Roman Empire collapse",
+  "How did language start — did humans invent it or did it emerge?",
+  "Help me think through whether I should quit my job to start something."
 ] as const;
 
 interface NotebookStampProps {
