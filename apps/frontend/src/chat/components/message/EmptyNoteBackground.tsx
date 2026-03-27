@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Button } from "../../../components/ui/button";
 
 const STARTER_QUESTIONS = [
-  "Why did the Roman Empire collapse",
+  "Why did the Roman Empire collapse?",
   "How did language start — did humans invent it or did it emerge?",
   "Help me think through whether I should quit my job to start something."
 ] as const;

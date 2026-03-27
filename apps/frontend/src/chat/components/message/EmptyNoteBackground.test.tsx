@@ -16,7 +16,7 @@ describe("EmptyNoteBackground", () => {
   it("renders starter questions with wrapping and left-aligned text in the fixed pane", () => {
     const markup = renderBackground(true);
 
-    expect(markup).toContain("Why did the Roman Empire collapse");
+    expect(markup).toContain("Why did the Roman Empire collapse?");
     expect(markup).toContain("How did language start — did humans invent it or did it emerge?");
     expect(markup).toContain("Help me think through whether I should quit my job to start something.");
     expect(markup).toContain("w-full cursor-pointer justify-start whitespace-normal");
