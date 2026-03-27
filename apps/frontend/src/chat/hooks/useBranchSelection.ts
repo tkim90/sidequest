@@ -18,6 +18,8 @@ import {
   FLOATING_ROOT_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
+  VISUALIZATION_WINDOW_HEIGHT,
+  VISUALIZATION_WINDOW_WIDTH,
   WINDOW_GAP,
 } from "../lib/constants";
 import {
@@ -30,6 +32,7 @@ import {
 } from "../lib/panePlacement";
 import {
   cloneMessagesForBranch,
+  createVisualizationRecord,
   createAnchorRecord,
   createWindowRecord,
 } from "../lib/state";
@@ -52,13 +55,15 @@ interface PointerDownContext {
 
 interface UseBranchSelectionResult {
   dismissSelection: () => void;
-  expandSelectionComposer: () => void;
+  expandSelectionBranchComposer: () => void;
+  expandSelectionVisualizeComposer: () => void;
   onMessageMouseDown: (
     event: ReactPointerEvent<HTMLDivElement>,
     windowId: string,
     messageId: string,
   ) => void;
-  onSelectionBranch: () => string | null;
+  onSelectionBranch: (prompt?: string) => string | null;
+  onSelectionVisualize: (prompt?: string) => string | null;
   popoverRef: RefObject<HTMLDivElement | null>;
   selectionState: SelectionState | null;
 }
@@ -77,6 +82,19 @@ interface CreateBranchWindowOptions {
   anchorMessage: MessageRecord;
 }
 
+interface CreateVisualizationWindowOptions {
+  childX?: number;
+  childY?: number;
+  childHeight?: number;
+  childWidth?: number;
+  parentWidth: number;
+  parentWindow: WindowRecord;
+  selectedText: string;
+  visualizationIndex: number;
+  windowLocalY: number;
+  anchorMessage: MessageRecord;
+}
+
 export function createBranchWindow({
   childX,
   childY,
@@ -91,6 +109,7 @@ export function createBranchWindow({
   anchorMessage,
 }: CreateBranchWindowOptions): WindowRecord {
   return createWindowRecord({
+    kind: "chat",
     title: `${parentWindow.title}.${childIndex + 1}`,
     x: childX ?? parentWindow.x + parentWidth + WINDOW_GAP,
     y:
@@ -110,6 +129,40 @@ export function createBranchWindow({
     },
     inheritedMessageCount,
     isHistoryExpanded: inheritedMessageCount === 0,
+  });
+}
+
+export function createVisualizationWindow({
+  childX,
+  childY,
+  childHeight = VISUALIZATION_WINDOW_HEIGHT,
+  childWidth = VISUALIZATION_WINDOW_WIDTH,
+  parentWidth,
+  parentWindow,
+  selectedText,
+  visualizationIndex,
+  windowLocalY,
+  anchorMessage,
+}: CreateVisualizationWindowOptions): WindowRecord {
+  return createWindowRecord({
+    kind: "visualization",
+    title: `${parentWindow.title}.viz${visualizationIndex + 1}`,
+    x: childX ?? parentWindow.x + parentWidth + WINDOW_GAP,
+    y:
+      childY ??
+      parentWindow.y +
+        clamp(windowLocalY - 120, 24, 260) +
+        visualizationIndex * CHILD_VERTICAL_STAGGER,
+    width: childWidth,
+    height: childHeight,
+    parentId: parentWindow.id,
+    selectedModel: parentWindow.selectedModel,
+    selectedEffort: parentWindow.selectedEffort,
+    branchFocus: {
+      selectedText,
+      parentWindowTitle: parentWindow.title,
+      parentMessageRole: anchorMessage.role,
+    },
   });
 }
 
@@ -217,15 +270,28 @@ export function useBranchSelection({
     window.getSelection()?.removeAllRanges();
   }
 
-  function expandSelectionComposer(): void {
+  function expandSelectionBranchComposer(): void {
     setSelectionState((current) => {
-      if (!current || current.stage === "compose") {
+      if (!current || current.stage === "branch-compose") {
         return current;
       }
 
       return {
         ...current,
-        stage: "compose",
+        stage: "branch-compose",
+      };
+    });
+  }
+
+  function expandSelectionVisualizeComposer(): void {
+    setSelectionState((current) => {
+      if (!current || current.stage === "visualize-compose") {
+        return current;
+      }
+
+      return {
+        ...current,
+        stage: "visualize-compose",
       };
     });
   }
@@ -308,11 +374,23 @@ export function useBranchSelection({
     return null;
   }
 
-  function createBranchFromSelection(): string | null {
+  function createBranchFromSelection(prompt?: string): string | null {
+    return createChildFromSelection("chat", prompt);
+  }
+
+  function createVisualizationFromSelection(prompt?: string): string | null {
+    return createChildFromSelection("visualization", prompt);
+  }
+
+  function createChildFromSelection(
+    kind: "chat" | "visualization",
+    prompt?: string,
+  ): string | null {
     const currentSelection = selectionState;
     if (!currentSelection) {
       return null;
     }
+    const trimmedPrompt = prompt?.trim();
 
     const snapshot = appStateRef.current;
     const parentWindow = snapshot.windows[currentSelection.parentWindowId];
@@ -377,9 +455,10 @@ export function useBranchSelection({
       return null;
     }
 
-    const inheritedMessages = cloneMessagesForBranch(
-      parentMessages.slice(0, anchorIndex + 1),
-    );
+    const inheritedMessages =
+      kind === "chat"
+        ? cloneMessagesForBranch(parentMessages.slice(0, anchorIndex + 1))
+        : [];
     const orderedWindows = snapshot.zOrder
       .map((windowId) => snapshot.windows[windowId])
       .filter((windowData): windowData is WindowRecord => Boolean(windowData));
@@ -390,13 +469,21 @@ export function useBranchSelection({
     );
     const canvasWidth = canvasRef.current?.clientWidth;
     const canvasHeight = canvasRef.current?.clientHeight;
+    const defaultHeight =
+      kind === "chat"
+        ? FLOATING_ROOT_WINDOW_HEIGHT
+        : VISUALIZATION_WINDOW_HEIGHT;
+    const defaultWidth =
+      kind === "chat"
+        ? FLOATING_ROOT_WINDOW_WIDTH
+        : VISUALIZATION_WINDOW_WIDTH;
     const fittedPaneSize =
       canvasWidth && canvasHeight
         ? resolveFloatingPaneSize({
             canvasHeight,
             canvasWidth,
-            defaultHeight: FLOATING_ROOT_WINDOW_HEIGHT,
-            defaultWidth: FLOATING_ROOT_WINDOW_WIDTH,
+            defaultHeight,
+            defaultWidth,
             minHeight: MIN_WINDOW_HEIGHT,
             minWidth: MIN_WINDOW_WIDTH,
             viewport: snapshot.viewport,
@@ -414,21 +501,42 @@ export function useBranchSelection({
           })
         : null;
 
-    const childWindow = createBranchWindow({
-      childX: nextPosition?.x,
-      childY: nextPosition?.y,
-      childHeight: fittedPaneSize?.height,
-      childIndex: parentWindow.childIds.length,
-      childWidth: fittedPaneSize?.width,
-      parentWidth:
-        windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
-        parentWindow.width,
-      inheritedMessageCount: inheritedMessages.length,
-      parentWindow,
-      selectedText: currentSelection.selectedText,
-      windowLocalY: currentSelection.windowLocalY,
-      anchorMessage,
-    });
+    const parentWidth =
+      windowRefs.current[parentWindow.id]?.getBoundingClientRect().width ??
+      parentWindow.width;
+    const branchChildIndex = parentWindow.childIds
+      .map((childId) => snapshot.windows[childId])
+      .filter((windowData) => windowData?.kind === "chat").length;
+    const visualizationIndex = parentWindow.childIds
+      .map((childId) => snapshot.windows[childId])
+      .filter((windowData) => windowData?.kind === "visualization").length;
+    const childWindow =
+      kind === "chat"
+        ? createBranchWindow({
+            childX: nextPosition?.x,
+            childY: nextPosition?.y,
+            childHeight: fittedPaneSize?.height,
+            childIndex: branchChildIndex,
+            childWidth: fittedPaneSize?.width,
+            parentWidth,
+            inheritedMessageCount: inheritedMessages.length,
+            parentWindow,
+            selectedText: currentSelection.selectedText,
+            windowLocalY: currentSelection.windowLocalY,
+            anchorMessage,
+          })
+        : createVisualizationWindow({
+            childX: nextPosition?.x,
+            childY: nextPosition?.y,
+            childHeight: fittedPaneSize?.height,
+            childWidth: fittedPaneSize?.width,
+            parentWidth,
+            parentWindow,
+            selectedText: currentSelection.selectedText,
+            visualizationIndex,
+            windowLocalY: currentSelection.windowLocalY,
+            anchorMessage,
+          });
 
     const anchor = createAnchorRecord({
       parentWindowId: parentWindow.id,
@@ -466,6 +574,16 @@ export function useBranchSelection({
           ...current.messagesByWindowId,
           [childWindow.id]: inheritedMessages,
         },
+        visualizationsByWindowId:
+          kind === "visualization"
+            ? {
+                ...current.visualizationsByWindowId,
+                [childWindow.id]: createVisualizationRecord({
+                  title: childWindow.title,
+                  prompt: trimmedPrompt || currentSelection.selectedText,
+                }),
+              }
+            : current.visualizationsByWindowId,
         anchors: {
           ...current.anchors,
           [anchor.id]: {
@@ -484,9 +602,11 @@ export function useBranchSelection({
 
   return {
     dismissSelection,
-    expandSelectionComposer,
+    expandSelectionBranchComposer,
+    expandSelectionVisualizeComposer,
     onMessageMouseDown: handleMessageMouseDown,
     onSelectionBranch: createBranchFromSelection,
+    onSelectionVisualize: createVisualizationFromSelection,
     popoverRef,
     selectionState,
   };

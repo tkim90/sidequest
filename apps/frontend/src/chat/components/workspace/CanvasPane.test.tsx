@@ -14,6 +14,7 @@ const noop = () => {};
 
 const CHILD_WINDOW: WindowRecord = {
   id: "child",
+  kind: "chat",
   title: "Chat 1.1",
   x: 120,
   y: 64,
@@ -36,6 +37,7 @@ const FLOATING_ENTRY: FloatingWindowPresenceEntry = {
   isExiting: false,
   messages: [],
   savedScrollState: { scrollTop: null, shouldAutoScroll: true },
+  visualization: null,
   windowData: CHILD_WINDOW,
   zIndex: 1,
 };

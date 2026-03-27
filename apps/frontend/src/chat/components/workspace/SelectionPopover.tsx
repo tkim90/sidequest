@@ -57,18 +57,9 @@ export function resolveSelectionPopoverPosition(options: {
   return { left, top };
 }
 
-/**
- * Derives a stable identity string for a selection so the parent can use it as
- * a React `key`. When the key changes the popover remounts, which resets local
- * state (e.g. the compose input) without an effect.
- */
 export function getSelectionIdentityKey(selectionState: SelectionState): string {
   return `${selectionState.parentWindowId}:${selectionState.parentMessageId}:${selectionState.selectedText}`;
 }
-
-// ---------------------------------------------------------------------------
-// Presentation leaves
-// ---------------------------------------------------------------------------
 
 interface BranchCtaButtonProps {
   onExpand: () => void;
@@ -86,36 +77,61 @@ function BranchCtaButton({ onExpand }: BranchCtaButtonProps) {
   );
 }
 
-interface BranchComposeFormProps {
-  onBranch: (prompt?: string) => void;
+interface VisualizeCtaButtonProps {
+  onVisualize: () => void;
 }
 
-function BranchComposeForm({ onBranch }: BranchComposeFormProps) {
+function VisualizeCtaButton({ onVisualize }: VisualizeCtaButtonProps) {
+  return (
+    <button
+      className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-border bg-paper-window px-4 py-2 text-sm font-medium text-foreground shadow-lg transition-colors hover:bg-paper-raised"
+      type="button"
+      onClick={onVisualize}
+    >
+      Visualize
+    </button>
+  );
+}
+
+interface SelectionComposeFormProps {
+  copy: string;
+  placeholder: string;
+  submitLabel: string;
+  onSubmit: (prompt?: string) => void;
+}
+
+function SelectionComposeForm({
+  copy,
+  placeholder,
+  submitLabel,
+  onSubmit,
+}: SelectionComposeFormProps) {
   const [inputValue, setInputValue] = useState("");
 
   function handleSubmit() {
-    if (inputValue.trim()) {
-      onBranch(inputValue.trim());
+    const prompt = inputValue.trim();
+    if (prompt) {
+      onSubmit(prompt);
     } else {
-      onBranch();
+      onSubmit();
     }
   }
 
   return (
     <>
-      <p className="m-0">Sidebar this selection into a new chat?</p>
+      <p className="m-0">{copy}</p>
       <div className="flex items-center gap-2">
         <div className="flex-1 rounded-2xl border border-border bg-secondary transition-colors">
           <input
             autoFocus
             type="text"
             className="w-full px-3 py-1 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Ask a follow-up question..."
+            placeholder={placeholder}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
                 handleSubmit();
               }
             }}
@@ -127,27 +143,27 @@ function BranchComposeForm({ onBranch }: BranchComposeFormProps) {
           size="sm"
           onClick={handleSubmit}
         >
-          New Chat
+          {submitLabel}
         </Button>
       </div>
     </>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Container popover
-// ---------------------------------------------------------------------------
-
 interface SelectionPopoverProps {
-  onExpand: () => void;
-  onBranch: (prompt?: string) => void;
+  onBranchExpand: () => void;
+  onBranchSubmit: (prompt?: string) => void;
+  onVisualizeExpand: () => void;
+  onVisualizeSubmit: (prompt?: string) => void;
   popoverRef: RefObject<HTMLDivElement | null>;
   selectionState: SelectionState;
 }
 
 function SelectionPopover({
-  onExpand,
-  onBranch,
+  onBranchExpand,
+  onBranchSubmit,
+  onVisualizeExpand,
+  onVisualizeSubmit,
   popoverRef,
   selectionState,
 }: SelectionPopoverProps) {
@@ -182,12 +198,16 @@ function SelectionPopover({
     };
   }, [popoverRef, selectionState]);
 
+  const isComposeStage =
+    selectionState.stage === "branch-compose" ||
+    selectionState.stage === "visualize-compose";
+
   return (
     <div
       className={
-        selectionState.stage === "compose"
+        isComposeStage
           ? "fixed z-[60] flex min-w-[420px] flex-col gap-2 border border-popover-foreground/30 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
-          : "fixed z-[60]"
+          : "fixed z-[60] flex items-center gap-2 rounded-[22px] border border-popover-foreground/20 bg-popover px-3 py-3 text-sm text-popover-foreground shadow-lg"
       }
       ref={popoverRef}
       style={{
@@ -196,14 +216,33 @@ function SelectionPopover({
         visibility: position ? "visible" : "hidden",
       }}
     >
-      {selectionState.stage === "compose" ? (
-        <BranchComposeForm onBranch={onBranch} />
+      {selectionState.stage === "branch-compose" ? (
+        <SelectionComposeForm
+          copy="Sidebar this selection into a new chat?"
+          placeholder="Ask a follow-up question..."
+          submitLabel="New Chat"
+          onSubmit={onBranchSubmit}
+        />
+      ) : selectionState.stage === "visualize-compose" ? (
+        <SelectionComposeForm
+          copy="What should this visualization focus on?"
+          placeholder="Describe what to visualize..."
+          submitLabel="Visualize"
+          onSubmit={onVisualizeSubmit}
+        />
       ) : (
-        <BranchCtaButton onExpand={onExpand} />
+        <>
+          <BranchCtaButton onExpand={onBranchExpand} />
+          <VisualizeCtaButton onVisualize={onVisualizeExpand} />
+        </>
       )}
     </div>
   );
 }
 
 export default SelectionPopover;
-export { BranchComposeForm, BranchCtaButton };
+export {
+  BranchCtaButton,
+  SelectionComposeForm,
+  VisualizeCtaButton,
+};

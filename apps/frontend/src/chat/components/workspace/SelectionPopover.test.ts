@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import SelectionPopover, {
   getSelectionIdentityKey,
   resolveSelectionPopoverPosition,
-  BranchComposeForm,
   BranchCtaButton,
+  SelectionComposeForm,
+  VisualizeCtaButton,
 } from "./SelectionPopover";
 
 describe("resolveSelectionPopoverPosition", () => {
@@ -105,30 +106,54 @@ describe("SelectionPopover", () => {
   it("renders the CTA bubble for a fresh selection", () => {
     const markup = renderToStaticMarkup(
       createElement(SelectionPopover, {
-        onExpand: () => {},
-        onBranch: () => {},
+        onBranchExpand: () => {},
+        onBranchSubmit: () => {},
+        onVisualizeExpand: () => {},
+        onVisualizeSubmit: () => {},
         popoverRef: createRef<HTMLDivElement>(),
         selectionState,
       }),
     );
 
     expect(markup).toContain("Branch in new window");
+    expect(markup).toContain("Visualize");
     expect(markup).not.toContain("Ask a follow-up question...");
+    expect(markup).not.toContain("Describe what to visualize...");
     expect(markup).toContain("z-[60]");
   });
 
-  it("renders the composer UI when expanded", () => {
+  it("renders the branch composer UI when expanded", () => {
     const markup = renderToStaticMarkup(
       createElement(SelectionPopover, {
-        onExpand: () => {},
-        onBranch: () => {},
+        onBranchExpand: () => {},
+        onBranchSubmit: () => {},
+        onVisualizeExpand: () => {},
+        onVisualizeSubmit: () => {},
         popoverRef: createRef<HTMLDivElement>(),
-        selectionState: { ...selectionState, stage: "compose" },
+        selectionState: { ...selectionState, stage: "branch-compose" },
       }),
     );
 
     expect(markup).toContain('placeholder="Ask a follow-up question..."');
     expect(markup).toContain(">New Chat<");
+    expect(markup).toContain("Sidebar this selection into a new chat?");
+  });
+
+  it("renders the visualize composer UI when expanded", () => {
+    const markup = renderToStaticMarkup(
+      createElement(SelectionPopover, {
+        onBranchExpand: () => {},
+        onBranchSubmit: () => {},
+        onVisualizeExpand: () => {},
+        onVisualizeSubmit: () => {},
+        popoverRef: createRef<HTMLDivElement>(),
+        selectionState: { ...selectionState, stage: "visualize-compose" },
+      }),
+    );
+
+    expect(markup).toContain('placeholder="Describe what to visualize..."');
+    expect(markup).toContain(">Visualize<");
+    expect(markup).toContain("What should this visualization focus on?");
   });
 });
 
@@ -179,10 +204,26 @@ describe("BranchCtaButton", () => {
   });
 });
 
-describe("BranchComposeForm", () => {
+describe("VisualizeCtaButton", () => {
+  it("renders the visualization CTA label", () => {
+    const markup = renderToStaticMarkup(
+      createElement(VisualizeCtaButton, { onVisualize: () => {} }),
+    );
+
+    expect(markup).toContain("Visualize");
+    expect(markup).toContain("<button");
+  });
+});
+
+describe("SelectionComposeForm", () => {
   it("renders the compose input and submit button", () => {
     const markup = renderToStaticMarkup(
-      createElement(BranchComposeForm, { onBranch: () => {} }),
+      createElement(SelectionComposeForm, {
+        copy: "Sidebar this selection into a new chat?",
+        placeholder: "Ask a follow-up question...",
+        submitLabel: "New Chat",
+        onSubmit: () => {},
+      }),
     );
 
     expect(markup).toContain('placeholder="Ask a follow-up question..."');

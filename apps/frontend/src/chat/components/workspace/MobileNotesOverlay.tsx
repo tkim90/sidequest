@@ -12,7 +12,7 @@ import type { AnchorGroupsByMessageKey, WindowRecord, WindowScrollState } from "
 import { useMountEffect } from "../../../hooks/useMountEffect";
 import type { ResizeEdges } from "../../hooks/canvasTypes";
 import type { FloatingWindowPresenceEntry } from "../../hooks/useFloatingWindowPresence";
-import ChatWindow from "../window/ChatWindow";
+import WorkspaceWindow from "../window/WorkspaceWindow";
 
 const MAX_VISIBLE_STACK_CARDS = 3;
 const BODY_SWIPE_CAPTURE_THRESHOLD_PX = 10;
@@ -394,7 +394,7 @@ function MobileNotesOverlay({
 
     return Boolean(
       target.closest(
-        "a, button, input, select, textarea, [data-notebook-scrollbar]",
+        "a, button, input, select, textarea, [data-notebook-scrollbar], [data-visualization-canvas]",
       ),
     );
   }
@@ -730,12 +730,12 @@ function MobileNotesOverlay({
                   onPointerDown={() => onWindowFocus(entry.windowData.id)}
                 >
                   <div className="paper-texture-window h-full overflow-hidden rounded-[24px] border border-paper-stroke/40 bg-paper-window shadow-[var(--paper-window-shadow)]">
-                    <ChatWindow
+                    <WorkspaceWindow
                       anchorGroupsByMessageKey={anchorGroupsByMessageKey}
                       alwaysShowCloseButton={isTopCard}
+                      entry={entry}
                       isFixedPane
                       isFocused={isCycling ? targetStackIndex === 0 : isTopCard}
-                      messages={entry.messages}
                       mobileInteractionMode={isTopCard && !isCycling ? "scroll-first-swipe" : undefined}
                       onMobileBodyPointerDown={
                         isTopCard && !isCycling
@@ -763,10 +763,7 @@ function MobileNotesOverlay({
                       onWindowScrollStateChange={onWindowScrollStateChange}
                       registerAnchorRef={registerAnchorRef}
                       registerWindowRef={registerWindowRef}
-                      savedScrollState={entry.savedScrollState}
                       showFixedPaneCloseButton={isTopCard}
-                      windowData={entry.windowData}
-                      zIndex={targetStackIndex + 1}
                     />
                   </div>
                 </motion.div>

@@ -4,7 +4,7 @@ import type { AnchorGroupsByMessageKey, WindowRecord, WindowScrollState } from "
 import type { ResizeEdges } from "../../hooks/canvasTypes";
 import type { FloatingWindowPresenceEntry } from "../../hooks/useFloatingWindowPresence";
 import { FLOATING_WINDOW_EXIT_DURATION_MS } from "../../hooks/useFloatingWindowPresence";
-import ChatWindow from "../window/ChatWindow";
+import WorkspaceWindow from "../window/WorkspaceWindow";
 
 interface FloatingNoteStackProps {
   anchorGroupsByMessageKey: AnchorGroupsByMessageKey;
@@ -89,10 +89,10 @@ function FloatingNoteStack({
             ease: "easeOut",
           }}
         >
-          <ChatWindow
+          <WorkspaceWindow
             anchorGroupsByMessageKey={anchorGroupsByMessageKey}
+            entry={entry}
             isFocused={!entry.isExiting && index === liveWindowCount - 1}
-            messages={entry.messages}
             onClose={onClose}
             onComposerChange={onComposerChange}
             onEffortChange={onEffortChange}
@@ -109,9 +109,6 @@ function FloatingNoteStack({
             onWindowScrollStateChange={onWindowScrollStateChange}
             registerAnchorRef={registerAnchorRef}
             registerWindowRef={registerWindowRef}
-            savedScrollState={entry.savedScrollState}
-            windowData={entry.windowData}
-            zIndex={entry.zIndex}
           />
         </motion.div>
       ))}

@@ -9,7 +9,8 @@
       "Bash(browser-use eval:*)",
       "Bash(browser-use close:*)",
       "Bash(browser-use screenshot:*)",
-      "Bash(browser-use:*)"
+      "Bash(browser-use:*)",
+      "Bash(curl -s http://127.0.0.1:4040/api/tunnels)"
     ]
   }
 }

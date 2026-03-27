@@ -20,6 +20,7 @@ function createEntry(windowId: string): FloatingWindowPresenceEntry {
     },
     windowData: {
       id: windowId,
+      kind: "chat",
       title: `Window ${windowId}`,
       x: 0,
       y: 0,
@@ -36,6 +37,7 @@ function createEntry(windowId: string): FloatingWindowPresenceEntry {
       selectedEffort: null,
       isStreaming: false,
     },
+    visualization: null,
     zIndex: 1,
   };
 }

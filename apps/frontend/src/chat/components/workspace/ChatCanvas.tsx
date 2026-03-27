@@ -5,6 +5,7 @@ import type {
   AnchorGroupsByMessageKey,
   MessageRecord,
   MessagesByWindowId,
+  VisualizationsByWindowId,
   Viewport,
   WindowScrollState,
   WindowRecord,
@@ -32,6 +33,7 @@ interface ChatCanvasProps {
   leftPaneWidthPx: number | null;
   mainWindow: WindowRecord | null;
   messagesByWindowId: MessagesByWindowId;
+  visualizationsByWindowId: VisualizationsByWindowId;
   onCanvasPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
   onComposerChange: (windowId: string, composer: string) => void;
@@ -90,6 +92,7 @@ function ChatCanvas({
   leftPaneWidthPx,
   mainWindow,
   messagesByWindowId,
+  visualizationsByWindowId,
   onCanvasPointerDown,
   onCanvasWheel,
   onComposerChange,
@@ -120,6 +123,7 @@ function ChatCanvas({
 }: ChatCanvasProps) {
   const floatingWindowEntries = useFloatingWindowPresence({
     messagesByWindowId,
+    visualizationsByWindowId,
     windows,
     windowScrollStates,
   });

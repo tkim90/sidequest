@@ -12,6 +12,7 @@ import {
   resolveMobileBranchOverlayState,
   mergeSelectionPreviewAnchorGroup,
   resolveBranchSourceNavigation,
+  resolveSelectionVisualizationRequest,
 } from "./useChatWorkspace";
 
 describe("mergeSelectionPreviewAnchorGroup", () => {
@@ -30,7 +31,7 @@ describe("mergeSelectionPreviewAnchorGroup", () => {
     parentWindowId: "window-1",
     parentMessageId: "message-1",
     selectedText: "selected text",
-    stage: "compose",
+    stage: "branch-compose",
     startOffset: 2,
     endOffset: 8,
     x: 100,
@@ -66,6 +67,21 @@ describe("mergeSelectionPreviewAnchorGroup", () => {
         anchorIds: ["anchor-1"],
       },
     ]);
+  });
+
+  it("injects the preview highlight for the visualize composer too", () => {
+    const result = mergeSelectionPreviewAnchorGroup(baseGroups, {
+      ...selectionState,
+      stage: "visualize-compose",
+    });
+
+    expect(result["window-1:message-1"]?.[0]).toEqual({
+      key: "__preview__",
+      startOffset: 2,
+      endOffset: 8,
+      anchorIds: [],
+      preview: true,
+    });
   });
 });
 
@@ -315,5 +331,92 @@ describe("resolveMobileBranchOverlayState", () => {
       preferredMobileNoteWindowId: null,
       shouldOpenMobileNotes: false,
     });
+  });
+});
+
+describe("resolveSelectionVisualizationRequest", () => {
+  it("derives the visualization request from the selected source message and parent window", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+    const sourceMessage = createMessage("assistant", "Diagram this architecture.");
+    const appState = {
+      ...initialState,
+      windows: {
+        ...initialState.windows,
+        [rootWindowId]: {
+          ...initialState.windows[rootWindowId],
+          selectedModel: "gpt-5.4",
+          selectedEffort: "high" as const,
+        },
+      },
+      messagesByWindowId: {
+        ...initialState.messagesByWindowId,
+        [rootWindowId]: [sourceMessage],
+      },
+    };
+
+    expect(
+      resolveSelectionVisualizationRequest(appState, {
+        parentWindowId: rootWindowId,
+        parentMessageId: sourceMessage.id,
+        selectedText: "architecture",
+        stage: "cta",
+        x: 0,
+        y: 0,
+        windowLocalY: 0,
+      }, "Make it a sequence diagram"),
+    ).toEqual({
+      effort: null,
+      model: "gpt-5.4",
+      prompt: "Make it a sequence diagram",
+      selectedText: "architecture",
+      sourceMessage: "Diagram this architecture.",
+      sourceTitle: "Sidequest",
+    });
+  });
+
+  it("falls back to a null prompt when the visualize query is blank", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+    const sourceMessage = createMessage("assistant", "Diagram this architecture.");
+    const appState = {
+      ...initialState,
+      messagesByWindowId: {
+        ...initialState.messagesByWindowId,
+        [rootWindowId]: [sourceMessage],
+      },
+    };
+
+    expect(
+      resolveSelectionVisualizationRequest(appState, {
+        parentWindowId: rootWindowId,
+        parentMessageId: sourceMessage.id,
+        selectedText: "architecture",
+        stage: "visualize-compose",
+        x: 0,
+        y: 0,
+        windowLocalY: 0,
+      }, "   "),
+    ).toMatchObject({
+      prompt: null,
+      selectedText: "architecture",
+    });
+  });
+
+  it("returns null when the source message cannot be resolved", () => {
+    const initialState = createInitialState(120);
+    const rootWindowId = initialState.zOrder[0];
+
+    expect(
+      resolveSelectionVisualizationRequest(initialState, {
+        parentWindowId: rootWindowId,
+        parentMessageId: "missing-message",
+        selectedText: "architecture",
+        stage: "cta",
+        x: 0,
+        y: 0,
+        windowLocalY: 0,
+      }),
+    ).toBeNull();
   });
 });

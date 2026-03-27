@@ -16,8 +16,8 @@ describe("EmptyNoteBackground", () => {
   it("renders starter questions with wrapping and left-aligned text in the fixed pane", () => {
     const markup = renderBackground(true);
 
-    expect(markup).toContain("Write a poem about history and science.");
-    expect(markup).toContain("What was Dijkstra known for?");
+    expect(markup).toContain("Why do humans find patterns in randomness?");
+    expect(markup).toContain("What actually makes a piece of writing 'good'?");
     expect(markup).toContain("Give me a random Jean Sartre quote.");
     expect(markup).toContain("w-full cursor-pointer justify-start whitespace-normal");
     expect(markup).toContain("text-left font-serif");

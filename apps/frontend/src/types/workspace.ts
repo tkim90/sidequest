@@ -2,7 +2,7 @@ export interface SelectionState {
   parentWindowId: string;
   parentMessageId: string;
   selectedText: string;
-  stage: "cta" | "compose";
+  stage: "cta" | "branch-compose" | "visualize-compose";
   startOffset?: number;
   endOffset?: number;
   x: number;

@@ -45,6 +45,7 @@ function ChatWorkspace() {
           leftPaneWidthPx={workspace.leftPaneWidthPx}
           mainWindow={workspace.mainWindow}
           messagesByWindowId={workspace.messagesByWindowId}
+          visualizationsByWindowId={workspace.visualizationsByWindowId}
           onCanvasPointerDown={workspace.onCanvasPointerDown}
           onCanvasWheel={workspace.onCanvasWheel}
           onComposerChange={workspace.onComposerChange}
@@ -78,8 +79,10 @@ function ChatWorkspace() {
       {workspace.selectionState ? (
         <SelectionPopover
           key={getSelectionIdentityKey(workspace.selectionState)}
-          onExpand={workspace.onSelectionExpand}
-          onBranch={workspace.onSelectionBranch}
+          onBranchExpand={workspace.onSelectionBranchExpand}
+          onBranchSubmit={workspace.onSelectionBranch}
+          onVisualizeExpand={workspace.onSelectionVisualizeExpand}
+          onVisualizeSubmit={workspace.onSelectionVisualize}
           popoverRef={workspace.popoverRef}
           selectionState={workspace.selectionState}
         />

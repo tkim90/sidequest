@@ -8,6 +8,8 @@ import type {
   MessageStatus,
   MessagesByWindowId,
   ReasoningEffort,
+  VisualizationRecord,
+  WindowKind,
   WindowMap,
   WindowRecord,
 } from "../../types";
@@ -20,6 +22,7 @@ import {
 } from "./constants";
 
 interface CreateWindowRecordOptions {
+  kind?: WindowKind;
   title: string;
   x: number;
   y: number;
@@ -47,6 +50,7 @@ interface CreateAnchorRecordOptions extends CreateAnchorGroupKeyOptions {
 }
 
 export function createWindowRecord({
+  kind = "chat",
   title,
   x,
   y,
@@ -62,6 +66,7 @@ export function createWindowRecord({
 }: CreateWindowRecordOptions): WindowRecord {
   return {
     id: crypto.randomUUID(),
+    kind,
     title,
     x,
     y,
@@ -101,7 +106,29 @@ export function createInitialState(rootWindowX: number = ROOT_WINDOW_X): AppStat
     messagesByWindowId: {
       [rootWindow.id]: [],
     },
+    visualizationsByWindowId: {},
     anchors: {},
+  };
+}
+
+interface CreateVisualizationRecordOptions {
+  title: string;
+  prompt: string;
+}
+
+export function createVisualizationRecord({
+  title,
+  prompt,
+}: CreateVisualizationRecordOptions): VisualizationRecord {
+  return {
+    status: "loading",
+    phase: "planning",
+    title,
+    prompt,
+    shapes: [],
+    assets: [],
+    bindings: [],
+    errorMessage: null,
   };
 }
 

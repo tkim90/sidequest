@@ -10,6 +10,7 @@ const noop = () => {};
 function makeWindow(overrides: Partial<WindowRecord> = {}): WindowRecord {
   return {
     id: "w1",
+    kind: "chat",
     title: "Chat 1",
     x: 100,
     y: 50,
@@ -37,6 +38,7 @@ function makeEntry(
     isExiting: false,
     messages: [],
     savedScrollState: { scrollTop: null, shouldAutoScroll: true },
+    visualization: null,
     windowData: makeWindow(),
     zIndex: 1,
     ...overrides,

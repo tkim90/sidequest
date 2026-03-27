@@ -20,10 +20,12 @@ import type {
   MessagesByWindowId,
   ReasoningEffort,
   SelectionState,
+  VisualizationsByWindowId,
   WindowScrollState,
   WindowRecord,
 } from "../../types";
 import { streamChat } from "../api/streamChat";
+import { streamVisualization } from "../api/streamVisualization";
 import { useNoticeStore } from "../../stores/noticeStore";
 import { useModelStore } from "../../stores/modelStore";
 import {
@@ -52,6 +54,11 @@ import {
   getDescendantIds,
 } from "../lib/state";
 import { clampLeftPaneWidth, resolveStoredLeftPaneWidth } from "../lib/paneLayout";
+import {
+  applyVisualizationError,
+  applyVisualizationFinal,
+  applyVisualizationPhase,
+} from "../lib/visualizationState";
 import {
   addRootWindow,
   buildCloseAllChildrenPrompt,
@@ -82,6 +89,7 @@ export interface ChatWorkspaceViewModel {
   isPaneResizing: boolean;
   leftPaneWidthPx: number | null;
   messagesByWindowId: MessagesByWindowId;
+  visualizationsByWindowId: VisualizationsByWindowId;
   onCanvasPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onCanvasWheel: (event: ReactWheelEvent<HTMLDivElement>) => void;
   onCloseAllChildWindows: () => void;
@@ -109,8 +117,10 @@ export interface ChatWorkspaceViewModel {
   onOpenFreshRootWindow: () => void;
   onPaneResizePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onRetry: (windowId: string, messageId: string) => Promise<void>;
-  onSelectionExpand: () => void;
+  onSelectionBranchExpand: () => void;
+  onSelectionVisualizeExpand: () => void;
   onSelectionBranch: (prompt?: string) => void;
+  onSelectionVisualize: (prompt?: string) => void;
   onSend: (windowId: string, promptOverride?: string) => Promise<void>;
   onToggleHistoryExpanded: (windowId: string) => void;
   onWindowClose: (windowId: string) => void;
@@ -162,7 +172,7 @@ export function mergeSelectionPreviewAnchorGroup(
 ): AnchorGroupsByMessageKey {
   if (
     !selectionState ||
-    selectionState.stage !== "compose" ||
+    selectionState.stage === "cta" ||
     selectionState.startOffset === undefined ||
     selectionState.endOffset === undefined
   ) {
@@ -307,6 +317,51 @@ export function buildRequestBranchFocus(
   return {
     ...branchFocus,
     latestUserQuery: trimmedLatestUserQuery,
+  };
+}
+
+interface SelectionVisualizationRequest {
+  effort: WindowRecord["selectedEffort"];
+  model: string | null;
+  prompt: string | null;
+  selectedText: string;
+  sourceMessage: string;
+  sourceTitle: string;
+}
+
+export function resolveSelectionVisualizationRequest(
+  appState: AppState,
+  selectionState: SelectionState | null,
+  prompt?: string,
+): SelectionVisualizationRequest | null {
+  if (!selectionState) {
+    return null;
+  }
+
+  const parentWindow = appState.windows[selectionState.parentWindowId];
+  if (!parentWindow) {
+    return null;
+  }
+
+  const anchorMessage = (appState.messagesByWindowId[selectionState.parentWindowId] ?? [])
+    .find((message) => message.id === selectionState.parentMessageId);
+  if (!anchorMessage) {
+    return null;
+  }
+
+  const selectedText = selectionState.selectedText.trim();
+  const sourceMessage = anchorMessage.content.trim();
+  if (!selectedText || !sourceMessage) {
+    return null;
+  }
+
+  return {
+    effort: null,
+    model: parentWindow.selectedModel,
+    prompt: prompt?.trim() || null,
+    selectedText,
+    sourceMessage,
+    sourceTitle: parentWindow.title,
   };
 }
 
@@ -497,6 +552,79 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
   ): void {
     setAppState((current) => updateWindowEffort(current, windowId, effort));
   }
+
+  const handleSelectionVisualize = useCallback((prompt?: string): void => {
+    const request = resolveSelectionVisualizationRequest(
+      appStateRef.current,
+      selection.selectionState,
+      prompt,
+    );
+    if (!request) {
+      useNoticeStore.getState().showNotice(
+        "Could not create a visualization from that selection.",
+      );
+      selection.dismissSelection();
+      return;
+    }
+
+    const childWindowId = selection.onSelectionVisualize(prompt);
+    const nextMobileBranchOverlayState = resolveMobileBranchOverlayState(
+      childWindowId,
+      isMobileView,
+    );
+
+    setPreferredMobileNoteWindowId(
+      nextMobileBranchOverlayState.preferredMobileNoteWindowId,
+    );
+    if (nextMobileBranchOverlayState.shouldOpenMobileNotes) {
+      setIsMobileNotesOpen(true);
+    }
+
+    if (!childWindowId) {
+      return;
+    }
+
+    const controller = new AbortController();
+    abortControllersRef.current[childWindowId] = controller;
+
+    void streamVisualization({
+      effort: request.effort,
+      model: request.model,
+      prompt: request.prompt,
+      selectedText: request.selectedText,
+      signal: controller.signal,
+      sourceMessage: request.sourceMessage,
+      sourceTitle: request.sourceTitle,
+      onStatus: ({ phase, message }) => {
+        setAppState((current) =>
+          applyVisualizationPhase(current, childWindowId, phase, message),
+        );
+      },
+      onFinal: (payload) => {
+        setAppState((current) =>
+          applyVisualizationFinal(current, childWindowId, payload),
+        );
+      },
+    })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        const message = getErrorMessage(error);
+        useNoticeStore.getState().showNotice(message);
+
+        setAppState((current) =>
+          applyVisualizationError(current, childWindowId, message),
+        );
+      })
+      .finally(() => {
+        if (abortControllersRef.current[childWindowId] === controller) {
+          delete abortControllersRef.current[childWindowId];
+        }
+        canvas.requestGeometryRefresh();
+      });
+  }, [canvas, isMobileView, selection]);
 
   const handleWindowScrollStateChange = useCallback((
     windowId: string,
@@ -936,6 +1064,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     isPaneResizing,
     leftPaneWidthPx,
     messagesByWindowId: appState.messagesByWindowId,
+    visualizationsByWindowId: appState.visualizationsByWindowId,
     onCanvasPointerDown: (event) => {
       selection.dismissSelection();
       canvas.onCanvasPointerDown(event);
@@ -968,9 +1097,10 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
     onOpenFreshRootWindow: openFreshRootWindow,
     onPaneResizePointerDown: handlePaneResizePointerDown,
     onRetry: handleRetry,
-    onSelectionExpand: selection.expandSelectionComposer,
+    onSelectionBranchExpand: selection.expandSelectionBranchComposer,
+    onSelectionVisualizeExpand: selection.expandSelectionVisualizeComposer,
     onSelectionBranch: (prompt?: string) => {
-      const childWindowId = selection.onSelectionBranch();
+      const childWindowId = selection.onSelectionBranch(prompt);
       const nextMobileBranchOverlayState = resolveMobileBranchOverlayState(
         childWindowId,
         isMobileView,
@@ -989,6 +1119,7 @@ export function useChatWorkspace(): ChatWorkspaceViewModel {
         });
       }
     },
+    onSelectionVisualize: handleSelectionVisualize,
     onSend: handleSend,
     onToggleHistoryExpanded: handleToggleHistoryExpanded,
     onWindowClose: handleClose,

@@ -10,6 +10,7 @@ import NotebookPane from "./NotebookPane";
 
 const ROOT_WINDOW: WindowRecord = {
   id: "root",
+  kind: "chat",
   title: "Sidequest",
   x: 0,
   y: 0,

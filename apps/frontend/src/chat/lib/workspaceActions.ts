@@ -343,6 +343,11 @@ export function removeWindowsFromState(
       ([windowId]) => !doomed.has(windowId),
     ),
   );
+  const remainingVisualizations = Object.fromEntries(
+    Object.entries(state.visualizationsByWindowId).filter(
+      ([windowId]) => !doomed.has(windowId),
+    ),
+  );
 
   const remainingAnchors = Object.fromEntries(
     Object.entries(state.anchors).filter(([, anchor]) => {
@@ -355,6 +360,7 @@ export function removeWindowsFromState(
     windows: remainingWindows,
     zOrder: state.zOrder.filter((windowId) => !doomed.has(windowId)),
     messagesByWindowId: remainingMessages,
+    visualizationsByWindowId: remainingVisualizations,
     anchors: remainingAnchors,
   };
 }
@@ -374,6 +380,7 @@ export function addRootWindow(
       ...state.messagesByWindowId,
       [rootWindow.id]: [],
     },
+    visualizationsByWindowId: state.visualizationsByWindowId,
   };
 }
 
@@ -409,7 +416,7 @@ export function buildCloseAllChildrenPrompt(
   return {
     confirmLabel: "Close child windows",
     eyebrow: "Close child windows",
-    title: "This will close every branched chat window and keep the main thread open.",
+    title: "This will close every child window and keep the main thread open.",
     windowIds: childWindowIds,
     windowTitles: collectWindowTitles(windows, childWindowIds),
   };

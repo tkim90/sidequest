@@ -64,7 +64,7 @@ function ChatWindowComposer({
     isChildPane
       ? "min-h-9 max-h-[92px] min-w-0 flex-1 px-3 py-2 text-[15px] leading-5 placeholder:text-[15px]"
       : isFixedPane
-        ? "w-full min-h-[44px] max-h-[200px] px-4 py-3 text-[18px] leading-7 placeholder:text-[18px]"
+        ? "w-full min-h-[24px] max-h-[200px] px-4 py-0 md:py-3 text-[18px] leading-4 placeholder:text-[18px]"
         : "w-full min-h-[72px] max-h-[200px] py-2 text-[22px] leading-[1.45] placeholder:text-[22px]",
   ].join(" ");
   const composerShellClassName = [
@@ -188,7 +188,7 @@ function ChatWindowComposer({
             <div
               className={[
                 "flex items-center justify-between gap-2.5",
-                isFixedPane ? "px-3 py-2" : "px-0 py-2",
+                isFixedPane ? "px-3 py-0" : "px-0 py-2",
               ].join(" ")}
             >
               {controls}

@@ -4,6 +4,8 @@ import { useMountEffect } from "../../hooks/useMountEffect";
 import type {
   MessageRecord,
   MessagesByWindowId,
+  VisualizationRecord,
+  VisualizationsByWindowId,
   WindowScrollState,
   WindowRecord,
 } from "../../types";
@@ -22,12 +24,14 @@ export interface FloatingWindowPresenceEntry {
   isExiting: boolean;
   messages: MessageRecord[];
   savedScrollState: WindowScrollState;
+  visualization: VisualizationRecord | null;
   windowData: WindowRecord;
   zIndex: number;
 }
 
 interface UseFloatingWindowPresenceOptions {
   messagesByWindowId: MessagesByWindowId;
+  visualizationsByWindowId: VisualizationsByWindowId;
   windows: WindowRecord[];
   windowScrollStates: Record<string, WindowScrollState>;
 }
@@ -40,6 +44,7 @@ interface UseFloatingWindowPresenceOptions {
  */
 export function useFloatingWindowPresence({
   messagesByWindowId,
+  visualizationsByWindowId,
   windows,
   windowScrollStates,
 }: UseFloatingWindowPresenceOptions): FloatingWindowPresenceEntry[] {
@@ -53,6 +58,7 @@ export function useFloatingWindowPresence({
       messages: messagesByWindowId[windowData.id] ?? EMPTY_MESSAGES,
       savedScrollState:
         windowScrollStates[windowData.id] ?? DEFAULT_SCROLL_STATE,
+      visualization: visualizationsByWindowId[windowData.id] ?? null,
       windowData,
       zIndex: index + 1,
     })),
@@ -81,6 +87,10 @@ export function useFloatingWindowPresence({
               windowScrollStates[windowData.id] ??
               existing?.savedScrollState ??
               DEFAULT_SCROLL_STATE,
+            visualization:
+              visualizationsByWindowId[windowData.id] ??
+              existing?.visualization ??
+              null,
             windowData,
             zIndex: index + 1,
           };
@@ -98,7 +108,7 @@ export function useFloatingWindowPresence({
 
       return nextEntries;
     });
-  }, [windows, messagesByWindowId, windowScrollStates]);
+  }, [windows, messagesByWindowId, visualizationsByWindowId, windowScrollStates]);
 
   useLayoutEffect(() => {
     floatingWindowEntries.forEach((entry) => {

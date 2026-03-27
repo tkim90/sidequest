@@ -19,6 +19,7 @@ const VIEWPORT: Viewport = {
 
 const ROOT_WINDOW: WindowRecord = {
   id: "root",
+  kind: "chat",
   title: "Sidequest",
   x: 0,
   y: 0,
@@ -38,6 +39,7 @@ const ROOT_WINDOW: WindowRecord = {
 
 const CHILD_WINDOW: WindowRecord = {
   id: "child",
+  kind: "chat",
   title: "Chat 1.1",
   x: 120,
   y: 64,
@@ -89,6 +91,7 @@ function renderChatCanvas(
       leftPaneWidthPx={null}
       mainWindow={mainWindow}
       messagesByWindowId={MESSAGES}
+      visualizationsByWindowId={{}}
       onCanvasPointerDown={() => {}}
       onCanvasWheel={() => {}}
       onComposerChange={() => {}}
